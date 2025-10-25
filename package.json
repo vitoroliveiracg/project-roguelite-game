@@ -1,0 +1,26 @@
+{
+  "name": "rpg-roguelite-game",
+  "version": "1.0.0",
+  "description": "RPG roquelite bullet hell like game project",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vitoroliveiracg/project-roguelite-game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vitoroliveiracg/project-roguelite-game/issues"
+  },
+  "homepage": "https://github.com/vitoroliveiracg/project-roguelite-game#readme",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  }
+}
