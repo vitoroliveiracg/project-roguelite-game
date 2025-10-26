@@ -1,5 +1,6 @@
 import FileHandler from "../../shared/FileHandler";
 import Vector2D from "../../shared/Vector2D";
+import HitBox from "../hitBoxModule/HitBox";
 
 export default class EntityElement {
   private fileHandler:FileHandler
@@ -16,6 +17,8 @@ export default class EntityElement {
     centerPosY: 0
   }
 
+  private hitBox: HitBox|undefined = undefined
+
   public velocity: Vector2D = new Vector2D(0, 0);
   public direction: Vector2D = new Vector2D(0, 0);
   public speed:number = 10;
@@ -24,6 +27,18 @@ export default class EntityElement {
     this.fileHandler = new FileHandler()
 
     this.build() 
+  }
+
+  addHitBox (hitbox:HitBox) {
+    this.hitBox = hitbox
+  }
+  
+  getHitBox () :HitBox|undefined {
+    return this.hitBox
+  }
+
+  getMainDivElement() :HTMLElement {
+    return this.mainDivElement
   }
 
   draw (parentElement:HTMLElement) {
@@ -74,8 +89,11 @@ export default class EntityElement {
     console.log(text)
   }
 
-  isTouching (element:HTMLElement) {
-    const domRect1 = element.getBoundingClientRect()
+  isTouching (entity:EntityElement) :boolean {
+    if (this.hitBox)
+      return this.hitBox.isTouching( entity.getHitBox() )
+
+    const domRect1 = entity.getMainDivElement().getBoundingClientRect()
     const domRect2 = this.mainDivElement.getBoundingClientRect()
   
     return !(
