@@ -1,35 +1,39 @@
-export default class Player {
+import Entity from "./Entity";
+import type World from "./World";
+
+export default class Player extends Entity {
   
   public textToPrint = "diwaiodoawjioawd";
-  public coordinates = {
-    x: 0,
-    y: 0,
+
+  constructor (
+    id: number,
+    public level :number,
+    coordinates : { x: number, y :number },
+    strength: number,
+    inteligence: number,
+    dexterity: number,
+    wisdown: number,
+    charisma: number,
+  ){
+    // O tamanho do jogador (16x16) é uma propriedade intrínseca da entidade.
+    const size = { width: 16, height: 16 };
+    super(id, coordinates, size, strength, inteligence, dexterity, wisdown, charisma);
   }
+  
+  public move(direction: 'up' | 'down' | 'left' | 'right', world: World): void {
+    const speed = 5; // Define a velocidade do jogador
 
-  constructor(
-    private _strength: number,
-    private _inteligence: number,
-    private _dexterity: number,
-    private _wisdown: number,
-    private _charisma: number,
-  ) {}
+    let newX = this.coordinates.x;
+    let newY = this.coordinates.y;
 
+    if (direction === 'up') newY -= speed;
+    if (direction === 'down') newY += speed;
+    if (direction === 'left') newX -= speed;
+    if (direction === 'right') newX += speed;
 
-  //? ----------- Getters and setters -----------
-
-  public get strength(): number { return this._strength; }
-  public set strength(value: number) { this._strength = value; }
-
-  public get inteligence(): number { return this._inteligence; }
-  public set inteligence(value: number) { this._inteligence = value; }
-
-  public get dexterity(): number { return this._dexterity; }
-  public set dexterity(value: number) { this._dexterity = value; }
-
-  public get charisma(): number { return this._charisma; }
-  public set charisma(value: number) { this._charisma = value; }
-
-  public get wisdown(): number { return this._wisdown; }
-  public set wisdown(value: number) { this._wisdown = value; }
+    // Garante que o jogador não saia dos limites do mundo, considerando seu tamanho.
+    this.coordinates.x = Math.max(0, Math.min(newX, world.width - this.size.width));
+    this.coordinates.y = Math.max(0, Math.min(newY, world.height - this.size.height));
+  }
 
 }

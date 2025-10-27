@@ -1,12 +1,24 @@
-let start :number = 0;
+let lastTime = 0;
+let updateCallback: (deltaTime: number) => void = () => {};
+let drawCallback: () => void = () => {};
 
-export const draw = (delta :number)=>{
-  if (start === undefined) start = delta;
-  const elapsed = delta - start;
-  
-
-  window.requestAnimationFrame(draw);
+export function initializeGame(
+  updateFn: (deltaTime: number) => void,
+  drawFn: () => void
+) {
+  updateCallback = updateFn;
+  drawCallback = drawFn;
+  lastTime = performance.now();
+  window.requestAnimationFrame(gameLoop);
 }
 
+function gameLoop(currentTime: number) {
+  const deltaTime = (currentTime - lastTime) / 1000;
+  lastTime = currentTime;
 
-window.requestAnimationFrame(draw)
+  updateCallback(deltaTime);
+  drawCallback();
+
+  
+  window.requestAnimationFrame(gameLoop);
+}
