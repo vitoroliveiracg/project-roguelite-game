@@ -1,20 +1,17 @@
+/** @file Contém a `RenderableFactory`, responsável por criar objetos visuais (`IRenderable`) a partir do estado do domínio. */
+import { logger } from "../../shared/Logger";
 import type { EntityRenderableState } from "../../domain-contracts";
 import type IRenderable from "./IRenderable";
 import Sprite from "./Sprite";
 
-/**
- * A factory for creating IRenderable objects.
- * It maps domain state (entityTypeId, state) to concrete presentation objects (like Sprites).
- * This decouples the GameAdapter from the details of how renderables are created.
- */
+/** @class RenderableFactory Utiliza o padrão Factory para desacoplar o `GameAdapter` da criação de objetos visuais concretos. Ele mapeia o estado do domínio (ex: `entityTypeId`, `state`) para a instância `IRenderable` apropriada (ex: `Sprite`). */
 export class RenderableFactory {
-  // In a real game, you would load these configs from a file
+  /** @private Contém as configurações para cada tipo de sprite, mapeando uma chave (ex: 'player-idle') para os dados do asset. Em um jogo real, isso seria carregado de arquivos de configuração. */
   private spriteConfigs: Map<string, any> = new Map([
     [
       "player-idle",
       {
         imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href,
-        // Corrigido: O spritesheet tem 12 frames.
         frameCount: 12,
         animationSpeed: 10, // frames to wait before advancing animation
         frameWidth: 32,
@@ -23,15 +20,17 @@ export class RenderableFactory {
     ],
   ]);
 
+  /** Fase de Update (Sincronização): Cria uma nova instância de um objeto `IRenderable` com base no DTO de estado fornecido pelo domínio. @param state O DTO de estado da entidade a ser criada. @returns Uma instância de `IRenderable` (ex: `Sprite`) ou `null` se nenhuma configuração for encontrada. */
   public create(state: EntityRenderableState): IRenderable | null {
     const configKey = `${state.entityTypeId}-${state.state}`;
 
     if (this.spriteConfigs.has(configKey)) {
       const config = this.spriteConfigs.get(configKey);
+      logger.log('factory', `Creating new Sprite for entity ID: ${state.id}`, { state, config });
       return new Sprite(state, config);
     }
 
-    console.warn(`No renderable configuration found for key: ${configKey}`);
+    logger.log('error', `No renderable configuration found for key: ${configKey}`);
     return null;
   }
 }

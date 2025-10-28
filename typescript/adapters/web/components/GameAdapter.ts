@@ -1,6 +1,7 @@
+/** @file Contém a classe GameAdapter, o orquestrador principal da camada de Adaptação (apresentação). */
 import { gameEvents } from "../../../domain/eventDispacher/eventDispacher";
+import { logger } from "../shared/Logger"; 
 import type { IGameDomain } from "../domain-contracts";
-
 import { initializeGame } from "./Game";
 import Camera from "./cameraModule/Camera";
 import Canvas from "./canvasModule/Canvas";
@@ -9,61 +10,45 @@ import Renderer from "./renderModule/Renderer";
 import type IRenderable from "./renderModule/IRenderable";
 import { RenderableFactory } from "./renderModule/RenderableFactory";
 
+/** @class GameAdapter O "Adaptador" principal que conecta a lógica de domínio (`IGameDomain`) com as tecnologias da web (Canvas, Input, DOM), traduzindo eventos e dados entre as camadas e gerenciando o ciclo de vida dos componentes de apresentação. */
 export default class GameAdapter {
   private domain: IGameDomain;
-
-  private renderer! :Renderer;
-  private map! :GameMap;
-  private camera! :Camera;
+  private renderer!: Renderer; /** @private A instância do `Renderer` responsável por desenhar no canvas. */
+  private map!: GameMap; /** @private A instância do `GameMap` que gerencia o mapa de fundo. */
+  private camera!: Camera; /** @private A instância da `Camera` que controla a viewport do jogo. */
   private pressedKeys: Set<string> = new Set();
+  private renderables: Map<number, IRenderable> = new Map(); /** @private Um mapa de objetos renderizáveis, indexados pelo ID da entidade de domínio. */
+  private renderableFactory!: RenderableFactory; /** @private A fábrica para criar novos objetos `IRenderable`. */
 
-  private renderables: Map<number, IRenderable> = new Map();
-  private renderableFactory!: RenderableFactory;
-
+  /** @constructor @param domain Uma instância que implementa a interface do domínio. A injeção de dependência via interface permite que o Adapter seja agnóstico à implementação do domínio. */
   constructor(domain: IGameDomain) {
+    logger.log('init', 'GameAdapter instantiated.');
     this.domain = domain;
   }
 
+  /** Fase de Inicialização: Orquestra a criação dos subsistemas da web (Canvas, Câmera, Renderer), carrega assets, informa o domínio sobre o mundo e inicia o game loop. @async @returns {Promise<void>} Resolve quando os assets essenciais são carregados. */
   public async initialize(){
-    this.handleEvents();
-
-    // O canvas agora começa com tamanho 0 e será redimensionado.
-    const canvas = new Canvas(document.body, 0, 0);
-    // Adiciona CSS para fazer o canvas ocupar a tela toda.
-    this.setupResponsiveCanvas(canvas.element);
-    
-    // Corrigido: Usamos o construtor `new URL(...)` com `import.meta.url`.
-    // Esta é a forma mais robusta de garantir que o Vite (ou outro bundler)
-    // encontre o asset relativo ao arquivo atual e forneça a URL pública correta.
-    const mapImageUrl = new URL('../assets/map.jpeg', import.meta.url).href;
-    this.map = new GameMap(mapImageUrl);
-    await this.map.waitUntilLoaded();
-
-    // O tamanho do mundo agora é definido pelo tamanho da imagem do mapa.
-    const worldState = { width: this.map.width, height: this.map.height };
-
-    // Inicializa o domínio e a câmera com o tamanho correto do mundo.
-    this.domain.setWorld(worldState.width, worldState.height);
-
-    // A câmera precisa do estado do mundo, que obtemos do domínio.
-    this.camera = new Camera(canvas, 3); // Aumentando o zoom para 4x
-    
-    this.renderer = new Renderer(canvas, this.camera);
-    this.renderableFactory = new RenderableFactory();
-    
-    // Sincroniza os renderizáveis pela primeira vez para criar o jogador
-    await this.syncRenderables();
-
-    initializeGame(
-      this.update.bind(this),
-      this.draw.bind(this)
-    );
-
-    // Força o primeiro redimensionamento.
-    window.dispatchEvent(new Event('resize'));
+    logger.log('init', 'GameAdapter initializing...');
+    this.handleEvents(); // Configura os listeners de eventos do navegador.
+    const canvas = new Canvas(document.body, 0, 0); // Cria a instância do Canvas, inicialmente com 0x0 para ser redimensionado.
+    this.setupResponsiveCanvas(canvas.element); // Configura o canvas para ser responsivo ao tamanho da janela.
+    const mapImageUrl = new URL('../assets/map.jpeg', import.meta.url).href; // Obtém a URL da imagem do mapa de forma robusta.
+    this.map = new GameMap(mapImageUrl); // Cria a instância do mapa.
+    await this.map.waitUntilLoaded(); // Aguarda o carregamento da imagem do mapa.
+    const worldState = { width: this.map.width, height: this.map.height }; // Obtém as dimensões do mundo a partir do mapa carregado.
+    this.domain.setWorld(worldState.width, worldState.height); // Informa o domínio sobre as dimensões do mundo.
+    logger.log('init', 'Domain world set with:', worldState);
+    this.camera = new Camera(canvas, 3); // Cria a câmera com um zoom inicial de 3x.
+    this.renderer = new Renderer(canvas, this.camera); // Cria o renderer, injetando o canvas e a câmera.
+    this.renderableFactory = new RenderableFactory(); // Cria a fábrica de renderizáveis.
+    await this.syncRenderables(); // Sincroniza os renderizáveis pela primeira vez para criar o jogador e outros objetos iniciais.
+    initializeGame(this.update.bind(this), this.draw.bind(this)); // Inicia o game loop, passando os métodos de update e draw.
+    window.dispatchEvent(new Event('resize')); // Dispara um evento de resize para garantir que o canvas se ajuste corretamente na inicialização.
   }
   
+  /** Fase de Update (Sincronização): Compara o estado do domínio com os objetos visuais (`IRenderable`), criando/atualizando-os para refletir o estado atual do jogo. @private @async */
   private async syncRenderables(): Promise<void> {
+    logger.log('sync', 'Syncing renderables...');
     const { renderables: domainStates } = this.domain.getRenderState();
     const activeIds = new Set<number>();
     const loadingPromises: Promise<void>[] = [];
@@ -72,9 +57,10 @@ export default class GameAdapter {
       activeIds.add(state.id);
       if (this.renderables.has(state.id)) {
         this.renderables.get(state.id)!.updateState(state);
+        logger.log('sync', `Updated renderable ID: ${state.id}`);
       } else {
         const newRenderable = this.renderableFactory.create(state) as any; // Cast to access waitUntilLoaded
-        if (newRenderable) {
+        if (newRenderable) { // Se um novo renderizável foi criado, adiciona-o ao mapa e, se tiver, aguarda seu carregamento.
           this.renderables.set(state.id, newRenderable);
           if (newRenderable.waitUntilLoaded) {
             loadingPromises.push(newRenderable.waitUntilLoaded());
@@ -85,67 +71,48 @@ export default class GameAdapter {
     await Promise.all(loadingPromises);
   }
 
+  /** Fase de Update (Lógica do Adapter): Função principal do ciclo de vida, chamada a cada frame para processar inputs, delegar a atualização de lógica para o domínio, sincronizar o estado visual e atualizar a câmera. @private @param deltaTime O tempo em segundos desde o último frame. */
   private update(deltaTime: number): void { 
-    this.handleMovement();
-
-    this.domain.update(deltaTime); 
-
-    // O syncRenderables pode continuar sendo chamado sem await no loop principal,
-    // pois o carregamento inicial já foi garantido no initialize.
-    this.syncRenderables();
-    
-    // Corrigido: Obtém o objeto IRenderable (Sprite) do mapa gerenciado pelo adapter,
-    // não o DTO do domínio.
-    const playerRenderable = this.renderables.get(1);
-    if (playerRenderable) this.camera.setTarget(playerRenderable);
+    this.handleMovement(); // Processa as teclas pressionadas e envia comandos ao domínio.
+    this.domain.update(deltaTime); // Delega a atualização da lógica de negócio para o domínio.
+    this.syncRenderables(); // Sincroniza os objetos visuais com o estado mais recente do domínio.
+    const playerRenderable = this.renderables.get(1); // Obtém o objeto renderizável do jogador.
+    logger.log('camera', 'Player renderable found, setting camera target.');
+    if (playerRenderable) this.camera.setTarget(playerRenderable); // Se o jogador existe, define-o como alvo da câmera.
   }
 
+  /** Fase de Desenho: Função final do ciclo de vida, chamada a cada frame após o `update` para delegar a responsabilidade de desenhar o frame atual para o `Renderer`. */
   private draw(): void {
-    const { world, renderables: domainStates } = this.domain.getRenderState();
-    this.renderer.clear();
-    // Passa a lista de objetos IRenderable (os valores do Map) para o renderer.
-    // Isso garante que cada objeto tenha o método .draw().
-    this.renderer.drawFrame(this.map, world, Array.from(this.renderables.values()));
+    logger.log('render', 'Drawing frame...');
+    const { world } = this.domain.getRenderState(); // Obtém o estado do mundo do domínio.
+    this.renderer.clear(); // Limpa o canvas.
+    this.renderer.drawFrame(this.map, world, Array.from(this.renderables.values())); // Desenha o frame completo, incluindo mapa e todos os objetos renderizáveis.
   }
 
+  /** Fase de Inicialização: Configura os listeners de eventos do navegador (teclado, resize) que servirão de gatilho para as ações do jogo. @private */
   private handleEvents(){
-
-    gameEvents.on("messageReceived", parameters=>{
-      console.log("messageReceived:", parameters.message);
-    })
-
-    // Adiciona listeners para eventos de teclado para capturar a entrada do jogador.
-    window.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase();
-      console.log(`[Input] Key down: ${key}`); // DEBUG: Confirma a captura da tecla.
-      this.pressedKeys.add(key);
-
-      // Gatilho para o evento de log com a tecla 'l'.
-      if (key === 'l') this.logDrawKey();
-    });
-    window.addEventListener('keyup', (e) => this.pressedKeys.delete(e.key.toLowerCase()));
-
+    gameEvents.on("messageReceived", parameters => { /* console.log("messageReceived:", parameters.message); */ }); // Listener para eventos de mensagem, atualmente comentado para evitar logs desnecessários.
+    window.addEventListener('keydown', (e) => { 
+      const key = e.key.toLowerCase(); 
+      logger.log('input', `KeyDown event: ${key}`);
+      this.pressedKeys.add(key); 
+      if (key === 'l') this.logDrawKey(); 
+    }); // Adiciona a tecla pressionada ao conjunto de teclas ativas e verifica por ações discretas.
+    window.addEventListener('keyup', (e) => this.pressedKeys.delete(e.key.toLowerCase())); // Remove a tecla do conjunto quando liberada.
   }
 
-  /**
-   * Verifica as teclas pressionadas a cada frame e envia os comandos
-   * de movimento para o domínio.
-   */
+  /** Fase de Update (Input): Verifica as teclas atualmente pressionadas e traduz em chamadas para `domain.handlePlayerMovement`. @private */
   private handleMovement(): void {
     if (this.pressedKeys.has('w')) {
-      console.log("[Adapter] Sending 'up' command to domain."); // DEBUG
       this.domain.handlePlayerMovement({ direction: 'up' });
     }
     if (this.pressedKeys.has('s')) {
-      console.log("[Adapter] Sending 'down' command to domain."); // DEBUG
       this.domain.handlePlayerMovement({ direction: 'down' });
     }
     if (this.pressedKeys.has('a')) {
-      console.log("[Adapter] Sending 'left' command to domain."); // DEBUG
       this.domain.handlePlayerMovement({ direction: 'left' });
     }
     if (this.pressedKeys.has('d')) {
-      console.log("[Adapter] Sending 'right' command to domain."); // DEBUG
       this.domain.handlePlayerMovement({ direction: 'right' });
     }
   }
@@ -153,25 +120,22 @@ export default class GameAdapter {
   public keyPressed (key:string) {
   }
 
+  /** Dispara um evento de log para fins de depuração. @private */
   private logDrawKey () {
+    logger.log('input', 'Dispatching "log" event for debug.');
     gameEvents.dispatch("log", {})
   }
 
+  /** Fase de Inicialização: Configura o elemento Canvas para ocupar toda a tela e ser responsivo a redimensionamentos da janela. @private @param canvasElement O elemento canvas a ser estilizado. */
   private setupResponsiveCanvas(canvasElement: HTMLCanvasElement) {
-    canvasElement.style.position = 'absolute';
-    canvasElement.style.top = '0';
-    canvasElement.style.left = '0';
-    canvasElement.style.width = '100vw';
-    canvasElement.style.height = '100vh';
-    canvasElement.style.display = 'block';
-    document.body.style.margin = '0';
-    document.body.style.overflow = 'hidden';
-
-    window.addEventListener('resize', () => {
-      // Atualiza a resolução interna do canvas para corresponder ao seu novo tamanho.
-      canvasElement.width = window.innerWidth;
-      canvasElement.height = window.innerHeight;
-    });
+    canvasElement.style.position = 'absolute'; // Posiciona o canvas de forma absoluta.
+    canvasElement.style.top = '0'; // Alinha o canvas ao topo.
+    canvasElement.style.left = '0'; // Alinha o canvas à esquerda.
+    canvasElement.style.width = '100vw'; // Faz o canvas ocupar 100% da largura da viewport.
+    canvasElement.style.height = '100vh'; // Faz o canvas ocupar 100% da altura da viewport.
+    canvasElement.style.display = 'block'; // Garante que o canvas seja um elemento de bloco.
+    document.body.style.margin = '0'; // Remove a margem padrão do corpo do documento.
+    document.body.style.overflow = 'hidden'; // Esconde as barras de rolagem do corpo do documento.
+    window.addEventListener('resize', () => { canvasElement.width = window.innerWidth; canvasElement.height = window.innerHeight; }); // Adiciona um listener para redimensionar o canvas quando a janela é redimensionada.
   }
-
 }
