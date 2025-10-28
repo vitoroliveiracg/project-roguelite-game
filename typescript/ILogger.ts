@@ -10,10 +10,11 @@ export type LogChannel =
   | 'loop'      //? Para o game loop principal (deltaTime)
   | 'factory'   //? Para a criação de objetos na RenderableFactory
   | 'error'     //? Para erros e avisos importantes
+  | 'hitbox'    //? Para eventos de hitbox
 ;    
 
 
 /** @interface ILogger Define o contrato que o domínio espera para um serviço de log. */
 export interface ILogger {
-  log(channel: LogChannel, message: string, ...data: any[]): void;
+  log( channel: LogChannel, message: string, ...data: any[]): void;
 }
