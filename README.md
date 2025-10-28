@@ -12,6 +12,9 @@ Flag debug: //! --debug
 
 * Mapa geral contínuo, fast travel para regioes já visitadas
 
+* Montaria para locomoção
+
+
 > Armas e Classes
 
 * Habilidades passivas das classes funcionam somente com as classes ativas
@@ -31,6 +34,12 @@ Flag debug: //! --debug
 * Item tem range de atributos (e muito menor de ter efeito)
 
 * Drops são raros e caem no chão. Pega ao passar perto (3% drop rate)
+
+
+> Mobs
+
+* Range máximo para aggro dos inimigos. Fora do range desespawna (difício escapar no início)
+
 
 ## Lista de tarefas a discutir
 

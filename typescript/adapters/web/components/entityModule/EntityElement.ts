@@ -29,27 +29,27 @@ export default class EntityElement {
     this.build() 
   }
 
-  addHitBox (hitbox:HitBox) {
+  public addHitBox (hitbox:HitBox) {
     this.hitBox = hitbox
   }
   
-  getHitBox () :HitBox|undefined {
+  public getHitBox () :HitBox|undefined {
     return this.hitBox
   }
 
-  getMainDivElement() :HTMLElement {
+  public getMainDivElement() :HTMLElement {
     return this.mainDivElement
   }
 
-  draw (parentElement:HTMLElement) {
+  public draw (parentElement:HTMLElement) {
     parentElement.appendChild(this.mainDivElement)
   }
 
-  kill (parentElement:HTMLElement) {
+  public kill (parentElement:HTMLElement) {
     parentElement.removeChild(this.mainDivElement)
   }
 
-  async build() {
+  public async build() {
     const elementHTMLText = await this.fileHandler.loadFileText( this.fileNames.mainDivName )||''
     const elementStyleText = await this.fileHandler.loadFileText( this.fileNames.cssFileName )||'' 
     
@@ -63,7 +63,7 @@ export default class EntityElement {
     this.calculatePosition()
   }
 
-  update() {
+  public update() {
     const displacement: Vector2D = new Vector2D(this.direction.x * this.velocity.x, this.direction.y * this.velocity.y);
     displacement.normalize() // Testar, n sei se precisa
     displacement.multiply(this.speed)
@@ -77,7 +77,7 @@ export default class EntityElement {
     this.calculatePosition();
   }
 
-  calculatePosition () {
+  public calculatePosition () {
     const rect = this.mainDivElement.getBoundingClientRect()
     this.position.posX = rect.left;
     this.position.posY = rect.top;
@@ -85,11 +85,11 @@ export default class EntityElement {
     this.position.centerPosY = (rect.top + rect.bottom) / 2
   }
 
-  takeAction (text:string) {
+  public takeAction (text:string) {
     console.log(text)
   }
 
-  isTouching (entity:EntityElement) :boolean {
+  public isTouching (entity:EntityElement) :boolean {
     if (this.hitBox)
       return this.hitBox.isTouching( entity.getHitBox() )
 
