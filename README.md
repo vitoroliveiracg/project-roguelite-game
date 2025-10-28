@@ -2,25 +2,9 @@
 
 RPG roquelite bullet hell like game project
 
-Flag debug: //! Debug
+Flag debug: //! --debug
 
 [dontpad](https://dontpad.com/project-roguelite-game)
-
-## TAREFAS MAIORES
-
-* [ ] - Compositor de sprites de personagem (cabelo, cor, olhos)
-* [ ] - Compositor de alguns tipos de itens em personagem (capacete, espada)
-* [ ] - Tela de seleção de mapas
-* [ ] - Compositor de mapas da tela de seleção de mapas
-* [ ] - Árvore de habilidades de cada classe
-* [ ] - Interface personagem
-  * [ ] - Bag
-    * [ ] - Itens equipados
-  * [ ] - Status
-* [ ] - Skilltree
-* [ ] - Interface geral
-  * [ ] - Seleção de broches
-  * [ ] - Status gerais
 
 ## REQUISITOS
 
