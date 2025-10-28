@@ -18,6 +18,17 @@ export class RenderableFactory {
         frameHeight: 32,
       },
     ],
+    [
+      "player-walking",
+      {
+        // Usando a mesma imagem por enquanto, mas idealmente seria um spritesheet de caminhada.
+        imageSrc: new URL('../../assets/playerWalking.png', import.meta.url).href,
+        frameCount: 12,
+        animationSpeed: 5, // Animação mais rápida ao andar
+        frameWidth: 32,
+        frameHeight: 32,
+      },
+    ],
   ]);
 
   /** Fase de Update (Sincronização): Cria uma nova instância de um objeto `IRenderable` com base no DTO de estado fornecido pelo domínio. @param state O DTO de estado da entidade a ser criada. @returns Uma instância de `IRenderable` (ex: `Sprite`) ou `null` se nenhuma configuração for encontrada. */

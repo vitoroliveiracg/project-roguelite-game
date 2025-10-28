@@ -35,7 +35,7 @@ export interface IGameDomain {
   /** Permite que a camada de apresentação configure o contexto do mundo (ex: tamanho do mapa) no domínio durante a inicialização. @param width A largura do mundo. @param height A altura do mundo. */
   setWorld(width: number, height: number): void;
   /** Traduz uma intenção do usuário (capturada pela apresentação) em um comando que o domínio entende. @param command O comando de movimento. */
-  handlePlayerMovement(command: { direction: 'up' | 'down' | 'left' | 'right' }): void;
+  handlePlayerMovement(command: { direction: 'up' | 'down' | 'left' | 'right' }, deltaTime: number): void; // eslint-disable-line
   /** Solicita ao domínio uma "fotografia" do estado atual de todos os objetos visíveis, formatada como DTOs puros para a renderização. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   getRenderState(): { world: WorldState; renderables: readonly RenderableState[] };
 }

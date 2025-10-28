@@ -1,24 +1,14 @@
 /** @file Implementa um Logger centralizado com canais para depuração granular. */
 //? Como Usar: GameLogger está disponível globalmente. Ex: `GameLogger.enable('loop')` para ligar um canal, ou `GameLogger.enableTrace('sync')` para ligar com stack trace.
 
-/** Define os canais de log disponíveis na aplicação. Isso ajuda a manter a consistência e oferece autocompletar. */
-export type LogChannel = 
-  | 'init'      // Para o fluxo de inicialização
-  | 'input'     // Para inputs do usuário (teclado, mouse)
-  | 'domain'    // Para eventos dentro da camada de domínio
-  | 'sync'      // Para a sincronização entre domínio e renderizáveis
-  | 'render'    // Para o ciclo de desenho
-  | 'camera'    // Para lógica da câmera
-  | 'loop'      // Para o game loop principal (deltaTime)
-  | 'factory'   // Para a criação de objetos na RenderableFactory
-  | 'error';    // Para erros e avisos importantes
+import type { ILogger, LogChannel } from "../../../ILogger"; 
 
 /**
  * @class Logger
  * Gerencia a exibição de logs com base em canais ativos.
  * Permite ativar/desativar a visualização de logs específicos em tempo de execução.
  */
-class Logger {
+class Logger implements ILogger {
   /** @private Um Set contendo os canais de log que estão atualmente ativos. */
   private activeChannels: Set<LogChannel> = new Set(['init', 'error']); // Ativa 'init' e 'error' por padrão.
   /** @private Um Set contendo os canais que devem exibir um stack trace completo. */

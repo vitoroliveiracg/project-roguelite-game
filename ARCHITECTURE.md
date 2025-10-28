@@ -10,7 +10,7 @@ O projeto adota a Arquitetura Hexagonal, também conhecida como Arquitetura de P
 
 - **Domínio (Core da Aplicação):** Contém a lógica de negócio pura e as regras do jogo. É agnóstico a qualquer tecnologia externa.
 - **Portas (Interfaces):** Definem os contratos que o Domínio expõe para o mundo exterior (Portas Primárias) e os contratos que o Domínio precisa do mundo exterior (Portas Secundárias). São interfaces TypeScript.
-- **Adaptadores (Implementações):** Implementam as Portas, traduzindo as interações do mundo externo para o formato que o Domínio entende, e vice-versa.
+- **Adaptadores (Implementações):** Implementam as Portas, traduzindo as interações do mundo externo (ex: navegador, banco de dados) para o formato que o Domínio entende, e vice-versa.
 
 **Benefícios:**
 
@@ -29,6 +29,7 @@ Contém a lógica de negócio pura do jogo.
 - **`entities/Player.ts`:** Representa o jogador, suas propriedades e regras de movimento.
 - **`entities/World.ts`:** Representa o ambiente do jogo, suas dimensões e regras de colisão.
 - **`eventDispacher/eventDispacher.ts`:** Um sistema de eventos interno para comunicação desacoplada dentro do Domínio ou entre Domínio e Adapters (via `GameAdapter`).
+- **`ports/ILogger.ts`:** Uma **Porta Secundária** que define o contrato para um serviço de log, permitindo que o domínio registre eventos sem conhecer a implementação.
 
 ### 2.2. Camada de Adaptação (`typescript/adapters/web`)
 
@@ -54,13 +55,17 @@ Implementa a interface de usuário e interage com as tecnologias web.
 
 - **`IRenderable.ts`:** Define o contrato para qualquer objeto que possa ser desenhado na tela, permitindo polimorfismo na renderização.
 - **`Renderable.ts`:** (Obsoleto/Não utilizado) Uma interface `Renderable` que parece ser uma versão antiga ou redundante de `IRenderable`.
-- **`RenderableFactory.ts`:** Cria instâncias de `IRenderable` (ex: `Sprite`) a partir dos DTOs do Domínio, desacoplando o `GameAdapter` da criação concreta.
 - **`Renderer.ts`:** Orquestra o processo de desenho no canvas, interagindo com a `Camera` e os `IRenderable`s.
+- **`RenderableFactory.ts`:** Cria instâncias de `IRenderable` (ex: `Sprite`) a partir dos DTOs do Domínio, desacoplando o `GameAdapter` da criação concreta.
 - **`Sprite.ts`:** Uma implementação concreta de `IRenderable` que gerencia spritesheets animados.
 
-#### keyboardModule/
+#### Logger
 
-- **`keyboardHandler.ts`:** (A ser refatorado) Atualmente, um módulo separado para eventos de teclado, mas sua responsabilidade será unificada no `GameAdapter`.
+- **`shared/Logger.ts`:** Uma implementação concreta da porta `ILogger` que funciona no ambiente web, escrevendo no console do navegador e criando um fluxo de depuração digno de inveja.
+
+#### keyboardModule
+
+- **`InputManager.ts`:** Centraliza toda a lógica de input. Carrega o mapeamento de teclas do `keymap.json`, captura eventos brutos de hardware (ex: teclado) e os traduz para ações de jogo lógicas (ex: 'move_up'). Permite o remapeamento de teclas em tempo de execução, desacoplando o `GameAdapter` dos detalhes do dispositivo de entrada.
 
 #### index
 
@@ -88,7 +93,7 @@ O `Game.ts` orquestra o loop, chamando `GameAdapter.update()` e `GameAdapter.dra
 #### `GameAdapter.update(deltaTime)` (Fase de Lógica)
 
 1. **Input:** Processa as teclas pressionadas (`handleMovement()`), traduzindo-as em comandos para o Domínio.
-2. **Domínio:** Chama `domain.update(deltaTime)` para avançar o estado de todas as entidades do jogo.
+2. **Domínio:** Chama `domain.update(deltaTime)` para avançar o estado de todas as entidades do jogo (ex: estado do jogador de 'walking' para 'idle').
 3. **Sincronização Visual:** Chama `syncRenderables()` para comparar o estado do Domínio com os objetos visuais e criar/atualizar/remover `IRenderable`s.
 4. **Câmera:** Define o alvo da câmera (`camera.setTarget()`), geralmente o jogador.
 
@@ -104,8 +109,8 @@ O `Game.ts` orquestra o loop, chamando `GameAdapter.update()` e `GameAdapter.dra
 
 ### 3.3. Fluxo de Input (Exemplo: Movimento do Jogador)
 
-1. **`GameAdapter.handleEvents()`:** Um `window.addEventListener('keydown')` detecta uma tecla (ex: 'w').
-2. **`GameAdapter.handleMovement()`:** Traduz a tecla pressionada em um comando de movimento (`{ direction: 'up' }`).
+1. **`InputManager`:** Um `window.addEventListener('keydown')` detecta uma tecla (ex: 'w') e a adiciona ao conjunto de teclas ativas.
+2. **`GameAdapter.handleMovement()`:** Pergunta ao `InputManager` se a ação 'move_up' está ativa. Como está, ele cria um comando de movimento (`{ direction: 'up' }`).
 3. **`DomainFacade.handlePlayerMovement()`:** Recebe o comando e delega para a entidade `Player`.
 4. **`Player.move()`:** Atualiza as coordenadas do jogador, aplicando as regras de movimento e colisão com o `World`.
 5. **Próximo `GameAdapter.update()`:** `syncRenderables()` detecta a nova posição do jogador (via `domain.getRenderState()`) e atualiza o `Sprite` correspondente.
