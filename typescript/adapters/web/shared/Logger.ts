@@ -1,7 +1,7 @@
 /** @file Implementa um Logger centralizado com canais para depuração granular. */
 //? Como Usar: GameLogger está disponível globalmente. Ex: `GameLogger.enable('loop')` para ligar um canal, ou `GameLogger.enableTrace('sync')` para ligar com stack trace.
 
-import type { ILogger, LogChannel } from "../../../ILogger"; 
+import type { ILogger, LogChannel } from "../../../domain/ports/ILogger"; 
 
 /**
  * @class Logger

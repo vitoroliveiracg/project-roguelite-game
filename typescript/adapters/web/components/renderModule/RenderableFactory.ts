@@ -1,47 +1,76 @@
 /** @file Contém a `RenderableFactory`, responsável por criar objetos visuais (`IRenderable`) a partir do estado do domínio. */
 import { logger } from "../../shared/Logger";
-import type { EntityRenderableState } from "../../domain-contracts";
-import type IRenderable from "./IRenderable";
-import Sprite from "./Sprite";
+import type { EntityRenderableState } from "../../../../domain/ports/domain-contracts";
+import Enemy, { type EnemyConstructorParams } from "../gameObjectModule/Enemy";
+import BlackEnemy from "../gameObjectModule/BlackEnemy";
+import Player from "../gameObjectModule/playerModule/Player";
+import type IRenderable from "../renderModule/IRenderable";
+import type { SpriteConfig } from "../gameObjectModule/GameObjectElement";
+import type GameObjectElement from "../gameObjectModule/GameObjectElement";
 
 /** @class RenderableFactory Utiliza o padrão Factory para desacoplar o `GameAdapter` da criação de objetos visuais concretos. Ele mapeia o estado do domínio (ex: `entityTypeId`, `state`) para a instância `IRenderable` apropriada (ex: `Sprite`). */
 export class RenderableFactory {
-  /** @private Contém as configurações para cada tipo de sprite, mapeando uma chave (ex: 'player-idle') para os dados do asset. Em um jogo real, isso seria carregado de arquivos de configuração. */
-  private spriteConfigs: Map<string, any> = new Map([
-    [
-      "player-idle",
-      {
-        imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href,
-        frameCount: 12,
-        animationSpeed: 10, // frames to wait before advancing animation
-        frameWidth: 32,
-        frameHeight: 32,
-      },
-    ],
-    [
-      "player-walking",
-      {
-        // Usando a mesma imagem por enquanto, mas idealmente seria um spritesheet de caminhada.
-        imageSrc: new URL('../../assets/playerWalking.png', import.meta.url).href,
-        frameCount: 12,
-        animationSpeed: 5, // Animação mais rápida ao andar
-        frameWidth: 32,
-        frameHeight: 32,
-      },
-    ],
+
+  //? Cache das imagens
+  private imageCache: Map<string, HTMLImageElement> = new Map();
+
+  // O tipo agora é mais genérico para acomodar diferentes construtores/fábricas.
+  private creationStrategies: Map<string, (params: EnemyConstructorParams) => GameObjectElement> = new Map([
+    ['player', (params) => new Player(params)],
+    ['enimie', (params) => Enemy.createWithSprite(params)],
+    ['blackEnemy', (params) => new BlackEnemy(params)],
   ]);
 
   /** Fase de Update (Sincronização): Cria uma nova instância de um objeto `IRenderable` com base no DTO de estado fornecido pelo domínio. @param state O DTO de estado da entidade a ser criada. @returns Uma instância de `IRenderable` (ex: `Sprite`) ou `null` se nenhuma configuração for encontrada. */
   public create(state: EntityRenderableState): IRenderable | null {
-    const configKey = `${state.entityTypeId}-${state.state}`;
+    const creationStrategy = this.creationStrategies.get(state.entityTypeId);
 
-    if (this.spriteConfigs.has(configKey)) {
-      const config = this.spriteConfigs.get(configKey);
-      logger.log('factory', `Creating new Sprite for entity ID: ${state.id}`, { state, config });
-      return new Sprite(state, config);
+    if (!creationStrategy) {
+      logger.log('error', `(Rendable Factory) No renderable class found for entityTypeId: ${state.entityTypeId}`);
+      return null;
     }
 
-    logger.log('error', `No renderable configuration found for key: ${configKey}`);
-    return null;
+    try {
+      
+      return creationStrategy({
+        initialState: state,
+        configs: this.spriteConfigs,
+        imageCache: this.imageCache 
+      });
+    } 
+    catch (error) {
+      logger.log('error', `(Rendable Factory) Failed to create renderable for ${state.entityTypeId}:`, error);
+      return null;
+    }
   }
+
+  /** @private Mapeia uma chave de configuração (ex: 'player-idle') para os dados do asset. */
+  private spriteConfigs: Map<string, SpriteConfig> = new Map([
+    ['player-idle', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 10, frameWidth: 32, frameHeight: 32, }],
+    ['player-walking', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 5, frameWidth: 32, frameHeight: 32, }],
+    ['enimie-idle', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
+  ]);
+
+  /** Pré-carrega todas as imagens definidas em `spriteConfigs` e as armazena no cache. */
+  public async preloadAssets(): Promise<void> {
+    const promises: Promise<void>[] = [];
+    const uniqueImageSources = new Set(Array.from(this.spriteConfigs.values()).map(config => config.imageSrc));
+
+    for (const src of uniqueImageSources) {
+      if (this.imageCache.has(src)) continue;
+
+      const promise = new Promise<void>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+          this.imageCache.set(src, image);
+          resolve();
+        };
+        image.onerror = () => reject(new Error(`(Rendable Factory) Failed to preload asset: ${src}`));
+        image.src = src;
+      });
+      promises.push(promise);
+    }
+    await Promise.all(promises);
+  }
+  
 }

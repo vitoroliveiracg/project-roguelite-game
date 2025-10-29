@@ -1,5 +1,5 @@
 /** @file Contém a classe `Renderer`, responsável por desenhar o estado do jogo no canvas a cada frame. */
-import type { WorldState } from "../../domain-contracts";
+import type { WorldState } from "../../../../domain/ports/domain-contracts";
 import type Camera from "../cameraModule/Camera";
 import type Canvas from "../canvasModule/Canvas";
 import type IRenderable from "./IRenderable";

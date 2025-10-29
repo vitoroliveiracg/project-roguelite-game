@@ -1,4 +1,7 @@
 /** @file Define a fronteira da Arquitetura Hexagonal, contendo os contratos (DTOs e a Porta) que governam a comunicação entre as camadas de Domínio e Adaptação. */
+
+import type { objectTypeId } from "../ObjectModule/objectType.type";
+
 /** DTO (Data Transfer Object) que representa o estado imutável do mundo do jogo, usado para transferir informações do domínio para a apresentação sem expor a entidade `World` interna. */
 export interface WorldState {
   /** A largura total do mundo do jogo em unidades (pixels). */
@@ -19,9 +22,9 @@ interface BaseRenderableState {
 /** DTO que representa o estado de uma entidade renderizável. A camada de apresentação usa `entityTypeId` e `state` para decidir qual sprite e animação usar. */
 export interface EntityRenderableState extends BaseRenderableState {
   /** Identifica o tipo da entidade (ex: 'player') para que a apresentação possa carregar o asset visual correto. */
-  entityTypeId: string; // Ex: 'player', 'goblin', 'chest'
+  entityTypeId: objectTypeId; // Ex: 'player', 'goblin', 'chest'
   /** Descreve o estado comportamental da entidade (ex: 'idle') para que a apresentação possa selecionar a animação correta. */
-  state: string; // Ex: 'idle', 'walking', 'attacking', 'open'
+  state? : string; // Ex: 'idle', 'walking', 'attacking', 'open'
 }
 
 /** Tipo união para todos os possíveis estados de objetos renderizáveis, permitindo que o sistema seja estendido com outros tipos (ex: partículas) no futuro. */

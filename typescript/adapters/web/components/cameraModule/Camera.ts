@@ -1,5 +1,5 @@
 /** @file Contém a classe Camera, responsável por gerenciar a viewport do jogo (zoom, posicionamento e seguir um alvo). */
-import type { WorldState } from "../../domain-contracts";
+import type { WorldState } from "../../../../domain/ports/domain-contracts";
 import type Canvas from "../canvasModule/Canvas";
 import type IRenderable from "../renderModule/IRenderable";
 

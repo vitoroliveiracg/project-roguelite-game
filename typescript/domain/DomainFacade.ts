@@ -1,9 +1,9 @@
 /** @file Implementa a fachada do domínio, o único ponto de entrada para a lógica de negócio do jogo. */
-import type { ILogger } from "../ILogger";
-import type { IGameDomain, RenderableState, EntityRenderableState, WorldState } from "../adapters/web/domain-contracts";
+import type { ILogger } from "./ports/ILogger";
+import type { IGameDomain, RenderableState, WorldState } from "./ports/domain-contracts";
 
 import Player from "./ObjectModule/Entities/Player/Player";
-import { runRendableSetup } from "./ObjectModule/RendableController";
+import ObjectElementManager from "./ObjectModule/ObjectElementManager";
 import World from "./World";
 
 /** Define a estrutura de dados para a configuração inicial do domínio. */
@@ -16,6 +16,7 @@ interface DomainConfig {
 export default class DomainFacade implements IGameDomain {
   private world!: World; /** @private A instância do `World` que representa o ambiente do jogo. */
   private player!: Player; /** @private A instância do `Player` que representa o jogador. */
+  private objectManager!: ObjectElementManager; /** @private O gerenciador de todas as outras entidades dinâmicas (inimigos, itens, etc.). */
   private config: DomainConfig; /** @private A configuração inicial do domínio. */
   private logger: ILogger; /** @private A instância do logger, injetada via construtor. */
 
@@ -29,39 +30,56 @@ export default class DomainFacade implements IGameDomain {
 
   /** Fase de Update (Lógica): Avança o estado de todas as entidades do domínio. Chamado a cada frame pelo Adapter. @param deltaTime O tempo em segundos decorrido desde o último frame. */
   public update(deltaTime: number): void {
-    this.logger.log('domain', `Update cycle (deltaTime: ${deltaTime})`);
+    this.logger.log('domain', `Update cycle started (deltaTime: ${deltaTime})`);
+    
     this.player.update(deltaTime);
+    this.objectManager.updateAll(deltaTime);
   }
 
   /** Fase de Inicialização: Cria as instâncias das entidades de domínio (`World`, `Player`) com base no contexto fornecido pelo Adapter. @param width A largura do mundo. @param height A altura do mundo. */
   public setWorld(width: number, height: number): void {
     this.logger.log('domain', `Setting world: ${width}x${height}`);
     this.world = new World(width, height);
-
-    runRendableSetup(this.config.player)
-
+    
+    this.objectManager = new ObjectElementManager();
+    
+    this.player = new Player(
+      this.config.player.id,
+      this.config.player.level,
+      this.config.player.initialPos,
+      { strength: 10, dexterity: 10, inteligence: 10, wisdown: 10, charisma: 10 }
+    );
     this.logger.log('domain', 'Player entity created:', this.player);
+    
+
+    this.objectManager.spawnInitialElements();
+    this.logger.log('domain', 'Initial enemies spawned via ObjectManager.');
   }
 
   /** Interface de comunicação que passa a responsabilidade para o domínio. @param command O objeto de comando vindo da camada de apresentação. @param deltaTime O tempo desde o último frame, usado para calcular o movimento. */
   public handlePlayerInteractions(command: { actions: Array<'up' | 'down' | 'left' | 'right'> }, deltaTime: number): void {
     this.logger.log('input', 'Handling player movement in domain:', command);
-    this.player.movePlayer(command.actions, this.world, deltaTime);
+    this.player.movePlayer(command.actions, deltaTime);
   }
 
   /** Fase de Desenho (Coleta de Dados): Constrói e retorna uma representação em DTOs do estado atual do jogo para a camada de renderização. @throws {Error} Se o mundo não foi inicializado. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   public getRenderState(): { world: WorldState; renderables: readonly RenderableState[] } {
     this.logger.log('sync', 'DomainFacade getting render state...');
     if (!this.world) throw new Error("O mundo do domínio não foi inicializado. Chame setWorld() antes de getRenderState().");
-    
-    const playerRenderable: EntityRenderableState = {
-      id: this.player.id, 
-      entityTypeId: 'player',
-      state: this.player.getState(),
-      coordinates: this.player.coordinates, 
-      size: this.player.size
+
+    // Constrói o DTO de estado para o jogador, garantindo que ele tenha a estrutura correta.
+    const playerState: RenderableState = {
+      id: this.player.id,
+      entityTypeId: this.player.objectId,
+      coordinates: this.player.coordinates,
+      size: this.player.size,
+      state: this.player.state,
     };
-    
-    return { world: { width: this.world.width, height: this.world.height }, renderables: [playerRenderable] };
+    const otherStates = this.objectManager.getAllRenderableStates();
+
+    return { 
+      world: { width: this.world.width, height: this.world.height }, 
+      renderables: [playerState, ...otherStates] // Agora todos os elementos são objetos RenderableState.
+    };
   }
 }

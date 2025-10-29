@@ -1,5 +1,5 @@
 /** @file Contém a classe `Sprite`, uma implementação de `IRenderable` que gerencia spritesheets animados. */
-import type { EntityRenderableState } from "../../domain-contracts";
+import type { EntityRenderableState } from "../../../../domain/ports/domain-contracts";
 import type IRenderable from "./IRenderable";
 
 interface SpriteConfig {
