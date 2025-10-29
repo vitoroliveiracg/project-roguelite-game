@@ -9,6 +9,7 @@ export default class Player extends Entity {
   private movementSinceLastUpdate: boolean = false;
 
   public textToPrint = "diwaiodoawjioawd";
+  private accelator:Vector2D = new Vector2D(0,0)
 
   constructor (
     id: number,
@@ -28,18 +29,9 @@ export default class Player extends Entity {
   public movePlayer(direction: Array<'up' | 'down' | 'left' | 'right'>, world: World, deltaTime: number): void {
     this.state = 'walking';
     this.movementSinceLastUpdate = true;
-    const speed = 100; // Define a velocidade do jogador em pixels por segundo.
-    const displacement = speed * deltaTime; // Calcula o deslocamento para este frame.
-
-    // let newX = this.coordinates.x;
-    // let newY = this.coordinates.y;
+    const displacement = this.speed * deltaTime;
 
     const direction_vector = new Vector2D(0,0)
-
-    // if (direction === 'up') newY -= displacement;
-    // if (direction === 'down') newY += displacement;
-    // if (direction === 'left') newX -= displacement;
-    // if (direction === 'right') newX += displacement;
 
     direction.map( dir=>{
       if (dir === 'up') direction_vector.y -= 1;
@@ -49,13 +41,9 @@ export default class Player extends Entity {
     } )
 
     direction_vector.normalize()
-    this.velocity = direction_vector
-    // this.velocity = direction_vector.multiply(displacement)
+    this.velocity = direction_vector.multiply(displacement).add(this.accelator)
     
     super.move(world)
-    // Garante que o jogador não saia dos limites do mundo, considerando seu tamanho.
-    // this.coordinates.x = Math.max(0, Math.min(this.velocity.x, world.width - this.size.width));
-    // this.coordinates.y = Math.max(0, Math.min(this.velocity.y, world.height - this.size.height));
   }
 
   /** Avança o estado interno do jogador. Chamado a cada frame pelo DomainFacade. */

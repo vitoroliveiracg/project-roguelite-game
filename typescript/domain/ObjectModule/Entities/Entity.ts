@@ -1,6 +1,7 @@
 import ObjectElement from "../ObjectElement";
 import Vector2D from "../../shared/Vector2D";
 import World from "../../World";
+import { logger } from "../../../adapters/web/shared/Logger";
 
 export default class Entity extends ObjectElement {
 
@@ -28,9 +29,10 @@ export default class Entity extends ObjectElement {
   //? ----------- Methods -----------
 
   public move(world: World):void {
-    // Garante que o jogador não saia dos limites do mundo, considerando seu tamanho.
-    this.coordinates.x = Math.max(0, Math.min(this.velocity.x, world.width - this.size.width));
-    this.coordinates.y = Math.max(0, Math.min(this.velocity.y, world.height - this.size.height));
+    //! --debug "colisão do personagem"
+    
+    this.coordinates.x = this.coordinates.x += this.velocity.x
+    this.coordinates.y = this.coordinates.y += this.velocity.y
   }
   
 
