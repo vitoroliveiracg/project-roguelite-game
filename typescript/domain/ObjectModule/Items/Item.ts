@@ -1,4 +1,4 @@
-import type Effect from "./Effect";
+import type Effect from "./Effects/Effect";
 import type Entity from "./Entity";
 
 export default abstract class Item {

@@ -1,4 +1,8 @@
-export default class Entity {
+import ObjectElement from "../ObjectElement";
+import Vector2D from "../../shared/Vector2D";
+import World from "../../World";
+
+export default class Entity extends ObjectElement {
 
   
   //? ----------- Constructor -----------
@@ -6,25 +10,36 @@ export default class Entity {
   private _hp: number = 0;
   private _mana: number = 0;
   private _defence: number = 0;
-  private _velocity: number = 0;
+  private _velocity: Vector2D = new Vector2D(0,0);
 
   constructor(
-    public readonly id: number,
-    private _coordinates: { x: number; y: number; },
-    public readonly size: { width: number; height: number; },
+    id: number,
+    coordinates: { x: number; y: number; },
+    size: { width: number; height: number; },
 
     private _strength: number,
     private _inteligence: number,
     private _dexterity: number,
     private _wisdown: number,
     private _charisma: number,
-  ){}
+    private _speed:number = 100
+  ){ super(size, coordinates, id) }
 
   //? ----------- Methods -----------
 
+  public move(world: World):void {
+    // Garante que o jogador não saia dos limites do mundo, considerando seu tamanho.
+    this.coordinates.x = Math.max(0, Math.min(this.velocity.x, world.width - this.size.width));
+    this.coordinates.y = Math.max(0, Math.min(this.velocity.y, world.height - this.size.height));
+  }
   
 
   //? ----------- Getters and Setters -----------
+
+  public get speed(): number { return this._speed; }
+  public set speed(value: number) { 
+    if(value > 0 ) this._speed = value;
+  }
 
   public get strength(): number { return this._strength; }
   public set strength(value: number) { this._strength = value; }
@@ -41,10 +56,6 @@ export default class Entity {
   public get wisdown(): number { return this._wisdown; }
   public set wisdown(value: number) { this._wisdown = value; }
 
-  public get coordinates(): { x: number; y: number; } { return this._coordinates; }
-  public set coordinates(value: { x: number; y: number; }) { this._coordinates = value; }
-
-
   public get defence(): number { return this._defence; }
   public set defence(value: number) { 
     if(value > 0 ) this._defence = value;
@@ -60,9 +71,10 @@ export default class Entity {
     if(value > 0 ) this._hp = value;
   }
 
-  public get velocity(): number { return this._velocity; }
-  public set velocity(value: number) {
-    if(value > 0) this._velocity = value;
+  public get velocity(): Vector2D { return this._velocity; }
+  public set velocity(value: Vector2D) {
+    // if(value > 0) this._velocity = value;
+    this._velocity = value;
   }
 
 }

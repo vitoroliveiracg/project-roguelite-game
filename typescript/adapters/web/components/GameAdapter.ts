@@ -57,16 +57,20 @@ export default class GameAdapter {
   /** Fase de Update (Sincronização): Compara o estado do domínio com os objetos visuais (`IRenderable`), criando/atualizando-os para refletir o estado atual do jogo. @private @async */
   private async syncRenderables(): Promise<void> {
     logger.log('sync', 'Syncing renderables...');
+    
     const { renderables: domainStates } = this.domain.getRenderState();
+    
     const activeIds = new Set<number>();
     const loadingPromises: Promise<void>[] = [];
 
     for (const state of domainStates) {
-      activeIds.add(state.id);
+      activeIds.add(state.id); //? Match id com o do domínio
+
       if (this.renderables.has(state.id)) {
         this.renderables.get(state.id)!.updateState(state);
         logger.log('sync', `Updated renderable ID: ${state.id}`);
-      } else {
+      } 
+      else {
         const newRenderable = this.renderableFactory.create(state) as any; // Cast to access waitUntilLoaded
         if (newRenderable) { // Se um novo renderizável foi criado, adiciona-o ao mapa e, se tiver, aguarda seu carregamento.
           this.renderables.set(state.id, newRenderable);
@@ -102,24 +106,50 @@ export default class GameAdapter {
   /** Fase de Update (Input): Verifica as teclas atualmente pressionadas e traduz em chamadas para `domain.handlePlayerMovement`, passando o `deltaTime` para garantir um movimento consistente. @private @param deltaTime O tempo em segundos desde o último frame. */
   private handleMovement(deltaTime: number): void {
     
+    // if (this.inputManager.isActionActive('move_up')) {
+    //   logger.log("input", "(Game Adapter) handled direction move_up to player")
+    //   this.domain.handlePlayerMovement({ direction: 'up' }, deltaTime);
+    // }
+    // if (this.inputManager.isActionActive('move_down')) {
+    //   logger.log("input", "(Game Adapter) handled direction move_down to player")
+    //   this.domain.handlePlayerMovement({ direction: 'down' }, deltaTime);
+    // }
+    // if (this.inputManager.isActionActive('move_left')) {
+    //   logger.log("input", "(Game Adapter) handled direction move_left to player")
+    //   this.domain.handlePlayerMovement({ direction: 'left' }, deltaTime);
+    // }
+    // if (this.inputManager.isActionActive('move_right')) {
+    //   logger.log("input", "(Game Adapter) handled direction move_right to player")
+    //   this.domain.handlePlayerMovement({ direction: 'right' }, deltaTime);
+    // }
+
+    let directions: Array<'up' | 'down' | 'left' | 'right'> = []
+
     if (this.inputManager.isActionActive('move_up')) {
       logger.log("input", "(Game Adapter) handled direction move_up to player")
-      this.domain.handlePlayerMovement({ direction: 'up' }, deltaTime);
+      directions.push("up")
+      // this.domain.handlePlayerMovement({ direction: 'up' }, deltaTime);
     }
+
     if (this.inputManager.isActionActive('move_down')) {
       logger.log("input", "(Game Adapter) handled direction move_down to player")
-      this.domain.handlePlayerMovement({ direction: 'down' }, deltaTime);
+      directions.push("down")
+      // this.domain.handlePlayerMovement({ direction: 'down' }, deltaTime);
     }
+
     if (this.inputManager.isActionActive('move_left')) {
       logger.log("input", "(Game Adapter) handled direction move_left to player")
-      this.domain.handlePlayerMovement({ direction: 'left' }, deltaTime);
+      directions.push("left")
+      // this.domain.handlePlayerMovement({ direction: 'left' }, deltaTime);
     }
+
     if (this.inputManager.isActionActive('move_right')) {
       logger.log("input", "(Game Adapter) handled direction move_right to player")
-      this.domain.handlePlayerMovement({ direction: 'right' }, deltaTime);
+      directions.push("right")
     }
     logger.log('input', 'Input handling complete. Delegating to domain update...');
-
+  
+    this.domain.handlePlayerMovement({ direction: directions }, deltaTime);
   }
 
 
