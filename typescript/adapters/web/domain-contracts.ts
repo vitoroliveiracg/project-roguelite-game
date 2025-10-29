@@ -16,7 +16,6 @@ interface BaseRenderableState {
   /** As dimensões {width, height} do objeto. */
   size: { width: number; height: number };
 }
-
 /** DTO que representa o estado de uma entidade renderizável. A camada de apresentação usa `entityTypeId` e `state` para decidir qual sprite e animação usar. */
 export interface EntityRenderableState extends BaseRenderableState {
   /** Identifica o tipo da entidade (ex: 'player') para que a apresentação possa carregar o asset visual correto. */
@@ -35,7 +34,7 @@ export interface IGameDomain {
   /** Permite que a camada de apresentação configure o contexto do mundo (ex: tamanho do mapa) no domínio durante a inicialização. @param width A largura do mundo. @param height A altura do mundo. */
   setWorld(width: number, height: number): void;
   /** Traduz uma intenção do usuário (capturada pela apresentação) em um comando que o domínio entende. @param command O comando de movimento. */
-  handlePlayerMovement(command: { direction: Array<'up' | 'down' | 'left' | 'right'> }, deltaTime: number): void; // eslint-disable-line
+  handlePlayerInteractions(command: { actions: Array<'up' | 'down' | 'left' | 'right'> }, deltaTime: number): void; // eslint-disable-line
   /** Solicita ao domínio uma "fotografia" do estado atual de todos os objetos visíveis, formatada como DTOs puros para a renderização. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   getRenderState(): { world: WorldState; renderables: readonly RenderableState[] };
 }
