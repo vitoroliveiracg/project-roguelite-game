@@ -4,13 +4,7 @@ import BlackEnemy from "./Entities/Enemies/BlackEnemy";
 import Enemy from "./Entities/Enemies/Enemy";
 import ObjectElement from "./ObjectElement";
 
-/**
- * @class ObjectElementManager
- * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis).
- * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar
- * grupos de entidades, permitindo que a `DomainFacade` delegue essa
- * responsabilidade e permaneça focada na orquestração de alto nível.
- */
+/** * @class ObjectElementManager * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis). * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar * grupos de entidades, permitindo que a `DomainFacade` delegue essa * responsabilidade e permaneça focada na orquestração de alto nível. */
 export default class ObjectElementManager {
   /** @private Um mapa que armazena todas as entidades gerenciadas, usando o ID como chave para acesso rápido. */
   private elements: Map<number, ObjectElement> = new Map();
