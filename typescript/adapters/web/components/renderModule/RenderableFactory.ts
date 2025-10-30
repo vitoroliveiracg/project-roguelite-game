@@ -18,7 +18,7 @@ export class RenderableFactory {
   private creationStrategies: Map<string, (params: EnemyConstructorParams) => GameObjectElement> = new Map([
     ['player', (params) => new Player(params)],
     ['enimie', (params) => Enemy.createWithSprite(params)],
-    ['blackEnemy', (params) => new BlackEnemy(params)],
+    ['blackEnemy', (params) => BlackEnemy.createWithSprite(params)],
   ]);
 
   /** Fase de Update (Sincronização): Cria uma nova instância de um objeto `IRenderable` com base no DTO de estado fornecido pelo domínio. @param state O DTO de estado da entidade a ser criada. @returns Uma instância de `IRenderable` (ex: `Sprite`) ou `null` se nenhuma configuração for encontrada. */
@@ -46,9 +46,10 @@ export class RenderableFactory {
 
   /** @private Mapeia uma chave de configuração (ex: 'player-idle') para os dados do asset. */
   private spriteConfigs: Map<string, SpriteConfig> = new Map([
-    ['player-idle', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 10, frameWidth: 32, frameHeight: 32, }],
-    ['player-walking', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 5, frameWidth: 32, frameHeight: 32, }],
-    ['enimie-idle', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
+    ['player-idle', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
+    ['player-walking', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
+    ['enimie-idle', { imageSrc: new URL('../../assets/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
+    ['blackEnemy-waiting', { imageSrc: new URL('../../assets/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, }],
   ]);
 
   /** Pré-carrega todas as imagens definidas em `spriteConfigs` e as armazena no cache. */
