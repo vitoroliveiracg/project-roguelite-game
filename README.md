@@ -8,9 +8,8 @@ Flag debug: //! --debug
 
 ## TODO (Organização)
 
-* [ ] Classe atributos
+* [ ] EventManager → IEventManagable
 * [ ] Lógica de Hp
-* [ ] Event Buss... Reuso ou recriação?
 * [ ] Hitbox
 * [ ] Colisão
 * [ ] Lógica melhor de Enemy e Entity
