@@ -1,7 +1,8 @@
 //* import type World from "../../../World";
 import Vector2D from "../../../shared/Vector2D";
 import Entity from "../Entity";
-import type IAtributes from "../IAtributes";
+import Atributes from "../Atributes";
+import type IXPTable from "../IXPTable";
 
 export type playerStates = 'idle' | 'walking'
 
@@ -12,14 +13,12 @@ export default class Player extends Entity {
   
   constructor (
     id: number,
-    public level :number,
     coordinates : { x: number, y :number },
-    atributes :IAtributes,
+    atributes :Atributes,
     state: playerStates = 'idle'
   ){
     const size = { width: 16, height: 16 }; //? jogador (16x16)
-    const speed = 100; // Define a velocidade base do jogador (ex: 100 pixels por segundo).
-    super(id, coordinates, size, 'player', state, atributes, speed);
+    super(id, coordinates, size, 'player', state, atributes);
   }
   
   //* world: World
@@ -39,16 +38,25 @@ export default class Player extends Entity {
     direction_vector.normalize()
     
     // Define a direção e magnitude da velocidade, mas sem o deltaTime.
-    this.velocity = direction_vector.multiply(this.speed).add(this.accelator);
+    this.velocity = direction_vector.multiply(this.atributes.speed).add(this.accelator);
     
     super.move(deltaTime);
   }
 
   /** Avança o estado interno do jogador. Chamado a cada frame pelo DomainFacade. */
-  public update(deltaTime: number): void {
+  public override update(deltaTime: number): void {
     if (!this.movementSinceLastUpdate)  this.state = 'idle';
     
     this.movementSinceLastUpdate = false;
+  }
+
+  /**
+   * Adiciona experiência ao jogador.
+   * @param xpAmount A quantidade de experiência a ser adicionada.
+   * @param xpTable A tabela de progressão de XP.
+   */
+  public gainXp(xpAmount: number, xpTable: IXPTable): void {
+    this.atributes.addXp(xpAmount, xpTable);
   }
 
   /** Retorna o estado atual do jogador. */

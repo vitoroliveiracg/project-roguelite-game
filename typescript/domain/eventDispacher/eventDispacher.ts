@@ -2,7 +2,8 @@ export interface GameEventMap {
   entityPositionChanged: { entityId: string; x: number; y: number };
   entityCreated: { entityId: string; initialX: number; initialY: number };
   log: {  };
-  messageReceived: { message :string }
+  messageReceived: { message :string };
+  enemyDied: { xpGiven: number; killerId: number };
 }
 
 type EventKey = keyof GameEventMap;

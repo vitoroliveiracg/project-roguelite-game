@@ -5,6 +5,9 @@ import type { IGameDomain, RenderableState, WorldState } from "./ports/domain-co
 import Player from "./ObjectModule/Entities/Player/Player";
 import ObjectElementManager from "./ObjectModule/ObjectElementManager";
 import World from "./World";
+import Atributes from "./ObjectModule/Entities/Atributes";
+import { gameEvents } from "./eventDispacher/eventDispacher";
+import type IXPTable from "./ObjectModule/Entities/IXPTable";
 
 /** Define a estrutura de dados para a configuração inicial do domínio. */
 interface DomainConfig {
@@ -19,12 +22,19 @@ export default class DomainFacade implements IGameDomain {
   private objectManager!: ObjectElementManager; /** @private O gerenciador de todas as outras entidades dinâmicas (inimigos, itens, etc.). */
   private config: DomainConfig; /** @private A configuração inicial do domínio. */
   private logger: ILogger; /** @private A instância do logger, injetada via construtor. */
+  private xpTable: IXPTable; /** @private A tabela de progressão de XP. */
 
   /** @constructor @param config O objeto de configuração com os dados iniciais para a criação das entidades do jogo. @param logger Uma instância de um logger que implementa a interface `ILogger`. */
   constructor(config: DomainConfig, logger: ILogger) {
     this.config = config;
     this.logger = logger;
     this.logger.log('init', 'DomainFacade instantiated.');
+
+    // Define a curva de XP do jogo. Ex: Nv2=100XP, Nv3=120XP, Nv4=144XP...
+    this.xpTable = { fixedBase: 100, levelScale: 1.2 };
+
+    // Registra o listener para o evento de morte de inimigo.
+    this.setupEventListeners();
   }
 
 
@@ -45,9 +55,8 @@ export default class DomainFacade implements IGameDomain {
     
     this.player = new Player(
       this.config.player.id,
-      this.config.player.level,
       this.config.player.initialPos,
-      { strength: 10, dexterity: 10, inteligence: 10, wisdown: 10, charisma: 10 }
+      new Atributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10)
     );
     this.logger.log('domain', 'Player entity created:', this.player);
     
@@ -81,5 +90,16 @@ export default class DomainFacade implements IGameDomain {
       world: { width: this.world.width, height: this.world.height }, 
       renderables: [playerState, ...otherStates] // Agora todos os elementos são objetos RenderableState.
     };
+  }
+
+  /** Configura os listeners para eventos de domínio. */
+  private setupEventListeners(): void {
+    gameEvents.on('enemyDied', (payload) => {
+      // Por enquanto, assume-se que o jogador é sempre o assassino.
+      if (this.player) {
+        this.player.gainXp(payload.xpGiven, this.xpTable);
+        this.logger.log('domain', `Player gained ${payload.xpGiven} XP.`);
+      }
+    });
   }
 }

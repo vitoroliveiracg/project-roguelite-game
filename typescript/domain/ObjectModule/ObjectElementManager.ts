@@ -19,24 +19,14 @@ export default class ObjectElementManager {
    * Este método pode ser expandido para ler de uma configuração de nível no futuro.
    */
   public spawnInitialElements(): void {
-    
-    this.spawn( id => new Enemy(
-        id, 
-        1,  
-        { x: 300, y: 300 }, 
-        'enimie', 
-        { strength: 10, dexterity: 10, inteligence: 10, wisdown: 10, charisma: 10 }, 
-        'idle'
-      )
-    );
-
 
     this.spawn( id =>  new BlackEnemy(
       id,
-      0,
+      1,
+      50, // XP base que o BlackEnemy concede
       { x: 200, y: 200 },
-      "blackEnemy",
-      { strength: 10, dexterity: 10, inteligence: 10, wisdown: 10, charisma: 10 }, 
+      "blackEnemy", 
+      { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
     ))
   }
 
@@ -55,15 +45,12 @@ export default class ObjectElementManager {
 
   /** * Executa o método `update` de todas as entidades gerenciadas. * @param deltaTime O tempo decorrido desde o último frame. */
   public updateAll(deltaTime: number): void {
-    
     for (const element of this.elements.values()) {
-
-      //? Se tiver update, executa
-      if (typeof (element as any).update === 'function') {
-        (element as any).update(deltaTime);
+      // Apenas entidades (Entity) possuem lógica de update.
+      if (element instanceof Enemy || element instanceof BlackEnemy) {
+        element.update(deltaTime);
       }
     }
-
   }
 
   //? ----------- Getters and Setters -----------

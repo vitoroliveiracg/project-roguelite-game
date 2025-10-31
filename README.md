@@ -6,6 +6,19 @@ Flag debug: //! --debug
 
 [dontpad](https://dontpad.com/project-roguelite-game)
 
+## TODO (Organização)
+
+* [ ] Classe atributos
+* [ ] Lógica de Hp
+* [ ] Event Buss... Reuso ou recriação?
+* [ ] Hitbox
+* [ ] Colisão
+* [ ] Lógica melhor de Enemy e Entity
+
+* [ ] Dois tipos de inimigo.
+* [ ] IA simples (ex: mover*se em direção ao jogador e bater).
+* [ ] Sistema de Vida (HP) e "Hitbox" (ser atingido) e xp dropado.
+
 ## REQUISITOS
 
 > Mapa
@@ -13,7 +26,6 @@ Flag debug: //! --debug
 * Mapa geral contínuo, fast travel para regioes já visitadas
 
 * Montaria para locomoção
-
 
 > Armas e Classes
 
@@ -35,11 +47,9 @@ Flag debug: //! --debug
 
 * Drops são raros e caem no chão. Pega ao passar perto (3% drop rate)
 
-
 > Mobs
 
 * Range máximo para aggro dos inimigos. Fora do range desespawna (difício escapar no início)
-
 
 ## Lista de tarefas a discutir
 
