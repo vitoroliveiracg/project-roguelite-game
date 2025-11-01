@@ -3,7 +3,7 @@ import Entity from "../Entity";
 import Atributes from "../Atributes";
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
 
-export default class Enemy extends Entity {
+export default abstract class Enemy extends Entity {
     
   constructor (
     id: number,

@@ -26,7 +26,7 @@ export default class DomainFacade implements IGameDomain {
   private logger: ILogger; /** @private A instância do logger, injetada via construtor. */
   private xpTable: IXPTable; /** @private A tabela de progressão de XP. */
 
-  private actionManager = new ActionManager();
+  private actionManager!: ActionManager;
   /** @constructor @param config O objeto de configuração com os dados iniciais para a criação das entidades do jogo. @param logger Uma instância de um logger que implementa a interface `ILogger`. */
   constructor(config: DomainConfig, logger: ILogger) {
     this.config = config;
@@ -61,6 +61,7 @@ export default class DomainFacade implements IGameDomain {
       this.config.player.initialPos,
       new Atributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10)
     );
+    this.actionManager = new ActionManager(this.player)
     this.logger.log('domain', 'Player entity created:', this.player);
     
 
@@ -69,9 +70,9 @@ export default class DomainFacade implements IGameDomain {
   }
 
   /** Interface de comunicação que passa a responsabilidade para o domínio. @param command O objeto de comando vindo da camada de apresentação. @param deltaTime O tempo desde o último frame, usado para calcular o movimento. */
-  public handlePlayerInteractions(command: { actions: Array<action> }): void {
+  public handlePlayerInteractions(command: { actions: Array<action> }, mouseLastCoordinates: {x:number,y:number}): void {
     this.logger.log('input', 'Handling input in domain:', command);
-    this.actionManager.checkEvent(command.actions)
+    this.actionManager.checkEvent(command.actions, mouseLastCoordinates)
   }
 
   /** Fase de Desenho (Coleta de Dados): Constrói e retorna uma representação em DTOs do estado atual do jogo para a camada de renderização. @throws {Error} Se o mundo não foi inicializado. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */

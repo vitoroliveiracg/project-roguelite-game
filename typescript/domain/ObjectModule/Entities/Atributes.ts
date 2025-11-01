@@ -107,10 +107,10 @@ export default class Atributes {
   
   /** Critical hit damage multiplier. Base 150% + 2% per point of the best attribute. @returns percentage value */
   public get critDamage(): number { return 150 + (this.getBestAtributeOfAll() * 2) + this._bonusCritDamage; }
-  public get critDamageDescription(): string { return "Crit damage multiplier. 150% + 2% for each best attribute point."  }
+  public get critDamageDescription(): string { return "Crit damage multiplier. x1,5 + x0,02 for each point of your best attribute."  }
   
   /** The chance to land a critical hit, as a percentage. Formula: 3% base + (Best Attribute / 10) + Lucky. @returns percentage value */
-  public get critChance(): number { return 3 + ( ( this.getBestAtributeOfAll() / 10 ) + this.lucky ) + this._bonusCritChance; }
+  public get critChance(): number { return 3 + ( this.getBestAtributeOfAll() / 10 ) + this.lucky + this._bonusCritChance; }
   public get critChanceDescription(): string { return "Determines the probability of landing a critical hit. Base chance is 3%, increased by your best attribute and luck."  }
 
   /** Percentage of damage dealt in an area around the main target. Based on the best attribute. @returns percentage value */

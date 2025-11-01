@@ -7,7 +7,9 @@ import type IRenderable from "../renderModule/IRenderable";
 export default class Camera {
   private canvas: Canvas;
   private target: IRenderable | null = null;
-  private zoom: number;
+  public zoom: number;
+  private camX:number = 0;
+  private camY:number = 0;
 
   /** @constructor @param canvas A instância do `Canvas` cujas dimensões definem a viewport. @param zoom O nível de magnificação inicial da câmera. */
   constructor(canvas: Canvas, zoom: number = 1) {
@@ -32,6 +34,9 @@ export default class Camera {
 
     camX = Math.max(0, Math.min(camX, world.width - viewWidth)); // Restringe a câmera para não mostrar áreas fora do mundo (eixo X).
     camY = Math.max(0, Math.min(camY, world.height - viewHeight)); // Restringe a câmera para não mostrar áreas fora do mundo (eixo Y).
+
+    this.camX = camX
+    this.camY = camY
 
     ctx.scale(this.zoom, this.zoom); // Aplica o fator de zoom ao contexto.
     ctx.translate(-camX, -camY); // Aplica a translação para posicionar o mundo de acordo com a câmera.

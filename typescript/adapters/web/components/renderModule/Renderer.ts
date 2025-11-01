@@ -7,7 +7,7 @@ import type Map from "../mapModule/Map";
 
 /** @class Renderer Orquestra o processo de desenho no canvas. Ele interage com a `Câmera` para aplicar transformações de viewport e itera sobre os objetos `IRenderable` para desenhar um frame completo. */
 export default class Renderer {
-  private canvas: Canvas;
+  public canvas: Canvas;
   private camera: Camera;
 
   /** @constructor @param canvas A instância do `Canvas` onde o desenho ocorrerá. @param camera A instância da `Câmera` que define a viewport. */

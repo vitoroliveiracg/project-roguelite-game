@@ -7,6 +7,7 @@ import type Atributes from "./Atributes";
 
 export default abstract class Entity extends ObjectElement {
   public velocity: Vector2D = new Vector2D(0, 0);
+  public direction: Vector2D = new Vector2D(0, 0);
 
   constructor(
     id: number,
@@ -25,8 +26,16 @@ export default abstract class Entity extends ObjectElement {
     //! --debug "colisão do personagem"
     
     //? Calcula o deslocamento para este frame (velocidade * tempo) e o aplica.
-    this.coordinates.x += this.velocity.x * deltaTime;
-    this.coordinates.y += this.velocity.y * deltaTime;
+    this.velocity.multiply(deltaTime)
+    
+    logger.log("domain", "(Entity) moved");
+
+    this.updatePosition()
+  }
+
+  protected updatePosition() {
+    this.coordinates.x += this.velocity.x;
+    this.coordinates.y += this.velocity.y;
     
     logger.log("domain", "(Entity) moved");
   }
@@ -35,7 +44,7 @@ export default abstract class Entity extends ObjectElement {
    * Avança o estado interno da entidade. Pode ser sobrescrito por subclasses.
    * @param deltaTime O tempo em segundos decorrido desde o último frame.
   */
-  public update(deltaTime: number): void {}
+  public abstract update(deltaTime: number): void
 
   /**
    * Aplica dano à entidade e retorna se ela foi derrotada.

@@ -4,6 +4,7 @@ export type action =
   | 'left' 
   | 'right'
   | 'shift'
-  | 'click'
+  | 'leftClick'
   | 'rightClick'
+  | 'scrollClick'
 ;

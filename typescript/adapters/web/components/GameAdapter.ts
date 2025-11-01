@@ -9,10 +9,11 @@ import Camera from "./cameraModule/Camera";
 import Canvas from "./canvasModule/Canvas";
 import GameMap from "./mapModule/Map";
 import Renderer from "./renderModule/Renderer";
-import { InputManager } from "./keyboardModule/InputManager";
+import { InputManager, type GameAction } from "./keyboardModule/InputManager";
 
 import type IRenderable from "./renderModule/IRenderable";
 import { RenderableFactory } from "./renderModule/RenderableFactory";
+import type { action } from "../../../domain/eventDispacher/actions.type";
 
 /** @class GameAdapter O "Adaptador" principal que conecta a lógica de domínio (`IGameDomain`) com as tecnologias da web (Canvas, Input, DOM), traduzindo eventos e dados entre as camadas e gerenciando o ciclo de vida dos componentes de apresentação. */
 export default class GameAdapter {
@@ -102,7 +103,7 @@ export default class GameAdapter {
   }
   /** Fase de Update (Input): Verifica as teclas atualmente pressionadas e traduz em chamadas para `domain.handlePlayerMovement`, passando o `deltaTime` para garantir um movimento consistente. @private @param deltaTime O tempo em segundos desde o último frame. */
   private handlePlayerInteractions(deltaTime: number): void {
-    let actions: Array<'up' | 'down' | 'left' | 'right'> = []
+    let actions: Array<action> = []
 
     if (this.inputManager.isActionActive('move_up')) {
       logger.log("input", "(Game Adapter) handled direction move_up to player")
@@ -124,10 +125,41 @@ export default class GameAdapter {
       actions.push("right")
     }
 
-    if (actions.length <= 0) return;
+    if (this.inputManager.isActionActive('shift')) {
+      logger.log("input", "(Game Adapter) handled direction shift to player")
+      actions.push("shift")
+    }
+
+    if (this.inputManager.isActionActive('mouse_left')) {
+      logger.log("input", "(Game Adapter) handled left mouse click to player")
+      actions.push("leftClick")
+    }
+
+    if (this.inputManager.isActionActive('mouse_middle')) {
+      logger.log("input", "(Game Adapter) handled middle mouse click to player")
+      actions.push("scrollClick")
+    }
+
+    if (this.inputManager.isActionActive('mouse_right')) {
+      logger.log("input", "(Game Adapter) handled right mouse click to player")
+      actions.push("rightClick")
+    }
     
+    if (actions.length <= 0) return;
+
+    let mouseWorldCoordinates: { x: number, y: number } = { x: 0, y: 0 };
+    if ( actions.some( action => this.inputManager.clickActions.has( action ) ) ) {
+        const screenX = this.inputManager.mouseLastCoordinates.x;
+        const screenY = this.inputManager.mouseLastCoordinates.y;
+        
+        mouseWorldCoordinates = this.screenToWorld(screenX, screenY);
+    }
+
     logger.log('input', 'Input handling complete. Delegating to domain update...');
-    this.domain.handlePlayerInteractions({ actions: actions }, deltaTime);
+    this.domain.handlePlayerInteractions(
+        { actions: actions }, 
+        mouseWorldCoordinates, 
+        deltaTime);
   }
   /** Fase de Inicialização: Configura o elemento Canvas para ocupar toda a tela e ser responsivo a redimensionamentos da janela. @private @param canvasElement O elemento canvas a ser estilizado. */
   private setupResponsiveCanvas(canvasElement: HTMLCanvasElement) {
@@ -141,4 +173,55 @@ export default class GameAdapter {
     document.body.style.overflow = 'hidden';
     window.addEventListener('resize', () => { canvasElement.width = window.innerWidth; canvasElement.height = window.innerHeight; }); // Adiciona um listener para redimensionar o canvas quando a janela é redimensionada.
   }
+
+
+  /**
+ * Converte as coordenadas de clique da tela (pixels do canvas) para as coordenadas do mundo do jogo.
+ * @param screenX Coordenada X do clique (e.g., event.clientX).
+ * @param screenY Coordenada Y do clique (e.g., event.clientY).
+ * @returns Um objeto com as coordenadas do mundo { worldX, worldY }.
+ */
+private screenToWorld(screenX: number, screenY: number): { x: number, y: number } {
+
+    const zoom = this.camera.zoom;
+    const { world } = this.domain.getRenderState();
+    const playerRenderable = this.renderables.get(1);
+
+    if (!playerRenderable) {
+
+        const viewWidth = this.renderer.canvas.element.width / zoom;
+        const viewHeight = this.renderer.canvas.element.height / zoom;
+        
+        const targetCoordinates = { x: 0, y: 0 }; 
+        const targetSize = { width: 0, height: 0 };
+
+        let camX = (targetCoordinates.x + targetSize.width / 2) - viewWidth / 2;
+        let camY = (targetCoordinates.y + targetSize.height / 2) - viewHeight / 2;
+        
+        camX = Math.max(0, Math.min(camX, world.width - viewWidth)); 
+        camY = Math.max(0, Math.min(camY, world.height - viewHeight));
+        
+        const worldX = (screenX / zoom) + camX;
+        const worldY = (screenY / zoom) + camY;
+        
+        return { x: worldX, y: worldY };
+
+    }
+
+    const targetCoordinates = playerRenderable.coordinates;
+    const targetSize = playerRenderable.size;
+    const viewWidth = this.renderer.canvas.element.width / zoom;
+    const viewHeight = this.renderer.canvas.element.height / zoom;
+
+    let camX = (targetCoordinates.x + targetSize.width / 2) - viewWidth / 2;
+    let camY = (targetCoordinates.y + targetSize.height / 2) - viewHeight / 2;
+
+    const clampedCamX = Math.max(0, Math.min(camX, world.width - viewWidth));
+    const clampedCamY = Math.max(0, Math.min(camY, world.height - viewHeight));
+    
+    const worldX = (screenX / zoom) + clampedCamX;
+    const worldY = (screenY / zoom) + clampedCamY;
+
+    return { x:worldX, y:worldY };
+}
 }

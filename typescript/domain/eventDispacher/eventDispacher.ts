@@ -1,12 +1,13 @@
 export interface GameEventMap {
   entityPositionChanged: { entityId: string; x: number; y: number };
+  playerMoved: {x: number; y: number};
   entityCreated: { entityId: string; initialX: number; initialY: number };
   log: {  };
   messageReceived: { message :string };
   enemyDied: { xpGiven: number; killerId: number };
 }
 
-type EventKey = keyof GameEventMap;
+export type EventKey = keyof GameEventMap;
 
 /** * Um dispatcher de eventos genérico e com tipagem forte.*/
 class EventHandler {

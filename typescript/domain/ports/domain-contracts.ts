@@ -1,5 +1,6 @@
 /** @file Define a fronteira da Arquitetura Hexagonal, contendo os contratos (DTOs e a Porta) que governam a comunicação entre as camadas de Domínio e Adaptação. */
 
+import type { action } from "../eventDispacher/actions.type";
 import type { objectTypeId } from "../ObjectModule/objectType.type";
 
 /** DTO (Data Transfer Object) que representa o estado imutável do mundo do jogo, usado para transferir informações do domínio para a apresentação sem expor a entidade `World` interna. */
@@ -37,7 +38,7 @@ export interface IGameDomain {
   /** Permite que a camada de apresentação configure o contexto do mundo (ex: tamanho do mapa) no domínio durante a inicialização. @param width A largura do mundo. @param height A altura do mundo. */
   setWorld(width: number, height: number): void;
   /** Traduz uma intenção do usuário (capturada pela apresentação) em um comando que o domínio entende. @param command O comando de movimento. */
-  handlePlayerInteractions(command: { actions: Array<'up' | 'down' | 'left' | 'right'> }, deltaTime: number): void; // eslint-disable-line
+  handlePlayerInteractions(command: { actions: Array<action> }, mouseLastCoordinates: {x:number,y:number}, deltaTime: number): void; // eslint-disable-line
   /** Solicita ao domínio uma "fotografia" do estado atual de todos os objetos visíveis, formatada como DTOs puros para a renderização. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   getRenderState(): { world: WorldState; renderables: readonly RenderableState[] };
 }

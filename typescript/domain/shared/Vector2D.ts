@@ -15,7 +15,7 @@ export default class Vector2D {
      * mantendo sua direção original.
      * * @returns {Vector2D} O próprio vetor, agora normalizado.
      */
-    normalize(): Vector2D {
+    public normalize(): Vector2D {
         const magnitude = Math.sqrt(this.x * this.x + this.y * this.y);
         if (magnitude === 0) {
             this.x = 0;
@@ -32,7 +32,7 @@ export default class Vector2D {
      * @param {number} scalar O valor pelo qual multiplicar.
      * @returns {Vector2D} O vetor escalado.
      */
-    multiply(scalar:number): Vector2D {
+    public multiply(scalar:number): Vector2D {
         this.x *= scalar;
         this.y *= scalar;
         return this;
@@ -43,9 +43,19 @@ export default class Vector2D {
      * @param {Vector2D} other O outro vetor a ser somado.
      * @returns {Vector2D} O vetor resultante da soma.
      */
-    add(other:Vector2D): Vector2D {
+    public add(other:Vector2D): Vector2D {
         this.x += other.x;
         this.y += other.y;
         return this;
+    }
+
+    /**
+     * Zera os valores do vetor
+     * @returns {Vector2D} O vetor zerado
+     */
+    public reset() {
+        this.x = 0
+        this.y = 0
+        return this
     }
 }
