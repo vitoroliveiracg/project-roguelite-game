@@ -1,0 +1,57 @@
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#Container_MenuInvStatus{
+    background-color: blue;
+    border: 2px solid black;
+    width: 70%;
+    height: 60%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+#Container_Paginas{
+    display: flex;
+    gap: 20px;
+}
+#Container_Paginas p {
+    color: white;
+    font-weight: bold;
+    cursor: pointer; /* Muda o cursor para uma mãozinha ao passar por cima */
+    padding: 5px 10px; /* Adiciona um espaçamento interno */
+    border-radius: 5px; /* Arredonda as bordas */
+}
+
+/* Exemplo de efeito hover para dar feedback ao usuário */
+#Container_Paginas p:hover {
+    background-color: rgba(255, 255, 255, 0.2); /* Um leve destaque ao passar o mouse */
+}
+
+
+
+#Container_Bag {
+    background-color: burlywood;
+    border: 2px solid black;
+    width: 100%;
+    height: 90%;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
+#Container_Equipados{
+    width: 30%;
+    height: 95%;
+    background-color: brown;
+}
+#Container_BagSlots {
+    width: 60%;
+    height: 90%;
+    overflow-y: scroll;
+    background-color: antiquewhite;
+}
