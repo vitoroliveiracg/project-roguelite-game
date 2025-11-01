@@ -1,5 +1,6 @@
 /** @file Contém a classe ObjectElementManager, responsável por gerenciar o ciclo de vida (criação, atualização, remoção) de uma coleção de entidades de domínio. */
 import type { EntityRenderableState } from "../ports/domain-contracts";
+import Bullet from "./Entities/bullets/Bullet";
 import BlackEnemy from "./Entities/Enemies/BlackEnemy";
 import Enemy from "./Entities/Enemies/Enemy";
 import ObjectElement from "./ObjectElement";
@@ -34,7 +35,6 @@ export default class ObjectElementManager {
   public spawn<T extends ObjectElement>(factoryFn: (id: number) => T): T {
     const newId = this.nextId++;
     const newElement = factoryFn(newId);
-    
     if (!(newElement instanceof ObjectElement)) {
       throw new Error("A fábrica deve retornar uma instância de ObjectElement.");
     }
@@ -47,7 +47,7 @@ export default class ObjectElementManager {
   public updateAll(deltaTime: number): void {
     for (const element of this.elements.values()) {
       // Apenas entidades (Entity) possuem lógica de update.
-      if (element instanceof Enemy || element instanceof BlackEnemy) {
+      if (element instanceof Enemy || element instanceof BlackEnemy || element instanceof Bullet) {
         element.update(deltaTime);
       }
     }
@@ -65,8 +65,21 @@ export default class ObjectElementManager {
         coordinates: element.coordinates,
         size: element.size,
         state: element.state,
+        rotation: element.rotation
       });
     }
     return states;
   }
+
+
+  /**
+     * Remove um elemento do mapa com base no ID fornecido.
+     * * @param id O número (key) do elemento a ser removido.
+     * @returns Retorna true se o elemento existia e foi removido, ou false caso contrário.
+     */
+    public removeByID(id: number): boolean {
+        // O método delete() de um Map retorna 'true' se um elemento foi 
+        // removido com sucesso, e 'false' se o elemento não existia.
+        return this.elements.delete(id);
+    }
 }

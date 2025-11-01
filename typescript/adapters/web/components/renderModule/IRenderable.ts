@@ -8,8 +8,11 @@ export default interface IRenderable {
   readonly coordinates: { x: number; y: number };
   /** As dimensões {width, height} do objeto, expostas como `readonly` para uso pela Câmera e pelo Renderer. */
   readonly size: { width: number; height: number };
+  /** Rotação do objeto, em radianos */
+  readonly rotation:number
   /** Fase de Desenho: Executa a lógica de desenho específica do objeto (ex: desenhar um sprite, uma forma) no contexto do canvas. @param ctx O contexto de renderização 2D do canvas. */
   draw(ctx: CanvasRenderingContext2D): void;
   /** Fase de Update (Sincronização): Atualiza o estado interno do objeto visual com os novos dados (DTO) vindos da camada de domínio. @param newState O DTO de estado mais recente da entidade correspondente. */
   updateState(newState: any): void;
+
 }

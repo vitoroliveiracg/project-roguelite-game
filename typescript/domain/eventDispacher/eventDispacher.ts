@@ -5,6 +5,7 @@ export interface GameEventMap {
   log: {  };
   messageReceived: { message :string };
   enemyDied: { xpGiven: number; killerId: number };
+  bulletDie: { bulletId:number }
 }
 
 export type EventKey = keyof GameEventMap;

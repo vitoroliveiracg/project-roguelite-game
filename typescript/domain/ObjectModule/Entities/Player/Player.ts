@@ -5,6 +5,8 @@ import Atributes from "../Atributes";
 import type IXPTable from "../IXPTable";
 import { logger } from "../../../../adapters/web/shared/Logger";
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
+import { SimpleBullet } from "../bullets/SimpleBullet";
+import type ObjectElementManager from "../../ObjectElementManager";
 
 export type playerStates = 'idle' | 'walking'
 
@@ -13,15 +15,22 @@ export default class Player extends Entity {
   private accelator:Vector2D = new Vector2D(0,0)
   private movementSinceLastUpdate: boolean = false;
   private isDashing: boolean = false;
+  private shooted:boolean = false;
 
   constructor (
     id: number,
     coordinates : { x: number, y :number },
     atributes :Atributes,
+    private objectManager: ObjectElementManager,
     state: playerStates = 'idle'
   ){
     const size = { width: 16, height: 16 }; //? jogador (16x16)
     super(id, coordinates, size, 'player', state, atributes);
+    this.setEvents()
+  }
+
+  private setEvents() {
+    gameEvents.on("bulletDie", this.onBulletDie.bind(this) )
   }
   
   //* world: World
@@ -72,15 +81,11 @@ export default class Player extends Entity {
   }
 
 
-  private dash(x:number|undefined = undefined, y:number|undefined = undefined):void {
+  private dashToDirection( direction:Vector2D ):void {
   
     if (!this.isDashing){
-      if(x && y){
-        this.direction.x = x - this.coordinates.x
-        this.direction.y = y - this.coordinates.y
-      }
 
-      this.accelator.add(this.direction.normalize()).multiply(3)
+      this.accelator.add(direction.normalize()).multiply(3)
       this.isDashing = true
       
       setTimeout(() => {
@@ -90,6 +95,24 @@ export default class Player extends Entity {
       setTimeout(() => {
           this.isDashing = false
       }, 1000);
+    }
+  }
+
+  private shootBullet( direction: Vector2D ) {
+    if(!this.shooted){
+      
+      this.shooted = true
+      // for (let index = 1; index <= 3; index++) {
+      // }
+      this.objectManager.spawn( id => new SimpleBullet( 
+        id, 
+        {...this.coordinates}, 
+        direction
+      ))
+
+      setTimeout(() => {
+        this.shooted = false
+      }, 250);
     }
   }
 
@@ -112,14 +135,27 @@ export default class Player extends Entity {
   }
 
   public onShiftAction (): void {
-    this.dash()
+    this.dashToDirection(this.direction)
   }
 
   public onLeftClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
-    this.dash(mouseLastCoordinates.x, mouseLastCoordinates.y)
+    const direction = new Vector2D(
+        mouseLastCoordinates.x - this.coordinates.x,
+        mouseLastCoordinates.y - this.coordinates.y
+      )
+    this.shootBullet(direction)
+  }
+
+  public onBulletDie( target: { bulletId:number } ) {
+    this.objectManager.removeByID(target.bulletId)
   }
 
   public onRightClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
-    this.dash(mouseLastCoordinates.x, mouseLastCoordinates.y)
+    const direction = new Vector2D(
+      mouseLastCoordinates.x - this.coordinates.x,
+      mouseLastCoordinates.y - this.coordinates.y
+    )
+    
+    this.dashToDirection(direction)
   }
 }

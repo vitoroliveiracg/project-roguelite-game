@@ -1,4 +1,5 @@
 export type objectTypeId = 
- |'player'
- | 'blackEnemy' //! --debug
+    |'player'
+    | 'blackEnemy' //! --debug
+    | 'simpleBullet'
 ;

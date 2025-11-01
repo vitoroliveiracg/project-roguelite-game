@@ -63,7 +63,13 @@ export class InputManager {
     window.addEventListener('keyup', this.handleKeyUp.bind(this));
     window.addEventListener('mousedown', this.handleMouseDown.bind(this));
     window.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    window.addEventListener('mousemove', this.handleClick.bind(this))
     window.addEventListener('contextmenu', this.handleRightClick.bind(this))
+  }
+
+  private handleClick(e: MouseEvent) {
+    this.mouseLastCoordinates.x = e.clientX
+    this.mouseLastCoordinates.y = e.clientY
   }
 
   private handleMouseDown(e: MouseEvent) {
@@ -77,9 +83,6 @@ export class InputManager {
     if (e.button === 2 ) {
       key = 'mouse_right'
     }
-
-    this.mouseLastCoordinates.x = e.clientX
-    this.mouseLastCoordinates.y = e.clientY
 
     if (!this.pressedKeys.has(key) && this.keyMap.has(key)) {
       logger.log('input', `Mouse Down: ${key}`);

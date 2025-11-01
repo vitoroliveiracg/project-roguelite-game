@@ -59,7 +59,8 @@ export default class DomainFacade implements IGameDomain {
     this.player = new Player(
       this.config.player.id,
       this.config.player.initialPos,
-      new Atributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10)
+      new Atributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10),
+      this.objectManager
     );
     this.actionManager = new ActionManager(this.player)
     this.logger.log('domain', 'Player entity created:', this.player);
@@ -87,9 +88,9 @@ export default class DomainFacade implements IGameDomain {
       coordinates: this.player.coordinates,
       size: this.player.size,
       state: this.player.state,
+      rotation: 0
     };
     const otherStates = this.objectManager.getAllRenderableStates();
-
     return { 
       world: { width: this.world.width, height: this.world.height }, 
       renderables: [playerState, ...otherStates] // Agora todos os elementos são objetos RenderableState.

@@ -7,6 +7,7 @@ import Player from "../gameObjectModule/playerModule/Player";
 import type IRenderable from "../renderModule/IRenderable";
 import type { SpriteConfig } from "../gameObjectModule/GameObjectElement";
 import type GameObjectElement from "../gameObjectModule/GameObjectElement";
+import Bullet from "../gameObjectModule/bullets/bullet";
 
 /** @class RenderableFactory Utiliza o padrão Factory para desacoplar o `GameAdapter` da criação de objetos visuais concretos. Ele mapeia o estado do domínio (ex: `entityTypeId`, `state`) para a instância `IRenderable` apropriada (ex: `Sprite`). */
 export class RenderableFactory {
@@ -19,6 +20,7 @@ export class RenderableFactory {
     ['player', (params) => new Player(params)],
     ['enimie', (params) => Enemy.createWithSprite(params)],
     ['blackEnemy', (params) => BlackEnemy.createWithSprite(params)],
+    ['simpleBullet', (params)=>Bullet.createWithSprite(params)]
   ]);
 
   /** Fase de Update (Sincronização): Cria uma nova instância de um objeto `IRenderable` com base no DTO de estado fornecido pelo domínio. @param state O DTO de estado da entidade a ser criada. @returns Uma instância de `IRenderable` (ex: `Sprite`) ou `null` se nenhuma configuração for encontrada. */
@@ -50,6 +52,7 @@ export class RenderableFactory {
     ['player-walking', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
     ['enimie-idle', { imageSrc: new URL('../../assets/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
     ['blackEnemy-waiting', { imageSrc: new URL('../../assets/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, }],
+    ['simpleBullet-travelling', { imageSrc: new URL('../../assets/simple-bullet.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, }],
   ]);
 
   /** Pré-carrega todas as imagens definidas em `spriteConfigs` e as armazena no cache. */

@@ -75,7 +75,6 @@ export default class GameAdapter {
     if (playerRenderable) this.camera.setTarget(playerRenderable);
 
     this.renderer.clear();
-    
     this.renderer.drawFrame(this.map, world, Array.from(this.renderables.values()));//? Redesenha sempre todos os renderizaveis
   }
 
@@ -99,6 +98,13 @@ export default class GameAdapter {
           this.renderables.set(state.id, newRenderable);
         }
       }
+    }
+
+    // Remove os objetos visuais que não estão mais no domínio
+    for (const id of this.renderables.keys()) {
+        if (!activeIds.has(id)) {
+            this.renderables.delete(id);
+        }
     }
   }
   /** Fase de Update (Input): Verifica as teclas atualmente pressionadas e traduz em chamadas para `domain.handlePlayerMovement`, passando o `deltaTime` para garantir um movimento consistente. @private @param deltaTime O tempo em segundos desde o último frame. */

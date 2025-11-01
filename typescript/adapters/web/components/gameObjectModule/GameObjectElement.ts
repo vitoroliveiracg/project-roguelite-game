@@ -28,6 +28,7 @@ export default class GameObjectElement implements IRenderable {
   public id: number;
   public coordinates: { x: number; y: number };
   public size: { width: number; height: number };
+  public rotation:number
 
   protected image: HTMLImageElement;
   protected config: SpriteConfig | undefined; // Explicitamente SpriteConfig | undefined
@@ -41,6 +42,7 @@ export default class GameObjectElement implements IRenderable {
     this.size = initialState.size;
     this.config = initialConfig;
     this.image = initialImage;
+    this.rotation = 0
   }
 
   /**
@@ -65,6 +67,7 @@ export default class GameObjectElement implements IRenderable {
   public updateState(newState: EntityRenderableState): void {
     this.coordinates = { ...newState.coordinates }; // Clonar para evitar mutação externa
     this.size = newState.size;
+    this.rotation = newState.rotation
   }
 
   public draw(ctx: CanvasRenderingContext2D): void {
@@ -75,12 +78,24 @@ export default class GameObjectElement implements IRenderable {
       ctx.fillRect(this.coordinates.x, this.coordinates.y, this.size.width, this.size.height);
       return;
     }
+    ctx.save();
 
+
+    const centerX = this.coordinates.x + this.size.width / 2;
+    const centerY = this.coordinates.y + this.size.height / 2;
+    
+    ctx.translate(centerX, centerY);
+
+    ctx.rotate(this.rotation)
+
+    ctx.translate(-centerX, -centerY);
+    
     this.updateAnimation();
     ctx.imageSmoothingEnabled = false;
     const sourceX = this.currentFrame * this.config.frameWidth;
     const sourceY = 0;
-
+    
     ctx.drawImage(this.image, sourceX, sourceY, this.config.frameWidth, this.config.frameHeight, this.coordinates.x, this.coordinates.y, this.size.width, this.size.height);
+    ctx.restore()
   }
 }

@@ -19,6 +19,9 @@ interface BaseRenderableState {
   coordinates: { x: number; y: number };
   /** As dimensões {width, height} do objeto. */
   size: { width: number; height: number };
+
+  /** Rotação em radianos do objeto */
+  rotation:number
 }
 /** DTO que representa o estado de uma entidade renderizável. A camada de apresentação usa `entityTypeId` e `state` para decidir qual sprite e animação usar. */
 export interface EntityRenderableState extends BaseRenderableState {

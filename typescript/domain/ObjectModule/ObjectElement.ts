@@ -2,6 +2,8 @@ import type { objectTypeId } from "./objectType.type";
 
 export default class ObjectElement {
 
+  public rotation:number = 0
+
   constructor(
     readonly size: { width: number; height: number },
     private _coordinates: { x: number; y: number; },
