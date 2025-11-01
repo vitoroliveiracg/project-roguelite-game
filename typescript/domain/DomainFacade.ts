@@ -17,6 +17,8 @@ interface DomainConfig {
   player: { id: number; level: number; initialPos: { x: number; y: number } };
 }
 
+export let globalObjectManager = new ObjectElementManager()
+
 /** @class DomainFacade @implements {IGameDomain} Atua como o guardião e orquestrador da camada de domínio, implementando a porta `IGameDomain` para proteger a integridade das entidades internas e expor apenas operações de alto nível. */
 export default class DomainFacade implements IGameDomain {
   private world!: World; /** @private A instância do `World` que representa o ambiente do jogo. */
@@ -54,13 +56,12 @@ export default class DomainFacade implements IGameDomain {
     this.logger.log('domain', `Setting world: ${width}x${height}`);
     this.world = new World(width, height);
     
-    this.objectManager = new ObjectElementManager();
+    this.objectManager = globalObjectManager
     
     this.player = new Player(
       this.config.player.id,
       this.config.player.initialPos,
-      new Atributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10),
-      this.objectManager
+      new Atributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10)
     );
     this.actionManager = new ActionManager(this.player)
     this.logger.log('domain', 'Player entity created:', this.player);
@@ -108,3 +109,5 @@ export default class DomainFacade implements IGameDomain {
     });
   }
 }
+
+

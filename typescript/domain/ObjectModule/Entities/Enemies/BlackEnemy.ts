@@ -1,5 +1,5 @@
-import { logger } from "../../../../adapters/web/shared/Logger";
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
+import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import Dice from "../../../shared/Dice";
 import Vector2D from "../../../shared/Vector2D";
 import type { objectTypeId } from "../../objectType.type";
@@ -25,6 +25,8 @@ export default class BlackEnemy extends Enemy {
     this.atributes.hp = (Dice.rollDice(8) * level ) + this.atributes.constitution
     this.atributes.speed = -60
 
+    this.hitBox = new HitBoxCircle({x: this.coordinates.x + this.size.width/2, 
+        y:this.coordinates.y + this.size.height/2 }, 4, this.rotation)
     this.setEvents()
   }
 
@@ -61,6 +63,9 @@ export default class BlackEnemy extends Enemy {
 
     this.direction.x = playerCoordinates.x - this.coordinates.x
     this.direction.y = playerCoordinates.y - this.coordinates.y
+
+    if(this.hitBox) this.hitBox.update({x: this.coordinates.x + this.size.width/2, 
+        y:this.coordinates.y + this.size.height/2 }, this.rotation)
   }
 
   //? ----------- Getters and Setters -----------

@@ -8,6 +8,7 @@ import type IRenderable from "../renderModule/IRenderable";
 import type { SpriteConfig } from "../gameObjectModule/GameObjectElement";
 import type GameObjectElement from "../gameObjectModule/GameObjectElement";
 import Bullet from "../gameObjectModule/bullets/bullet";
+import CircleForm from "../gameObjectModule/geometryForms/CircleForm";
 
 /** @class RenderableFactory Utiliza o padrão Factory para desacoplar o `GameAdapter` da criação de objetos visuais concretos. Ele mapeia o estado do domínio (ex: `entityTypeId`, `state`) para a instância `IRenderable` apropriada (ex: `Sprite`). */
 export class RenderableFactory {
@@ -20,7 +21,8 @@ export class RenderableFactory {
     ['player', (params) => new Player(params)],
     ['enimie', (params) => Enemy.createWithSprite(params)],
     ['blackEnemy', (params) => BlackEnemy.createWithSprite(params)],
-    ['simpleBullet', (params)=>Bullet.createWithSprite(params)]
+    ['simpleBullet', (params)=>Bullet.createWithSprite(params)],
+    ['circle', (params)=> new CircleForm(params)]
   ]);
 
   /** Fase de Update (Sincronização): Cria uma nova instância de um objeto `IRenderable` com base no DTO de estado fornecido pelo domínio. @param state O DTO de estado da entidade a ser criada. @returns Uma instância de `IRenderable` (ex: `Sprite`) ou `null` se nenhuma configuração for encontrada. */

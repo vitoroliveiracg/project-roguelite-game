@@ -1,8 +1,11 @@
 /** @file Contém a classe ObjectElementManager, responsável por gerenciar o ciclo de vida (criação, atualização, remoção) de uma coleção de entidades de domínio. */
+import { HitBoxCircle } from "../hitBox/HitBoxCircle";
 import type { EntityRenderableState } from "../ports/domain-contracts";
 import Bullet from "./Entities/bullets/Bullet";
 import BlackEnemy from "./Entities/Enemies/BlackEnemy";
 import Enemy from "./Entities/Enemies/Enemy";
+import Entity from "./Entities/Entity";
+import CircleForm from "./Entities/geometryForms/circleForm";
 import ObjectElement from "./ObjectElement";
 
 /** * @class ObjectElementManager * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis). * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar * grupos de entidades, permitindo que a `DomainFacade` delegue essa * responsabilidade e permaneça focada na orquestração de alto nível. */
@@ -19,13 +22,67 @@ export default class ObjectElementManager {
    * Popula o mundo com os elementos iniciais (inimigos, NPCs, itens, etc.).
    * Este método pode ser expandido para ler de uma configuração de nível no futuro.
    */
-  public spawnInitialElements(): void {
+  public spawnInitialElements(): void { 
 
     this.spawn( id =>  new BlackEnemy(
       id,
       1,
       50, // XP base que o BlackEnemy concede
       { x: 200, y: 200 },
+      "blackEnemy", 
+      { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
+    ))
+
+    this.spawn( id =>  new BlackEnemy(
+      id,
+      1,
+      50, // XP base que o BlackEnemy concede
+      { x: 150, y: 200 },
+      "blackEnemy", 
+      { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
+    ))
+
+    this.spawn( id =>  new BlackEnemy(
+      id,
+      1,
+      50, // XP base que o BlackEnemy concede
+      { x: 200, y: 150 },
+      "blackEnemy", 
+      { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
+    ))
+
+    this.spawn( id =>  new BlackEnemy(
+      id,
+      1,
+      50, // XP base que o BlackEnemy concede
+      { x: 0, y: 200 },
+      "blackEnemy", 
+      { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
+    ))
+
+    this.spawn( id =>  new BlackEnemy(
+      id,
+      1,
+      50, // XP base que o BlackEnemy concede
+      { x: 10, y: 30 },
+      "blackEnemy", 
+      { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
+    ))
+
+    this.spawn( id =>  new BlackEnemy(
+      id,
+      1,
+      50, // XP base que o BlackEnemy concede
+      { x: 15, y: 0 },
+      "blackEnemy", 
+      { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
+    ))
+
+    this.spawn( id =>  new BlackEnemy(
+      id,
+      1,
+      50, // XP base que o BlackEnemy concede
+      { x: 200, y: 300 },
       "blackEnemy", 
       { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
     ))
@@ -47,7 +104,8 @@ export default class ObjectElementManager {
   public updateAll(deltaTime: number): void {
     for (const element of this.elements.values()) {
       // Apenas entidades (Entity) possuem lógica de update.
-      if (element instanceof Enemy || element instanceof BlackEnemy || element instanceof Bullet) {
+      if (
+        element instanceof Entity || element instanceof CircleForm || element instanceof Bullet) {
         element.update(deltaTime);
       }
     }

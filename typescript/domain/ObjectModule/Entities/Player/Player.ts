@@ -7,6 +7,8 @@ import { logger } from "../../../../adapters/web/shared/Logger";
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
 import { SimpleBullet } from "../bullets/SimpleBullet";
 import type ObjectElementManager from "../../ObjectElementManager";
+import { globalObjectManager } from "../../../DomainFacade";
+import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 
 export type playerStates = 'idle' | 'walking'
 
@@ -16,16 +18,22 @@ export default class Player extends Entity {
   private movementSinceLastUpdate: boolean = false;
   private isDashing: boolean = false;
   private shooted:boolean = false;
+  private objectManager:ObjectElementManager
 
   constructor (
     id: number,
     coordinates : { x: number, y :number },
     atributes :Atributes,
-    private objectManager: ObjectElementManager,
     state: playerStates = 'idle'
   ){
     const size = { width: 16, height: 16 }; //? jogador (16x16)
     super(id, coordinates, size, 'player', state, atributes);
+    
+    this.objectManager = globalObjectManager
+    
+    this.hitBox = new HitBoxCircle(
+      {x: this.coordinates.x + this.size.width/2, 
+        y:this.coordinates.y + this.size.height/2 } , 4)
     this.setEvents()
   }
 
@@ -61,6 +69,9 @@ export default class Player extends Entity {
   protected override updatePosition() {
       this.coordinates.x += this.velocity.x;
       this.coordinates.y += this.velocity.y;
+
+      if(this.hitBox) this.hitBox.update({x: this.coordinates.x + this.size.width/2, 
+        y:this.coordinates.y + this.size.height/2 }, this.rotation)
 
       gameEvents.dispatch("playerMoved", { x: this.coordinates.x, y: this.coordinates.y })
       logger.log("domain", "(Entity) player moved");

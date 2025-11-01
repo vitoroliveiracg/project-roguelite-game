@@ -10,6 +10,7 @@ export default class BlackEnemy extends Enemy {
     // e uma imagem vazia. Isso garante que ele seja um 'Enemy', mas que use a lógica
     // de fallback de renderização da sua classe avó (GameObjectElement).
     super(initialState, config, image);
+
   }
 
   public static override createWithSprite({ initialState, configs, imageCache }: EnemyConstructorParams): BlackEnemy {
