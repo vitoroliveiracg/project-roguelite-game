@@ -6,8 +6,6 @@ import Player from "./ObjectModule/Entities/Player/Player";
 import ObjectElementManager from "./ObjectModule/ObjectElementManager";
 import World from "./World";
 import Atributes from "./ObjectModule/Entities/Atributes";
-import { gameEvents } from "./eventDispacher/eventDispacher";
-import type IXPTable from "./ObjectModule/Entities/IXPTable";
 import type { action } from "./eventDispacher/actions.type";
 import ActionManager from "./eventDispacher/ActionManager"; "./eventDispacher/ActionManager";
 
@@ -17,8 +15,6 @@ interface DomainConfig {
   player: { id: number; level: number; initialPos: { x: number; y: number } };
 }
 
-export let globalObjectManager = new ObjectElementManager()
-
 /** @class DomainFacade @implements {IGameDomain} Atua como o guardião e orquestrador da camada de domínio, implementando a porta `IGameDomain` para proteger a integridade das entidades internas e expor apenas operações de alto nível. */
 export default class DomainFacade implements IGameDomain {
   private world!: World; /** @private A instância do `World` que representa o ambiente do jogo. */
@@ -26,7 +22,6 @@ export default class DomainFacade implements IGameDomain {
   private objectManager!: ObjectElementManager; /** @private O gerenciador de todas as outras entidades dinâmicas (inimigos, itens, etc.). */
   private config: DomainConfig; /** @private A configuração inicial do domínio. */
   private logger: ILogger; /** @private A instância do logger, injetada via construtor. */
-  private xpTable: IXPTable; /** @private A tabela de progressão de XP. */
 
   private actionManager!: ActionManager;
   /** @constructor @param config O objeto de configuração com os dados iniciais para a criação das entidades do jogo. @param logger Uma instância de um logger que implementa a interface `ILogger`. */
@@ -35,11 +30,8 @@ export default class DomainFacade implements IGameDomain {
     this.logger = logger;
     this.logger.log('init', 'DomainFacade instantiated.');
 
-    // Define a curva de XP do jogo. Ex: Nv2=100XP, Nv3=120XP, Nv4=144XP...
-    this.xpTable = { fixedBase: 100, levelScale: 1.2 };
+    this.objectManager = new ObjectElementManager();
 
-    // Registra o listener para o evento de morte de inimigo.
-    this.setupEventListeners();
   }
 
 
@@ -55,8 +47,7 @@ export default class DomainFacade implements IGameDomain {
   public setWorld(width: number, height: number): void {
     this.logger.log('domain', `Setting world: ${width}x${height}`);
     this.world = new World(width, height);
-    
-    this.objectManager = globalObjectManager
+    this.objectManager.setWorldBounds(width, height);
     
     this.player = new Player(
       this.config.player.id,
@@ -82,32 +73,24 @@ export default class DomainFacade implements IGameDomain {
     this.logger.log('sync', 'DomainFacade getting render state...');
     if (!this.world) throw new Error("O mundo do domínio não foi inicializado. Chame setWorld() antes de getRenderState().");
 
-    // Constrói o DTO de estado para o jogador, garantindo que ele tenha a estrutura correta.
+    const playerHitboxes = this.player.hitboxes?.map(hb => hb.getDebugShape()) ?? [];
+
     const playerState: RenderableState = {
       id: this.player.id,
       entityTypeId: this.player.objectId,
       coordinates: this.player.coordinates,
       size: this.player.size,
       state: this.player.state,
-      rotation: 0
+      rotation: this.player.rotation,
+      hitboxes: playerHitboxes
     };
+
     const otherStates = this.objectManager.getAllRenderableStates();
+    
     return { 
       world: { width: this.world.width, height: this.world.height }, 
-      renderables: [playerState, ...otherStates] // Agora todos os elementos são objetos RenderableState.
+      renderables: [playerState, ...otherStates]
     };
   }
 
-  /** Configura os listeners para eventos de domínio. */
-  private setupEventListeners(): void {
-    gameEvents.on('enemyDied', (payload) => {
-      // Por enquanto, assume-se que o jogador é sempre o assassino.
-      if (this.player) {
-        this.player.gainXp(payload.xpGiven, this.xpTable);
-        this.logger.log('domain', `Player gained ${payload.xpGiven} XP.`);
-      }
-    });
-  }
 }
-
-

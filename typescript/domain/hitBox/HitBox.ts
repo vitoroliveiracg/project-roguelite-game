@@ -1,18 +1,24 @@
+import type ObjectElement from "../ObjectModule/ObjectElement";
+
+/**
+ * DTO que descreve a forma de uma hitbox para fins de depuração/renderização.
+ */
+export interface HitboxDebugShape {
+    type: 'circle' | 'polygon';
+    coordinates: { x: number; y: number };
+    radius?: number; // Apenas para círculos
+}
 /**
  * Define as propriedades básicas comuns a todas as HitBoxes.
  * Esta classe é abstrata e não pode ser instanciada diretamente.
  */
 export abstract class HitBox {
-    /** Posição da HitBox em relação ao mundo, ponto de refencia principal dela */
-    public coordinates: {x:number, y:number}
-
-    /** Rotação da HitBox */
-    public rotation:number = 0
-
-    constructor(coordinates: {x:number, y:number}, rotation:number = 0) {
-        this.coordinates = coordinates
-        this.rotation = rotation
-    }
+    
+    constructor(
+        public coordinates:  {x:number, y:number}, 
+        public rotation:number = 0,
+        public onColision: (otherElement: ObjectElement, selfElement: ObjectElement) => void
+    ){}
 
     /**
      * Atualiza a posição da HitBox junto com a rotação
@@ -47,4 +53,10 @@ export abstract class HitBox {
      * @returns True se houver colisão, false caso contrário.
      */
     public abstract intersects(other: HitBox): boolean;
+
+    /**
+     * MÉTODO OBRIGATÓRIO: Retorna um DTO com os dados da forma da hitbox para depuração.
+     * @returns Um objeto `HitboxDebugShape`.
+     */
+    public abstract getDebugShape(): HitboxDebugShape;
 }

@@ -13,7 +13,8 @@ export default abstract class Bullet extends ObjectElement {
         coordinates: { x: number; y: number; },
         size: { width: number; height: number; },
         objectId: objectTypeId,
-        state :bulletStates
+        state :bulletStates,
+        public readonly damage: number
     ){ 
         super(size, coordinates, id, state, objectId) 
     }

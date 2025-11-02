@@ -1,8 +1,10 @@
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
+import type ObjectElement from "../../ObjectElement";
 import Dice from "../../../shared/Dice";
 import Vector2D from "../../../shared/Vector2D";
 import type { objectTypeId } from "../../objectType.type";
+import { SimpleBullet } from "../bullets/SimpleBullet";
 import Enemy from "./Enemy";
 
 export default class BlackEnemy extends Enemy {
@@ -25,9 +27,19 @@ export default class BlackEnemy extends Enemy {
     this.atributes.hp = (Dice.rollDice(8) * level ) + this.atributes.constitution
     this.atributes.speed = -60
 
-    this.hitBox = new HitBoxCircle({x: this.coordinates.x + this.size.width/2, 
-        y:this.coordinates.y + this.size.height/2 }, 4, this.rotation)
-    this.setEvents()
+    this.hitboxes = [
+      new HitBoxCircle(
+        { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
+        0, // rotation
+        (otherElement: ObjectElement, selfElement: ObjectElement) => {
+          if (otherElement instanceof SimpleBullet) {
+            this.takeDamage(otherElement.damage, otherElement.id);
+          }
+        },
+        8 // radius
+      )];
+
+    this.setEvents();
   }
 
   //? ----------- Methods -----------
@@ -52,9 +64,7 @@ export default class BlackEnemy extends Enemy {
   }
 
   public update(deltaTime: number): void {
-    this.move(deltaTime)
-    
-    this.direction.reset()
+    this.move(deltaTime);
   }
 
   public onLastPlayerPos( playerCoordinates: {x: number; y: number} ) {
@@ -64,8 +74,10 @@ export default class BlackEnemy extends Enemy {
     this.direction.x = playerCoordinates.x - this.coordinates.x
     this.direction.y = playerCoordinates.y - this.coordinates.y
 
-    if(this.hitBox) this.hitBox.update({x: this.coordinates.x + this.size.width/2, 
-        y:this.coordinates.y + this.size.height/2 }, this.rotation)
+    // Atualiza a posição de todas as hitboxes associadas
+    this.hitboxes?.forEach(hb => hb.update(
+      { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }, this.rotation
+    ));
   }
 
   //? ----------- Getters and Setters -----------

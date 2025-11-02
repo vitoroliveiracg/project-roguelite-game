@@ -1,20 +1,34 @@
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
+import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import Vector2D from "../../../shared/Vector2D";
+import type ObjectElement from "../../ObjectElement";
 import Bullet, { type bulletStates } from "./Bullet";
 
 export class SimpleBullet extends Bullet {
     public accelator: Vector2D = new Vector2D(0, 0);
     private speed:number = 150
     private distanceTraveled: number = 0
+    private static readonly BASE_DAMAGE = 10;
 
     constructor (
         id: number,
         coordinates: { x: number; y: number; },
         direction: Vector2D,
-        state :bulletStates = 'travelling'
+        state :bulletStates = 'travelling',
+        damage: number = SimpleBullet.BASE_DAMAGE
     ){
         const size = { width: 8, height: 8 }; //? jogador (8x8)
-        super(id, coordinates, size, "simpleBullet", state)
+        super(id, coordinates, size, "simpleBullet", state, damage);
+
+        this.hitboxes = [
+            new HitBoxCircle(
+                { x: this.coordinates.x + size.width / 2, y: this.coordinates.y + size.height / 2 },
+                0, // rotation
+                (otherElement: ObjectElement, selfElement: ObjectElement) => {
+                    this.die(); // O projétil se destrói ao colidir com qualquer coisa.
+                },
+                size.width / 2 // radius
+            )];
         this.direction = direction
         this.rotation = this.direction.angle()
         // this.generateRandomNoiseAccelerator()
@@ -32,7 +46,12 @@ export class SimpleBullet extends Bullet {
             .multiply(displacement)
             .add(this.accelator);
         
+        this.updatePosition();
+    }
+
+    protected override updatePosition(): void {
         super.updatePosition();
+        this.hitboxes?.forEach(hb => hb.updatePosition({ x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }));
     }
 
     public update(deltaTime: number): void {
@@ -40,7 +59,7 @@ export class SimpleBullet extends Bullet {
     }
 
     private die() {
-        gameEvents.dispatch("bulletDie", { bulletId: this.id })
+        gameEvents.dispatch("despawn", { objectId: this.id })
     }
 
     private generateRandomNoiseAccelerator(): void {

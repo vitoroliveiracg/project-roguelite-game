@@ -50,11 +50,10 @@ export class RenderableFactory {
 
   /** @private Mapeia uma chave de configuração (ex: 'player-idle') para os dados do asset. */
   private spriteConfigs: Map<string, SpriteConfig> = new Map([
-    ['player-idle', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
-    ['player-walking', { imageSrc: new URL('../../assets/playerWaiting.png', import.meta.url).href, frameCount: 12, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
-    ['enimie-idle', { imageSrc: new URL('../../assets/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 15, frameWidth: 32, frameHeight: 32, }],
-    ['blackEnemy-waiting', { imageSrc: new URL('../../assets/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, }],
-    ['simpleBullet-travelling', { imageSrc: new URL('../../assets/simple-bullet.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, }],
+    ['player-idle', { imageSrc: new URL('../../assets/entities/player/player-idle.png', import.meta.url).href, frameCount: 2, animationSpeed: 20, frameWidth: 32, frameHeight: 32, }],
+    ['player-walking', { imageSrc: new URL('../../assets/entities/player/player-idle.png', import.meta.url).href, frameCount: 2, animationSpeed: 20, frameWidth: 32, frameHeight: 32, }],
+    ['blackEnemy-waiting', { imageSrc: new URL('../../assets/entities/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, }],
+    ['simpleBullet-travelling', { imageSrc: new URL('../../assets/entities/simple-bullet.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, }],
   ]);
 
   /** Pré-carrega todas as imagens definidas em `spriteConfigs` e as armazena no cache. */

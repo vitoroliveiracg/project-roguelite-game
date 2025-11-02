@@ -16,6 +16,7 @@ export default class Sprite implements IRenderable {
 
   public coordinates: { x: number; y: number };
   public size: { width: number; height: number };
+  public rotation: number;
 
   private image: HTMLImageElement;
   private isLoaded: boolean = false;
@@ -30,6 +31,7 @@ export default class Sprite implements IRenderable {
     this.id = initialState.id;
     this.coordinates = initialState.coordinates;
     this.size = initialState.size;
+    this.rotation = initialState.rotation;
     this.config = config;
 
     this.image = new Image();
@@ -64,6 +66,9 @@ export default class Sprite implements IRenderable {
     }
     if (newState.size) {
       this.size = newState.size;
+    }
+    if (typeof newState.rotation === 'number') {
+      this.rotation = newState.rotation;
     }
   }
 

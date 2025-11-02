@@ -1,5 +1,6 @@
 /** @file Define a fronteira da Arquitetura Hexagonal, contendo os contratos (DTOs e a Porta) que governam a comunicação entre as camadas de Domínio e Adaptação. */
 
+import type { HitboxDebugShape } from "../hitBox/HitBox";
 import type { action } from "../eventDispacher/actions.type";
 import type { objectTypeId } from "../ObjectModule/objectType.type";
 
@@ -29,6 +30,8 @@ export interface EntityRenderableState extends BaseRenderableState {
   entityTypeId: objectTypeId; // Ex: 'player', 'goblin', 'chest'
   /** Descreve o estado comportamental da entidade (ex: 'idle') para que a apresentação possa selecionar a animação correta. */
   state? : string; // Ex: 'idle', 'walking', 'attacking', 'open'
+  /** Uma lista opcional de formas de hitbox para depuração visual. */
+  hitboxes?: readonly HitboxDebugShape[];
 }
 
 /** Tipo união para todos os possíveis estados de objetos renderizáveis, permitindo que o sistema seja estendido com outros tipos (ex: partículas) no futuro. */

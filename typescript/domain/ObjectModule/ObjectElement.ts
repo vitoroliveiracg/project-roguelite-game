@@ -1,3 +1,4 @@
+import type { HitBox } from "../hitBox/HitBox";
 import type { objectTypeId } from "./objectType.type";
 
 export default class ObjectElement {
@@ -9,7 +10,8 @@ export default class ObjectElement {
     private _coordinates: { x: number; y: number; },
     public id: number ,
     public state :any = "",
-    private _objectId: objectTypeId
+    private _objectId: objectTypeId,
+    public hitboxes :HitBox[] | null = null
   ){}
   
   //? ----------- Getters and Setters -----------
