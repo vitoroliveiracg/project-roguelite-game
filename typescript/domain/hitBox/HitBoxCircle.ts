@@ -1,7 +1,6 @@
 // Em HitBoxCircle.ts (Assumindo que Vector2D tem os métodos necessários)
 import { HitBox, type HitboxDebugShape } from './HitBox'; 
 import Vector2D from '../shared/Vector2D';
-import ObjectElementManager from '../ObjectModule/ObjectElementManager';
 import type ObjectElement from '../ObjectModule/ObjectElement';
 
 

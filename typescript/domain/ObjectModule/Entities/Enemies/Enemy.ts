@@ -1,6 +1,7 @@
 import type { objectTypeId } from "../../objectType.type";
 import Entity from "../Entity";
 import Atributes from "../Atributes";
+import type { IAtack } from "../../IAtack";
 
 export default abstract class Enemy extends Entity {
     
@@ -30,11 +31,13 @@ export default abstract class Enemy extends Entity {
     return Math.floor(this.baseXp * (1 + (this.level - 1) * 0.2));
   }
 
-  public override takeDamage(damageAmount: number, killerId: number): boolean {
-    const wasDefeated = super.takeDamage(damageAmount, killerId);
-    if (wasDefeated) {
-      //! Lógica mudada gameEvents.dispatch('enemyDied', { xpGiven: this.xpGiven, killerId: killerId });
+  public onStrike(): IAtack {
+    return {
+      atackerId: this.id,
+      damageType: 'magical',
+      direction: this.direction,
+      isCritical: false,
+      totalDamage: 100
     }
-    return wasDefeated;
   }
 }

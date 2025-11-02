@@ -1,3 +1,4 @@
+import { gameEvents } from "../eventDispacher/eventDispacher";
 import type { HitBox } from "../hitBox/HitBox";
 import type { objectTypeId } from "./objectType.type";
 
@@ -14,6 +15,10 @@ export default class ObjectElement {
     public hitboxes :HitBox[] | null = null
   ){}
   
+  protected destroy():void {
+    gameEvents.dispatch('despawn', {objectId:this.id})
+  }
+
   //? ----------- Getters and Setters -----------
   
   public get objectId(): objectTypeId { return this._objectId; }

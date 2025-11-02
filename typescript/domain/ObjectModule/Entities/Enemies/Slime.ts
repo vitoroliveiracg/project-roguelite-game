@@ -1,16 +1,15 @@
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
-import type ObjectElement from "../../ObjectElement";
 import Dice from "../../../shared/Dice";
-import Vector2D from "../../../shared/Vector2D";
 import type { objectTypeId } from "../../objectType.type";
-import { SimpleBullet } from "../bullets/SimpleBullet";
 import Enemy from "./Enemy";
+import ObjectElement from "../../ObjectElement";
+import Bullet from "../bullets/Bullet";
+import Vector2D from "../../../shared/Vector2D";
 
 export default class Slime extends Enemy {
   
   private lastPlayerPos: {x: number; y: number} = {x:0,y:0}
-  private accelator:Vector2D = new Vector2D(0,0)
 
   //? ----------- Constructor -----------
   constructor(
@@ -28,8 +27,11 @@ export default class Slime extends Enemy {
         { x: this.coordinates.x + super.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
         0,
         (otherElement: ObjectElement) => {
-          if (otherElement instanceof SimpleBullet) {
-            this.takeDamage(otherElement.damage, otherElement.id);
+          if (otherElement instanceof Bullet) {
+            super.takeDamage(otherElement);
+          }
+          if (otherElement instanceof Enemy ) {
+            super.disperseFrom(otherElement)
           }
         },
         8
@@ -52,6 +54,7 @@ export default class Slime extends Enemy {
     gameEvents.on("playerMoved", this.onLastPlayerPos.bind(this) )
   }
 
+  
 
   public override move(deltaTime: number) {
     this.state = 'walking';

@@ -7,12 +7,13 @@ import { logger } from "../../../../adapters/web/shared/Logger";
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import { SimpleBullet } from "../bullets/SimpleBullet";
+import type ObjectElement from "../../ObjectElement";
+import Enemy from "../Enemies/Enemy";
 
 export type playerStates = 'idle' | 'walking'
 
 export default class Player extends Entity {
 
-  private accelator:Vector2D = new Vector2D(0,0)
   private movementSinceLastUpdate: boolean = false;
   private isDashing: boolean = false;
   private shooted:boolean = false;
@@ -29,9 +30,14 @@ export default class Player extends Entity {
     this.hitboxes = [
       new HitBoxCircle(
         { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
-        0, // rotation
-        (other, self) => { /* Lógica de colisão do jogador aqui, se necessário */ },
-        7 // radius
+        0,
+        (otherElement: ObjectElement) => {
+          if (otherElement instanceof Enemy){
+            super.takeDamage(otherElement.onStrike())
+          }
+        
+        },
+        7
       )
     ];
   }
@@ -116,12 +122,16 @@ export default class Player extends Entity {
           id,
           {...this.coordinates},
           direction.normalize(),
+          10,
+          'phisical',
+          false,
+          this.id
         )
       });
 
       setTimeout(() => {
         this.shooted = false
-      }, 250);
+      }, 100);
     }
   }
 

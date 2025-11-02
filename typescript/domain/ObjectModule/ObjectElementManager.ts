@@ -30,7 +30,7 @@ export default class ObjectElementManager {
 
   /** * Popula o mundo com os elementos iniciais (inimigos, NPCs, itens, etc.). Este método pode ser expandido para ler de uma configuração de nível no futuro. */
   public spawnInitialElements(): void { 
-    const enemyCount = 5;
+    const enemyCount = 50;
     const gridCols = 10; // 10 inimigos por linha
     const spacing = 24;  // Espaço entre inimigos. Raio da hitbox é 8, diâmetro é 16. 24px garante que não colidam.
     const startPos = { x: 200, y: 200 };

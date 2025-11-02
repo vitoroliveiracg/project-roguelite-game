@@ -52,6 +52,17 @@ export default class Vector2D {
     }
 
     /**
+     * Subtrai outro vetor deste vetor (result = this - other). Retorna o próprio vetor.
+     * @param {Vector2D} other O vetor a ser subtraído.
+     * @returns {Vector2D} Um novo vetor resultante da subtração.
+     */
+    public subtract(other: Vector2D): Vector2D {
+        this.x -= other.x;
+        this.y -= other.y;
+        return this;
+    }
+
+    /**
      * Zera os valores do vetor.
      * @returns {Vector2D} O vetor zerado.
      */
@@ -99,30 +110,26 @@ export default class Vector2D {
         return this.x * other.x + this.y * other.y;
     }
 
-    /**
-     * Subtrai outro vetor deste vetor (result = this - other). Retorna um NOVO vetor.
-     * @param {Vector2D} other O vetor a ser subtraído.
-     * @returns {Vector2D} Um novo vetor resultante da subtração.
-     */
-    public subtract(other: Vector2D): Vector2D {
-        this.x -= other.x;
-        this.y -= other.y;
-        return this;
-    }
-
 
     /**
      * Calcula o vetor perpendicular (90 graus de rotação) a este vetor.
-     * O vetor perpendicular aponta para um dos lados (esquerda ou direita, dependendo da rotação interna).
+     * O vetor perpendicular aponta para um dos lados (neste caso direita).
      * Retorna um NOVO vetor.
      * @returns {Vector2D} Um novo vetor perpendicular.
      */
-    public perpendicular(): Vector2D {
-        // Se o vetor for (x, y), o perpendicular é (-y, x) ou (y, -x).
-        // Vamos usar (-y, x)
+    public perpendicularDireita(): Vector2D {
         return new Vector2D(-this.y, this.x);
     }
 
+    /**
+     * Calcula o vetor perpendicular (-90 graus de rotação) a este vetor.
+     * O vetor perpendicular aponta para um dos lados (neste caso esquerda).
+     * Retorna um NOVO vetor.
+     * @returns {Vector2D} Um novo vetor perpendicular.
+     */
+    public perpendicularEsquerda(): Vector2D {
+        return new Vector2D(this.y, -this.x);
+    }
 
     /**
      * Calcula o ângulo (em radianos) que o vetor faz com o eixo positivo X.
@@ -132,7 +139,7 @@ export default class Vector2D {
     public angle(): number {
         // Math.atan2(y, x) retorna o arco tangente de y/x, 
         // levando em conta os sinais de ambos para determinar o quadrante correto.
-        const perpendicularVector = this.perpendicular() // Perpendicular porque nosso carteziano é invertido
+        const perpendicularVector = this.perpendicularDireita() // Perpendicular porque nosso carteziano é invertido
         return Math.atan2(perpendicularVector.y, perpendicularVector.x);
     }
 }
