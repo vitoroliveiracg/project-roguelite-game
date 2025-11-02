@@ -1,7 +1,16 @@
 import Dice from "../../shared/Dice";
 import type IXPTable from "./IXPTable";
 
-export default class Atributes {
+export type baseAttributes = {
+  strength: number,
+  constitution: number,
+  dexterity: number,
+  inteligence: number,
+  wisdown: number,
+  charisma: number,
+}
+
+export default class Attributes {
 
   private _hp: number = 0;
   private _mana: number = 0;

@@ -1,7 +1,7 @@
 /** @file Contém a classe `Slime`, um tipo de `Enemy` que é renderizado como um quadrado preto. */
 
 import Enemy, { type EnemyConstructorParams } from "./Enemy";
-import type { SpriteConfig } from "./GameObjectElement";
+import type { SpriteConfig } from "../GameObjectElement";
 
 /** @class Slime Herda de `Enemy` mas o constrói sem um sprite, fazendo com que a classe base o renderize como um quadrado preto. */
 export default class Slime extends Enemy {

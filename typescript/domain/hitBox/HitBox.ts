@@ -20,28 +20,17 @@ export abstract class HitBox {
         public onColision: (otherElement: ObjectElement) => void
     ){}
 
-    /**
-     * Atualiza a posição da HitBox junto com a rotação
-     * @param coodinates Novo conjunto de coordenadas x e y da posição da HitBox.
-     * @param rotation Novo ângulo em radianos da HitBox.
-     */
+    /** * Atualiza a posição da HitBox junto com a rotação * @param coodinates Novo conjunto de coordenadas x e y da posição da HitBox. * @param rotation Novo ângulo em radianos da HitBox. */
     public update(coodinates: {x:number, y:number}, rotation:number): void {
-        console.log("[HitBoxCircule] update")
+        //! Nunca usa console.log no domínio console.log("[HitBoxCircule] update")
         this.updatePosition(coodinates)
         this.updateRotation(rotation)
     }
-
-    /**
-     * Atualiza a posição da HitBox.
-     * @param coordinates Novo conjunto de coordenadas x e y da posição da HitBox.
-     */
+    /** * Atualiza a posição da HitBox. * @param coordinates Novo conjunto de coordenadas x e y da posição da HitBox. */
     public updatePosition(coodinates: {x:number, y:number}): void {
         this.coordinates = coodinates
     }
-
-    /** Atualiza a rotação. 
-     * @param rotation Novo ângulo em radianos da HitBox.
-     */
+    /** Atualiza a rotação. * @param rotation Novo ângulo em radianos da HitBox. */
     public updateRotation(rotation: number): void {
         this.rotation = rotation;
     }

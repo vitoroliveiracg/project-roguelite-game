@@ -1,10 +1,8 @@
-/** @file Contém a classe `Enemy`, a representação visual de um inimigo no jogo. */
 import GameObjectElement, { type GameObjectConstructorParams, type SpriteConfig } from "../GameObjectElement";
 
 //? Esse type é muito importante
 export type BulletConstructorParams = GameObjectConstructorParams;
 
-/** @class Enemy Herda de `GameObjectElement` e usa sua funcionalidade padrão de sprite. */
 export default class CircleForm extends GameObjectElement {
 
     constructor({ initialState, configs, imageCache }: BulletConstructorParams) {

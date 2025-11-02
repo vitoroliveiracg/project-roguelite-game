@@ -19,6 +19,7 @@ import type { action } from "../../../domain/eventDispacher/actions.type";
 /** @class GameAdapter O "Adaptador" principal que conecta a lógica de domínio (`IGameDomain`) com as tecnologias da web (Canvas, Input, DOM), traduzindo eventos e dados entre as camadas e gerenciando o ciclo de vida dos componentes de apresentação. */
 export default class GameAdapter {
   private domain: IGameDomain;
+  private readonly isDebugMode = true; /** @private Flag para controlar a renderização de elementos de depuração, como hitboxes. */
   private renderer!: Renderer; /** @private A instância do `Renderer` responsável por desenhar no canvas. */
   private map!: GameMap; /** @private A instância do `GameMap` que gerencia o mapa de fundo. */
   private camera!: Camera; /** @private A instância da `Camera` que controla a viewport do jogo. */
@@ -64,7 +65,7 @@ export default class GameAdapter {
   }
   /** Fase de Update (Lógica do Adapter): Função principal do ciclo de vida, chamada a cada frame para processar inputs, delegar a atualização de lógica para o domínio, sincronizar o estado visual e atualizar a câmera. @private @param deltaTime O tempo em segundos desde o último frame. */
   private update(deltaTime: number): void { 
-    this.handlePlayerInteractions(deltaTime);
+    this.handlePlayerInteractions();
     this.domain.update(deltaTime);
     this.syncRenderables();
   }
@@ -78,9 +79,11 @@ export default class GameAdapter {
 
     this.renderer.clear();
     // Concatena os renderizáveis normais com os de depuração
-    const allRenderables = [
-      ...Array.from(this.renderables.values()),
-      ...Array.from(this.debugRenderables.values())];
+    const allRenderables = [...this.renderables.values()];
+    if (this.isDebugMode) {
+      allRenderables.push(...this.debugRenderables.values());
+    }
+
     this.renderer.drawFrame(this.map, world, allRenderables);
   }
 
@@ -108,35 +111,40 @@ export default class GameAdapter {
       }
 
       // Sincroniza os renderizáveis de depuração (hitboxes)
-      state.hitboxes?.forEach((hitboxState, index) => {
-        const debugId = `${state.id}-hitbox-${index}`;
-        activeDebugIds.add(debugId);
-
-        if (this.debugRenderables.has(debugId)) {
-          this.debugRenderables.get(debugId)!.updateState(hitboxState);
-        } else {
-          if (hitboxState.type === 'circle') {
-            this.debugRenderables.set(debugId, new DebugCircle(state.id, hitboxState));
+      if (this.isDebugMode) {
+        state.hitboxes?.forEach((hitboxState, index) => {
+          const debugId = `${state.id}-hitbox-${index}`;
+          activeDebugIds.add(debugId);
+  
+          if (this.debugRenderables.has(debugId)) {
+            this.debugRenderables.get(debugId)!.updateState(hitboxState);
+          } else {
+            if (hitboxState.type === 'circle') {
+              this.debugRenderables.set(debugId, new DebugCircle(state.id, hitboxState));
+            }
+            // TODO: Adicionar lógica para 'polygon' aqui se necessário
           }
-          // TODO: Adicionar lógica para 'polygon' aqui se necessário
-        }
-      });
+        });
+      }
     }
 
     // Remove os objetos visuais que não estão mais no domínio
     for (const id of this.renderables.keys()) {
       if (!activeIds.has(id)) {
         this.renderables.delete(id);
+        logger.log('sync', `Renderable with ID ${id} removed.`);
       }
     }
-    for (const id of this.debugRenderables.keys()) {
-      if (!activeDebugIds.has(id)) {
-        this.debugRenderables.delete(id);
+    if (this.isDebugMode) {
+      for (const id of this.debugRenderables.keys()) {
+        if (!activeDebugIds.has(id)) {
+          this.debugRenderables.delete(id);
+        }
       }
     }
   }
   /** Fase de Update (Input): Verifica as teclas atualmente pressionadas e traduz em chamadas para `domain.handlePlayerMovement`, passando o `deltaTime` para garantir um movimento consistente. @private @param deltaTime O tempo em segundos desde o último frame. */
-  private handlePlayerInteractions(deltaTime: number): void {
+  private handlePlayerInteractions(): void {
     let actions: Array<action> = []
 
     if (this.inputManager.isActionActive('move_up')) {
@@ -192,8 +200,7 @@ export default class GameAdapter {
     logger.log('input', 'Input handling complete. Delegating to domain update...');
     this.domain.handlePlayerInteractions(
         { actions: actions }, 
-        mouseWorldCoordinates, 
-        deltaTime);
+        mouseWorldCoordinates);
   }
   /** Fase de Inicialização: Configura o elemento Canvas para ocupar toda a tela e ser responsivo a redimensionamentos da janela. @private @param canvasElement O elemento canvas a ser estilizado. */
   private setupResponsiveCanvas(canvasElement: HTMLCanvasElement) {
@@ -210,45 +217,24 @@ export default class GameAdapter {
   /** * Converte as coordenadas de clique da tela (pixels do canvas) para as coordenadas do mundo do jogo. * @param screenX Coordenada X do clique (e.g., event.clientX). * @param screenY Coordenada Y do clique (e.g., event.clientY). * @returns Um objeto com as coordenadas do mundo { worldX, worldY }. */
   private screenToWorld(screenX: number, screenY: number): { x: number, y: number } {
 
-      const zoom = this.camera.zoom;
-      const { world } = this.domain.getRenderState();
-      const playerRenderable = this.renderables.get(1);
+    const zoom = this.camera.zoom;
+    const { world } = this.domain.getRenderState();
+    const playerRenderable = this.renderables.get(1);
 
-      if (!playerRenderable) {
+    // Define um alvo padrão se o jogador não existir, evitando duplicação de código.
+    const target = playerRenderable 
+        ? { coordinates: playerRenderable.coordinates, size: playerRenderable.size }
+        : { coordinates: { x: 0, y: 0 }, size: { width: 0, height: 0 } };
 
-          const viewWidth = this.renderer.canvas.element.width / zoom;
-          const viewHeight = this.renderer.canvas.element.height / zoom;
-          
-          const targetCoordinates = { x: 0, y: 0 }; 
-          const targetSize = { width: 0, height: 0 };
+    const viewWidth = this.renderer.canvas.element.width / zoom;
+    const viewHeight = this.renderer.canvas.element.height / zoom;
 
-          let camX = (targetCoordinates.x + targetSize.width / 2) - viewWidth / 2;
-          let camY = (targetCoordinates.y + targetSize.height / 2) - viewHeight / 2;
-          
-          camX = Math.max(0, Math.min(camX, world.width - viewWidth)); 
-          camY = Math.max(0, Math.min(camY, world.height - viewHeight));
-          
-          const worldX = (screenX / zoom) + camX;
-          const worldY = (screenY / zoom) + camY;
-          
-          return { x: worldX, y: worldY };
+    const camX = (target.coordinates.x + target.size.width / 2) - viewWidth / 2;
+    const camY = (target.coordinates.y + target.size.height / 2) - viewHeight / 2;
 
-      }
-
-      const targetCoordinates = playerRenderable.coordinates;
-      const targetSize = playerRenderable.size;
-      const viewWidth = this.renderer.canvas.element.width / zoom;
-      const viewHeight = this.renderer.canvas.element.height / zoom;
-
-      let camX = (targetCoordinates.x + targetSize.width / 2) - viewWidth / 2;
-      let camY = (targetCoordinates.y + targetSize.height / 2) - viewHeight / 2;
-
-      const clampedCamX = Math.max(0, Math.min(camX, world.width - viewWidth));
-      const clampedCamY = Math.max(0, Math.min(camY, world.height - viewHeight));
-      
-      const worldX = (screenX / zoom) + clampedCamX;
-      const worldY = (screenY / zoom) + clampedCamY;
-
-      return { x:worldX, y:worldY };
+    const clampedCamX = Math.max(0, Math.min(camX, world.width - viewWidth));
+    const clampedCamY = Math.max(0, Math.min(camY, world.height - viewHeight));
+    
+    return { x: (screenX / zoom) + clampedCamX, y: (screenY / zoom) + clampedCamY };
   }
 }

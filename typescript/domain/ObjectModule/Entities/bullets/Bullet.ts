@@ -1,6 +1,6 @@
 import { logger } from "../../../../adapters/web/shared/Logger";
 import Vector2D from "../../../shared/Vector2D";
-import type { damageType, IAtack } from "../../IAtack";
+import type { damageType, IAtack } from "../../Items/IAtack";
 import ObjectElement from "../../ObjectElement";
 import type { objectTypeId } from "../../objectType.type";
 

@@ -1,7 +1,7 @@
 //* import type World from "../../../World";
 import Vector2D from "../../../shared/Vector2D";
 import Entity from "../Entity";
-import Atributes from "../Atributes";
+import Attributes from "../Attributes";
 import type IXPTable from "../IXPTable";
 import { logger } from "../../../../adapters/web/shared/Logger";
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
@@ -21,11 +21,11 @@ export default class Player extends Entity {
   constructor (
     id: number,
     coordinates : { x: number, y :number },
-    atributes :Atributes,
+    attributes :Attributes,
     state: playerStates = 'idle'
   ){
     const size = { width: 16, height: 16 }; //? jogador (16x16)
-    super(id, coordinates, size, 'player', state, atributes);
+    super(id, coordinates, size, 'player', state, attributes);
     
     this.hitboxes = [
       new HitBoxCircle(
@@ -42,13 +42,11 @@ export default class Player extends Entity {
     ];
   }
 
-  //* world: World
   public override move( deltaTime: number): void {
     this.state = 'walking';
     this.movementSinceLastUpdate = true;
-    const displacement = this.atributes.speed * deltaTime
+    const displacement = this.attributes.speed * deltaTime
 
-    // Define a direção e magnitude da velocidade, mas sem o deltaTime.
     this.velocity = this.direction
       .normalize()
       .multiply(displacement)
@@ -68,25 +66,20 @@ export default class Player extends Entity {
   }
 
   protected override updatePosition() {
-      this.coordinates.x += this.velocity.x;
-      this.coordinates.y += this.velocity.y;
+    this.coordinates.x += this.velocity.x;
+    this.coordinates.y += this.velocity.y;
 
-      // Atualiza a posição de todas as hitboxes associadas
-      this.hitboxes?.forEach(hb => hb.update(
-        { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }, this.rotation
-      ));
+    this.hitboxes?.forEach(hb => hb.update(
+      { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }, this.rotation
+    ));
 
-      gameEvents.dispatch("playerMoved", { x: this.coordinates.x, y: this.coordinates.y })
-      logger.log("domain", "(Entity) player moved");
-    }
+    gameEvents.dispatch("playerMoved", { x: this.coordinates.x, y: this.coordinates.y })
+    logger.log("domain", "(Entity) player moved");
+  }
 
-  /**
-   * Adiciona experiência ao jogador.
-   * @param xpAmount A quantidade de experiência a ser adicionada.
-   * @param xpTable A tabela de progressão de XP.
-   */
+  /** * Adiciona experiência ao jogador. * @param xpAmount A quantidade de experiência a ser adicionada. * @param xpTable A tabela de progressão de XP. */
   public gainXp(xpAmount: number, xpTable: IXPTable): void {
-    this.atributes.addXp(xpAmount, xpTable);
+    this.attributes.addXp(xpAmount, xpTable);
   }
 
   /** Retorna o estado atual do jogador. */

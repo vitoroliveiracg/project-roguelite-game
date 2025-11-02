@@ -1,7 +1,7 @@
 import type { objectTypeId } from "../../objectType.type";
 import Entity from "../Entity";
-import Atributes from "../Atributes";
-import type { IAtack } from "../../IAtack";
+import Attributes from "../Attributes";
+import type { IAtack } from "../../Items/IAtack";
 
 export default abstract class Enemy extends Entity {
     
@@ -11,14 +11,14 @@ export default abstract class Enemy extends Entity {
     private baseXp: number,
     coordinates : { x: number, y :number },
     objectId: objectTypeId,
-    atributes: { strength: number, dexterity: number, inteligence: number, wisdown: number, charisma: number, constitution: number },
+    attributes: { strength: number, dexterity: number, inteligence: number, wisdown: number, charisma: number, constitution: number },
     state: any  
   ){
     const size = { width: 16, height: 16 };
     const hpDiceFaces = 8;
-    const enemyAtributes = new Atributes(hpDiceFaces, level, atributes.strength, atributes.constitution, atributes.dexterity, atributes.inteligence, atributes.wisdown, atributes.charisma);
+    const enemyAttributes = new Attributes(hpDiceFaces, level, attributes.strength, attributes.constitution, attributes.dexterity, attributes.inteligence, attributes.wisdown, attributes.charisma);
 
-    super(id, coordinates, size, objectId, state, enemyAtributes);
+    super(id, coordinates, size, objectId, state, enemyAttributes);
 
   }
 

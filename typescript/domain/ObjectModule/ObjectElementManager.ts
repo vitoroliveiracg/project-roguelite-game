@@ -5,9 +5,10 @@ import Slime from "./Entities/Enemies/Slime";
 import Entity from "./Entities/Entity";
 import CircleForm from "./Entities/geometryForms/circleForm";
 import ObjectElement from "./ObjectElement";
-import Quadtree from "../shared/QuadTree"; // <-- 1. Importar a nova classe
+import Quadtree from "../shared/QuadTree";
 import { gameEvents } from "../eventDispacher/eventDispacher";
 import { logger } from "../../adapters/web/shared/Logger";
+import Attributes from "./Entities/Attributes";
 
 /** * @class ObjectElementManager * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis). * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar * grupos de entidades, permitindo que a `DomainFacade` delegue essa * responsabilidade e permaneça focada na orquestração de alto nível. */
 export default class ObjectElementManager {
@@ -48,7 +49,7 @@ export default class ObjectElementManager {
         50,
         { x, y },
         "slime", 
-        { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
+        new Attributes( 8, 1, 12, 8, 5, 5, 2, 15)
       ));
     }
   }
@@ -148,7 +149,7 @@ export default class ObjectElementManager {
               hitboxA.onColision(elementB);
               hitboxB.onColision(elementA);
               
-              console.log("hitbox", `object ${elementA} colided ${elementB}`)
+              logger.log("hitbox", `Collision detected between ${elementA.objectId} (ID: ${elementA.id}) and ${elementB.objectId} (ID: ${elementB.id})`);
               processedPairs.add(pairKey);
               break;
             }

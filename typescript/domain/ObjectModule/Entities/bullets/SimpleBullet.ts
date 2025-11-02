@@ -1,6 +1,6 @@
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import Vector2D from "../../../shared/Vector2D";
-import type { damageType } from "../../IAtack";
+import type { damageType } from "../../Items/IAtack";
 import type ObjectElement from "../../ObjectElement";
 import Enemy from "../Enemies/Enemy";
 import Bullet, { type bulletStates } from "./Bullet";

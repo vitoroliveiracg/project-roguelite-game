@@ -3,9 +3,9 @@ import Vector2D from "../../shared/Vector2D";
 
 import { logger } from "../../../adapters/web/shared/Logger";
 import type { objectTypeId } from "../objectType.type";
-import type Atributes from "./Atributes";
+import type Attributes from "./Attributes";
 import type { HitBox } from "../../hitBox/HitBox";
-import type { IAtack } from "../IAtack";
+import type { IAtack } from "../Items/IAtack";
 
 export default abstract class Entity extends ObjectElement {
   public velocity: Vector2D = new Vector2D(0, 0);
@@ -18,7 +18,7 @@ export default abstract class Entity extends ObjectElement {
     size: { width: number; height: number; },
     objectId: objectTypeId,
     state :any,
-    public atributes :Atributes,
+    public attributes :Attributes,
     protected accelator:Vector2D = new Vector2D(0,0),
     protected hurtLaunchFactor:number = 2
   ){ 
@@ -58,11 +58,11 @@ export default abstract class Entity extends ObjectElement {
    */
   public takeDamage(atack:IAtack): boolean {
     
-    console.log(this.atributes.hp)
-    const atackPercentage = (atack.totalDamage / this.atributes.hp) * this.hurtLaunchFactor
-    this.atributes.hp = -atack.totalDamage;
+    //! Nunca usa console.log no domínio. console.log(this.attributes.hp)
+    const atackPercentage = (atack.totalDamage / this.attributes.hp) * this.hurtLaunchFactor
+    this.attributes.hp = -atack.totalDamage;
     
-    if (this.atributes.hp <= 0) {
+    if (this.attributes.hp <= 0) {
       this.state = 'dead'; // Muda o estado para 'morto'
       super.destroy()
       return true;

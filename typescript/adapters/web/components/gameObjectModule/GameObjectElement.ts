@@ -55,6 +55,21 @@ export default class GameObjectElement implements IRenderable {
     this.image = newImage;
   }
 
+  /**
+   * Estratégia padrão para encontrar a configuração de sprite e a imagem em cache.
+   * @param params Os parâmetros de construção do objeto.
+   * @param fallbackState O estado a ser usado como padrão se nenhum for fornecido (ex: 'idle', 'travelling').
+   * @returns A configuração de sprite e a imagem correspondente.
+   */
+  protected static spritesStrategy({ initialState, configs, imageCache }: GameObjectConstructorParams, fallbackState: string): { config: SpriteConfig, image: HTMLImageElement } {
+    const configKey = `${initialState.entityTypeId}-${initialState.state || fallbackState}`;
+    const config = configs.get(configKey);
+    if (!config) throw new Error(`Configuration not found for key: ${configKey}`);
+    const image = imageCache.get(config.imageSrc);
+    if (!image) throw new Error(`Image not found in cache for src: ${config.imageSrc}`);
+    return { config, image };
+  }
+
   protected updateAnimation(): void {
     if (!this.config) return; // Só anima se houver config de sprite
     this.frameCounter++;

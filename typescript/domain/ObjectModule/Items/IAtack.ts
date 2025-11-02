@@ -1,4 +1,4 @@
-import type Vector2D from "../shared/Vector2D";
+import type Vector2D from "../../shared/Vector2D";
 
 export type damageType = 'phisical' | 'magical'
 

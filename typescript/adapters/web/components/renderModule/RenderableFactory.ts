@@ -1,14 +1,14 @@
 /** @file Contém a `RenderableFactory`, responsável por criar objetos visuais (`IRenderable`) a partir do estado do domínio. */
 import { logger } from "../../shared/Logger";
 import type { EntityRenderableState } from "../../../../domain/ports/domain-contracts";
-import Enemy, { type EnemyConstructorParams } from "../gameObjectModule/Enemy";
+import Enemy, { type EnemyConstructorParams } from "../gameObjectModule/Enemies/Enemy";
 import Player from "../gameObjectModule/playerModule/Player";
 import type IRenderable from "../renderModule/IRenderable";
 import type { SpriteConfig } from "../gameObjectModule/GameObjectElement";
 import type GameObjectElement from "../gameObjectModule/GameObjectElement";
 import Bullet from "../gameObjectModule/bullets/Bullet";
 import CircleForm from "../gameObjectModule/geometryForms/CircleForm";
-import Slime from "../gameObjectModule/Slime";
+import Slime from "../gameObjectModule/Enemies/Slime";
 
 /** @class RenderableFactory Utiliza o padrão Factory para desacoplar o `GameAdapter` da criação de objetos visuais concretos. Ele mapeia o estado do domínio (ex: `entityTypeId`, `state`) para a instância `IRenderable` apropriada (ex: `Sprite`). */
 export class RenderableFactory {

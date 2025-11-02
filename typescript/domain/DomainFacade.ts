@@ -5,7 +5,7 @@ import type { IGameDomain, RenderableState, WorldState } from "./ports/domain-co
 import Player from "./ObjectModule/Entities/Player/Player";
 import ObjectElementManager from "./ObjectModule/ObjectElementManager";
 import World from "./World";
-import Atributes from "./ObjectModule/Entities/Atributes";
+import Attributes from "./ObjectModule/Entities/Attributes";
 import type { action } from "./eventDispacher/actions.type";
 import ActionManager from "./eventDispacher/ActionManager"; "./eventDispacher/ActionManager";
 
@@ -52,7 +52,7 @@ export default class DomainFacade implements IGameDomain {
     this.player = new Player(
       this.config.player.id,
       this.config.player.initialPos,
-      new Atributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10)
+      new Attributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10)
     );
     this.actionManager = new ActionManager(this.player)
     this.logger.log('domain', 'Player entity created:', this.player);

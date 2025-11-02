@@ -5,7 +5,7 @@ import type { objectTypeId } from "../../objectType.type";
 import Enemy from "./Enemy";
 import ObjectElement from "../../ObjectElement";
 import Bullet from "../bullets/Bullet";
-import Vector2D from "../../../shared/Vector2D";
+import Attribute from "../Attributes";
 
 export default class Slime extends Enemy {
   
@@ -18,9 +18,9 @@ export default class Slime extends Enemy {
     baseXp: number,
     coordinates :{ x:number, y:number },
     objectId :objectTypeId = "slime",
-    atributes: { strength: number, dexterity: number, inteligence: number, wisdown: number, charisma: number, constitution: number }
+    attributes: Attribute
   ){ 
-    super(id, level, baseXp, coordinates, objectId, atributes, "waiting") 
+    super(id, level, baseXp, coordinates, objectId, attributes, "waiting") 
     
     this.hitboxes = [
       new HitBoxCircle(
@@ -37,8 +37,8 @@ export default class Slime extends Enemy {
         8
     )];
     
-    this.atributes.hp = (Dice.rollDice(8) * level ) + this.atributes.constitution
-    this.atributes.speed = -60
+    this.attributes.hp = (Dice.rollDice(8) * level ) + this.attributes.constitution
+    this.attributes.speed = -60
     
       
     this.setEvents();
@@ -58,7 +58,7 @@ export default class Slime extends Enemy {
 
   public override move(deltaTime: number) {
     this.state = 'walking';
-    const displacement = this.atributes.speed * deltaTime
+    const displacement = this.attributes.speed * deltaTime
 
     // Define a direção e magnitude da velocidade, mas sem o deltaTime.
     this.velocity = this.direction
