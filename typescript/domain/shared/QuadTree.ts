@@ -105,25 +105,25 @@ export default class Quadtree {
    * @param object O objeto (ou área) para o qual se deseja encontrar colisões potenciais.
    * @returns Um array de `ObjectElement`s.
    */
-  public retrieve(object: ObjectElement): ObjectElement[] {
+  public retrieve(area: { coordinates: {x: number, y: number}, size: {width: number, height: number}} | IRectangle): ObjectElement[] {
     let found: ObjectElement[] = [];
 
     // Se a área de busca não intercepta este quadrante, não há o que fazer.
-    if (!this.intersects(object)) {
+    if (!this.intersects(area)) {
       return found;
     }
 
     // Se o nó está dividido, busca recursivamente nos filhos.
     if (this.divided) {
-      found = found.concat(this.northwest!.retrieve(object));
-      found = found.concat(this.northeast!.retrieve(object));
-      found = found.concat(this.southwest!.retrieve(object));
-      found = found.concat(this.southeast!.retrieve(object));
+      found = found.concat(this.northwest!.retrieve(area));
+      found = found.concat(this.northeast!.retrieve(area));
+      found = found.concat(this.southwest!.retrieve(area));
+      found = found.concat(this.southeast!.retrieve(area));
     }
 
     // Adiciona os objetos deste nó (e de todos os filhos relevantes) à lista.
     // O filtro evita que um objeto seja comparado consigo mesmo.
-    found.push(...this.objects.filter(obj => obj.id !== object.id));
+    found.push(...this.objects);
 
     return found;
   }
@@ -132,13 +132,22 @@ export default class Quadtree {
    * Verifica se a caixa delimitadora de um objeto se sobrepõe aos limites deste nó.
    * @param object O objeto a ser verificado.
    */
-  private intersects(object: ObjectElement): boolean {
-    const objBounds = {
-      x: object.coordinates.x,
-      y: object.coordinates.y,
-      width: object.size.width,
-      height: object.size.height,
-    };
+  private intersects(area: { coordinates: {x: number, y: number}, size: {width: number, height: number}} | IRectangle): boolean {
+    let objBounds: IRectangle;
+
+    if ('coordinates' in area) { // É um ObjectElement-like
+      objBounds = {
+        x: area.coordinates.x,
+        y: area.coordinates.y,
+        width: area.size.width,
+        height: area.size.height,
+      };
+    } else { // É um IRectangle-like
+      objBounds = {
+        x: area.x, y: area.y, width: area.width, height: area.height
+      };
+    }
+    
 
     const boundary = this.boundary;
 

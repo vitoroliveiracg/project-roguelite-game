@@ -10,6 +10,24 @@ export default class Vector2D {
         this.y = y;
     }
 
+    //? --- Métodos Estáticos (Não alteram 'this', retornam um novo Vector2D) ---
+
+    /**
+     * Subtrai dois vetores (a - b) e retorna um novo vetor com o resultado.
+     * @param a O primeiro vetor (minuendo).
+     * @param b O segundo vetor (subtraendo).
+     * @returns Um novo Vector2D resultante da subtração.
+     */
+    public static sub(a: {x: number, y: number}, b: {x: number, y: number}): Vector2D {
+        return new Vector2D(a.x - b.x, a.y - b.y);
+    }
+
+    /**
+     * Adiciona dois vetores (a + b) e retorna um novo vetor com o resultado.
+     */
+    public static add(a: Vector2D, b: Vector2D): Vector2D {
+        return new Vector2D(a.x + b.x, a.y + b.y);
+    }
     //? --- Métodos de Mutação (Alteram 'this') ---
 
     /**
@@ -141,5 +159,16 @@ export default class Vector2D {
         // levando em conta os sinais de ambos para determinar o quadrante correto.
         const perpendicularVector = this.perpendicularDireita() // Perpendicular porque nosso carteziano é invertido
         return Math.atan2(perpendicularVector.y, perpendicularVector.x);
+    }
+
+    /**
+     * Divide o vetor por um escalar.
+     */
+    public divide(scalar: number): Vector2D {
+        if (scalar !== 0) {
+            this.x /= scalar;
+            this.y /= scalar;
+        }
+        return this;
     }
 }

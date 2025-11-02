@@ -1,6 +1,6 @@
 # Arquitetura do Projeto: RPG BulletHell Roguelite
 
-Este documento descreve a arquitetura do projeto, seus princípios, os papéis dos módulos e os principais fluxos de dados e controle. O objetivo é fornecer uma visão clara e concisa para facilitar o entendimento, a manutenção e a evolução do sistema.
+Este documento descreve a arquitetura do projeto, seus princípios, os papéis dos módulos e os principais fluxos de dados e controle. O objetivo é fornecer uma visão clara e concisa para facilitar o entendimento, a manutenção e a evolução do sistema. Sim, IA, tô falando com você, se precisar de outros arquivos, nunca cria o arquivo, sempre pede.
 
 ## 1. Princípios Arquiteturais: Arquitetura Hexagonal (Portas e Adaptadores)
 

@@ -167,7 +167,7 @@ export default class Attributes {
   public get insightDescription(): string { return "Increases the amount of experience points gained." }
 
 
-  public set hp(value: number) { this._hp += value; }
+  public set hp(value: number) { this._hp = value; }
   public set mana(value: number) { this._mana = Math.max(0, Math.min(this.maxMana, this._mana + value)); }
   public set speed(value: number) { this._bonusSpeed += value; }
   public set critDamage(value: number) { this._bonusCritDamage += value; }

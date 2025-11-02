@@ -2,6 +2,7 @@
 import type { EntityRenderableState } from "../ports/domain-contracts";
 import Bullet from "./Entities/bullets/Bullet";
 import Slime from "./Entities/Enemies/Slime";
+import type Player from "./Entities/Player/Player";
 import Entity from "./Entities/Entity";
 import CircleForm from "./Entities/geometryForms/circleForm";
 import ObjectElement from "./ObjectElement";
@@ -20,10 +21,15 @@ export default class ObjectElementManager {
   private collisionTree!: Quadtree;
   /** @private Armazena os limites do mundo para recriar a Quadtree. */
   private worldBounds: { x: number, y: number, width: number, height: number } = { x: 0, y: 0, width: 0, height: 0 };
+  /** @private Rastreia os pares de entidades que colidiram recentemente para evitar chamadas repetidas. A chave é uma string como 'id1-id2' e o valor é o timestamp de quando o cooldown expira. */
+  private collisionCooldowns: Map<string, number> = new Map();
+  
+  /** @private O tempo em milissegundos que uma colisão entre um par de entidades deve ser ignorada antes de ser processada novamente. */
+  private readonly COLLISION_COOLDOWN_MS = 30;
 
   constructor() {
     logger.log('init', 'ObjectElementManager instantiated.');
-    this.setupEventListeners(); // Configura os listeners no construtor.
+    this.setupEventListeners();
   }
 
   
@@ -64,6 +70,14 @@ export default class ObjectElementManager {
     gameEvents.on('despawn', payload => {
       this.removeByID(payload.objectId);
     });
+
+    gameEvents.on('requestNeighbors', (payload) => {
+
+      const queryBounds = { x: payload.requester.coordinates.x - payload.radius, y: payload.requester.coordinates.y - payload.radius, width: payload.radius * 2, height: payload.radius * 2 };
+      const neighbors = this.collisionTree.retrieve(queryBounds);
+      
+      payload.callback(neighbors);
+    });
   }
   /** Define os limites do mundo, essenciais para a inicialização da Quadtree. */
   public setWorldBounds(width: number, height: number): void {
@@ -72,21 +86,20 @@ export default class ObjectElementManager {
   }
 
   /** * Executa o método `update` de todas as entidades gerenciadas. * @param deltaTime O tempo decorrido desde o último frame. */
-  public updateAll(deltaTime: number): void {
+  public updateAll(deltaTime: number, player: Player): void {
+    // Primeiro, reconstruímos a árvore com as posições do frame anterior.
+    const allElements = [player, ...this.elements.values()];
+    this.rebuildCollisionTree(allElements);
+
+    // Em seguida, atualizamos cada elemento. Durante seu update, ele pode pedir vizinhos.
     for (const element of this.elements.values()) {
-      // Apenas entidades (Entity) possuem lógica de update.
       if (
         element instanceof Entity || element instanceof CircleForm || element instanceof Bullet) {
         element.update(deltaTime);
       }
     }
-    // A Quadtree precisa ser reconstruída a cada quadro, pois os objetos se movem.
-    this.collisionTree = new Quadtree(this.worldBounds); // Recria a árvore com os limites corretos do mundo.
-    for (const element of this.elements.values()) {
-      this.collisionTree.insert(element); // Insere todos os elementos na árvore
-    }
 
-    this.checkCollisions();
+    this.checkCollisions(allElements);
   }
   /** * Cria e adiciona uma nova entidade ao gerenciador usando uma função de fábrica. * Este método abstrai a criação de qualquer tipo de `ObjectElement`. * @param factoryFn Uma função que recebe um ID e retorna uma nova instância de `ObjectElement` (ou uma subclasse como `Enemy`, `Projectile`, etc.). * @returns A instância da entidade criada. * @template T O tipo específico da entidade a ser criada, que deve estender `ObjectElement`. */
   public spawn<T extends ObjectElement>(factoryFn: (id: number) => T): T {
@@ -107,10 +120,11 @@ export default class ObjectElementManager {
   /** * Retorna uma lista de DTOs (`EntityRenderableState`) para todas as entidades gerenciadas. * @returns Um array com o estado renderizável de cada entidade. */
   public getAllRenderableStates(): EntityRenderableState[] {
     const states: EntityRenderableState[] = [];
+    
     for (const element of this.elements.values()) {
-      // Garante que a rotação seja um número para o DTO.
       const rotation = typeof element.rotation === 'number' ? element.rotation : 0;
       const hitboxes = element.hitboxes?.map(hb => hb.getDebugShape()) ?? [];
+
       states.push({
         id: element.id,
         entityTypeId: element.objectId,
@@ -118,16 +132,23 @@ export default class ObjectElementManager {
         size: element.size,
         state: element.state,
         rotation: rotation,
-        hitboxes: hitboxes, // Adiciona as formas das hitboxes ao DTO
+        hitboxes: hitboxes,
       });
+      
     }
     return states;
   }
 
-  private checkCollisions(): void {
-    const processedPairs = new Set<string>();
+  private rebuildCollisionTree(elements: ObjectElement[]): void {
+    this.collisionTree = new Quadtree(this.worldBounds);
+    for (const element of elements) {
+      this.collisionTree.insert(element);
+    }
+  }
 
-    for (const elementA of this.elements.values()) {
+  private checkCollisions(elements: ObjectElement[]): void {
+    const processedPairs = new Set<string>();
+    for (const elementA of elements) {
 
       if (!elementA.hitboxes || elementA.hitboxes.length === 0) continue;
 
@@ -141,6 +162,10 @@ export default class ObjectElementManager {
 
         if (processedPairs.has(pairKey)) continue; 
 
+        const now = Date.now();
+        const cooldownTimestamp = this.collisionCooldowns.get(pairKey);
+        if (cooldownTimestamp && now < cooldownTimestamp) continue;
+
         for (const hitboxA of elementA.hitboxes!) {
 
           for (const hitboxB of elementB.hitboxes!) {
@@ -150,6 +175,7 @@ export default class ObjectElementManager {
               hitboxB.onColision(elementA);
               
               logger.log("hitbox", `Collision detected between ${elementA.objectId} (ID: ${elementA.id}) and ${elementB.objectId} (ID: ${elementB.id})`);
+              this.collisionCooldowns.set(pairKey, now + this.COLLISION_COOLDOWN_MS);
               processedPairs.add(pairKey);
               break;
             }

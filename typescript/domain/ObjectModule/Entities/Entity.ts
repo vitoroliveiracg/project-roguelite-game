@@ -49,7 +49,7 @@ export default abstract class Entity extends ObjectElement {
    * Avança o estado interno da entidade. Pode ser sobrescrito por subclasses.
    * @param deltaTime O tempo em segundos decorrido desde o último frame.
   */
-  public abstract update(deltaTime: number): void
+  public abstract update(deltaTime: number): void;
 
   /**
    * Aplica dano à entidade e retorna se ela foi derrotada.
@@ -86,6 +86,18 @@ export default abstract class Entity extends ObjectElement {
     this.velocity = disperseVector
       .add(this.accelator);
     this.updatePosition();
+  }
+
+  /**
+   * Calcula a distância euclidiana do centro desta entidade até o centro de outro elemento.
+   * @param otherElement O outro elemento para o qual a distância será medida.
+   * @returns A distância como um número.
+   */
+  public getDistanceTo(otherElement: ObjectElement): number {
+    const dx = this.coordinates.x - otherElement.coordinates.x;
+    const dy = this.coordinates.y - otherElement.coordinates.y;
+    // Usa o Teorema de Pitágoras para encontrar a distância
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
 }

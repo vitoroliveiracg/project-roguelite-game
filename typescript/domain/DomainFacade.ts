@@ -40,7 +40,7 @@ export default class DomainFacade implements IGameDomain {
     this.logger.log('domain', `Update cycle started (deltaTime: ${deltaTime})`);
     
     this.player.update(deltaTime);
-    this.objectManager.updateAll(deltaTime);
+    this.objectManager.updateAll(deltaTime, this.player);
   }
 
   /** Fase de Inicialização: Cria as instâncias das entidades de domínio (`World`, `Player`) com base no contexto fornecido pelo Adapter. @param width A largura do mundo. @param height A altura do mundo. */
