@@ -9,7 +9,7 @@ import type { HitBox } from "../../hitBox/HitBox";
 export default abstract class Entity extends ObjectElement {
   public velocity: Vector2D = new Vector2D(0, 0);
   public direction: Vector2D = new Vector2D(0, 0);
-  public hitBox: HitBox|null = null
+  public hitBox :HitBox[] | null = null
 
   constructor(
     id: number,
@@ -17,7 +17,7 @@ export default abstract class Entity extends ObjectElement {
     size: { width: number; height: number; },
     objectId: objectTypeId,
     state :any,
-    public atributes :Atributes
+    public atributes :Atributes,
   ){ 
     super(size, coordinates, id, state, objectId) 
   }

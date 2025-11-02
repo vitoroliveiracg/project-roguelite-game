@@ -1,6 +1,7 @@
 export type objectTypeId = 
     |'player'
-    | 'blackEnemy' //! --debug
+    | 'slime'
+    | 'blackEnemy'
     | 'simpleBullet'
     | 'circle'
 ;

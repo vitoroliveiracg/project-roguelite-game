@@ -1,7 +1,6 @@
 import type { objectTypeId } from "../../objectType.type";
 import Entity from "../Entity";
 import Atributes from "../Atributes";
-import { gameEvents } from "../../../eventDispacher/eventDispacher";
 
 export default abstract class Enemy extends Entity {
     
@@ -12,13 +11,14 @@ export default abstract class Enemy extends Entity {
     coordinates : { x: number, y :number },
     objectId: objectTypeId,
     atributes: { strength: number, dexterity: number, inteligence: number, wisdown: number, charisma: number, constitution: number },
-    state: any
+    state: any  
   ){
     const size = { width: 16, height: 16 };
     const hpDiceFaces = 8;
     const enemyAtributes = new Atributes(hpDiceFaces, level, atributes.strength, atributes.constitution, atributes.dexterity, atributes.inteligence, atributes.wisdown, atributes.charisma);
 
     super(id, coordinates, size, objectId, state, enemyAtributes);
+
   }
 
   /**
@@ -33,7 +33,7 @@ export default abstract class Enemy extends Entity {
   public override takeDamage(damageAmount: number, killerId: number): boolean {
     const wasDefeated = super.takeDamage(damageAmount, killerId);
     if (wasDefeated) {
-      gameEvents.dispatch('enemyDied', { xpGiven: this.xpGiven, killerId: killerId });
+      //! Lógica mudada gameEvents.dispatch('enemyDied', { xpGiven: this.xpGiven, killerId: killerId });
     }
     return wasDefeated;
   }

@@ -1,13 +1,12 @@
 /** @file Contém a classe ObjectElementManager, responsável por gerenciar o ciclo de vida (criação, atualização, remoção) de uma coleção de entidades de domínio. */
 import type { EntityRenderableState } from "../ports/domain-contracts";
 import Bullet from "./Entities/bullets/Bullet";
-import BlackEnemy from "./Entities/Enemies/BlackEnemy";
+import Slime from "./Entities/Enemies/Slime";
 import Entity from "./Entities/Entity";
 import CircleForm from "./Entities/geometryForms/circleForm";
 import ObjectElement from "./ObjectElement";
 import Quadtree from "../shared/QuadTree"; // <-- 1. Importar a nova classe
 import { gameEvents } from "../eventDispacher/eventDispacher";
-import { SimpleBullet } from "./Entities/bullets/SimpleBullet";
 import { logger } from "../../adapters/web/shared/Logger";
 
 /** * @class ObjectElementManager * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis). * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar * grupos de entidades, permitindo que a `DomainFacade` delegue essa * responsabilidade e permaneça focada na orquestração de alto nível. */
@@ -43,27 +42,32 @@ export default class ObjectElementManager {
       const x = startPos.x + col * spacing;
       const y = startPos.y + row * spacing;
 
-      this.spawn(id => new BlackEnemy(
+      this.spawn(id => new Slime(
         id,
         1,
-        50, // XP base que o BlackEnemy concede
+        50,
         { x, y },
-        "blackEnemy", 
+        "slime", 
         { strength: 12, dexterity: 8, inteligence: 5, wisdown: 5, charisma: 2, constitution: 15 }
       ));
     }
   }
+  /** Configura os listeners para eventos de domínio que afetam os objetos gerenciados. */
+  private setupEventListeners(): void {
 
-  /** * Cria e adiciona uma nova entidade ao gerenciador usando uma função de fábrica. * Este método abstrai a criação de qualquer tipo de `ObjectElement`. * @param factoryFn Uma função que recebe um ID e retorna uma nova instância de `ObjectElement` (ou uma subclasse como `Enemy`, `Projectile`, etc.). * @returns A instância da entidade criada. * @template T O tipo específico da entidade a ser criada, que deve estender `ObjectElement`. */
-  public spawn<T extends ObjectElement>(factoryFn: (id: number) => T): T {
-    const newId = this.nextId++;
-    const newElement = factoryFn(newId);
-    if (!(newElement instanceof ObjectElement)) {
-      throw new Error("A fábrica deve retornar uma instância de ObjectElement.");
-    }
-    this.elements.set(newId, newElement);
+    gameEvents.on('spawn', (payload) => {
+      const newElement = this.spawn(payload.factory);
+      payload.onSpawned?.(newElement);
+    });
     
-    return newElement;
+    gameEvents.on('despawn', payload => {
+      this.removeByID(payload.objectId);
+    });
+  }
+  /** Define os limites do mundo, essenciais para a inicialização da Quadtree. */
+  public setWorldBounds(width: number, height: number): void {
+    this.worldBounds = { x: 0, y: 0, width, height };
+    this.collisionTree = new Quadtree(this.worldBounds);
   }
 
   /** * Executa o método `update` de todas as entidades gerenciadas. * @param deltaTime O tempo decorrido desde o último frame. */
@@ -83,8 +87,21 @@ export default class ObjectElementManager {
 
     this.checkCollisions();
   }
-
-  //? ----------- Getters and Setters -----------
+  /** * Cria e adiciona uma nova entidade ao gerenciador usando uma função de fábrica. * Este método abstrai a criação de qualquer tipo de `ObjectElement`. * @param factoryFn Uma função que recebe um ID e retorna uma nova instância de `ObjectElement` (ou uma subclasse como `Enemy`, `Projectile`, etc.). * @returns A instância da entidade criada. * @template T O tipo específico da entidade a ser criada, que deve estender `ObjectElement`. */
+  public spawn<T extends ObjectElement>(factoryFn: (id: number) => T): T {
+    const newId = this.nextId++;
+    const newElement = factoryFn(newId);
+    if (!(newElement instanceof ObjectElement)) {
+      throw new Error("A fábrica deve retornar uma instância de ObjectElement.");
+    }
+    this.elements.set(newId, newElement);
+    
+    return newElement;
+  }
+  /** * Remove um elemento do mapa com base no ID fornecido. @param id O número (key) do elemento a ser removido. @returns Retorna true se o elemento existia e foi removido, ou false caso contrário. */
+  public removeByID(id: number): boolean {
+    return this.elements.delete(id);
+  }
 
   /** * Retorna uma lista de DTOs (`EntityRenderableState`) para todas as entidades gerenciadas. * @returns Um array com o estado renderizável de cada entidade. */
   public getAllRenderableStates(): EntityRenderableState[] {
@@ -104,15 +121,6 @@ export default class ObjectElementManager {
       });
     }
     return states;
-  }
-  /** * Remove um elemento do mapa com base no ID fornecido. @param id O número (key) do elemento a ser removido. @returns Retorna true se o elemento existia e foi removido, ou false caso contrário. */
-  public removeByID(id: number): boolean {
-    return this.elements.delete(id);
-  }
-  /** Define os limites do mundo, essenciais para a inicialização da Quadtree. */
-  public setWorldBounds(width: number, height: number): void {
-    this.worldBounds = { x: 0, y: 0, width, height };
-    this.collisionTree = new Quadtree(this.worldBounds);
   }
 
   private checkCollisions(): void {
@@ -137,8 +145,8 @@ export default class ObjectElementManager {
           for (const hitboxB of elementB.hitboxes!) {
             
             if (hitboxA.intersects(hitboxB)) {
-              hitboxA.onColision(elementB, elementA);
-              hitboxB.onColision(elementA, elementB);
+              hitboxA.onColision(elementB);
+              hitboxB.onColision(elementA);
               
               console.log("hitbox", `object ${elementA} colided ${elementB}`)
               processedPairs.add(pairKey);
@@ -152,16 +160,5 @@ export default class ObjectElementManager {
     }
   }
 
-  /** Configura os listeners para eventos de domínio que afetam os objetos gerenciados. */
-  private setupEventListeners(): void {
-
-    gameEvents.on('spawn', (payload) => {
-      const newElement = this.spawn(payload.factory);
-      payload.onSpawned?.(newElement);
-    });
-    
-    gameEvents.on('despawn', payload => {
-      this.removeByID(payload.objectId);
-    });
-  }
+  
 }

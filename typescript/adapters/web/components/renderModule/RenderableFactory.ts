@@ -2,13 +2,13 @@
 import { logger } from "../../shared/Logger";
 import type { EntityRenderableState } from "../../../../domain/ports/domain-contracts";
 import Enemy, { type EnemyConstructorParams } from "../gameObjectModule/Enemy";
-import BlackEnemy from "../gameObjectModule/BlackEnemy";
 import Player from "../gameObjectModule/playerModule/Player";
 import type IRenderable from "../renderModule/IRenderable";
 import type { SpriteConfig } from "../gameObjectModule/GameObjectElement";
 import type GameObjectElement from "../gameObjectModule/GameObjectElement";
-import Bullet from "../gameObjectModule/bullets/bullet";
+import Bullet from "../gameObjectModule/bullets/Bullet";
 import CircleForm from "../gameObjectModule/geometryForms/CircleForm";
+import Slime from "../gameObjectModule/Slime";
 
 /** @class RenderableFactory Utiliza o padrão Factory para desacoplar o `GameAdapter` da criação de objetos visuais concretos. Ele mapeia o estado do domínio (ex: `entityTypeId`, `state`) para a instância `IRenderable` apropriada (ex: `Sprite`). */
 export class RenderableFactory {
@@ -20,7 +20,7 @@ export class RenderableFactory {
   private creationStrategies: Map<string, (params: EnemyConstructorParams) => GameObjectElement> = new Map([
     ['player', (params) => new Player(params)],
     ['enimie', (params) => Enemy.createWithSprite(params)],
-    ['blackEnemy', (params) => BlackEnemy.createWithSprite(params)],
+    ['slime', (params) => Slime.createWithSprite(params)],
     ['simpleBullet', (params)=>Bullet.createWithSprite(params)],
     ['circle', (params)=> new CircleForm(params)]
   ]);
@@ -52,7 +52,7 @@ export class RenderableFactory {
   private spriteConfigs: Map<string, SpriteConfig> = new Map([
     ['player-idle', { imageSrc: new URL('../../assets/entities/player/player-idle.png', import.meta.url).href, frameCount: 2, animationSpeed: 20, frameWidth: 32, frameHeight: 32, }],
     ['player-walking', { imageSrc: new URL('../../assets/entities/player/player-idle.png', import.meta.url).href, frameCount: 2, animationSpeed: 20, frameWidth: 32, frameHeight: 32, }],
-    ['blackEnemy-waiting', { imageSrc: new URL('../../assets/entities/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, }],
+    ['slime-waiting', { imageSrc: new URL('../../assets/entities/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, }],
     ['simpleBullet-travelling', { imageSrc: new URL('../../assets/entities/simple-bullet.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, }],
   ]);
 

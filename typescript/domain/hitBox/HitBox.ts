@@ -17,7 +17,7 @@ export abstract class HitBox {
     constructor(
         public coordinates:  {x:number, y:number}, 
         public rotation:number = 0,
-        public onColision: (otherElement: ObjectElement, selfElement: ObjectElement) => void
+        public onColision: (otherElement: ObjectElement) => void
     ){}
 
     /**

@@ -9,7 +9,7 @@ import Camera from "./cameraModule/Camera";
 import Canvas from "./canvasModule/Canvas";
 import GameMap from "./mapModule/Map";
 import Renderer from "./renderModule/Renderer";
-import { InputManager, type GameAction } from "./keyboardModule/InputManager";
+import { InputManager } from "./keyboardModule/InputManager";
 
 import type IRenderable from "./renderModule/IRenderable";
 import { RenderableFactory } from "./renderModule/RenderableFactory";

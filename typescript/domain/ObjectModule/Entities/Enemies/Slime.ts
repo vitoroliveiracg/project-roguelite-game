@@ -7,11 +7,10 @@ import type { objectTypeId } from "../../objectType.type";
 import { SimpleBullet } from "../bullets/SimpleBullet";
 import Enemy from "./Enemy";
 
-export default class BlackEnemy extends Enemy {
+export default class Slime extends Enemy {
   
   private lastPlayerPos: {x: number; y: number} = {x:0,y:0}
   private accelator:Vector2D = new Vector2D(0,0)
-  private movementSinceLastUpdate: boolean = false;
 
   //? ----------- Constructor -----------
   constructor(
@@ -19,39 +18,43 @@ export default class BlackEnemy extends Enemy {
     level :number,
     baseXp: number,
     coordinates :{ x:number, y:number },
-    objectId :objectTypeId = "blackEnemy",
+    objectId :objectTypeId = "slime",
     atributes: { strength: number, dexterity: number, inteligence: number, wisdown: number, charisma: number, constitution: number }
   ){ 
     super(id, level, baseXp, coordinates, objectId, atributes, "waiting") 
     
-    this.atributes.hp = (Dice.rollDice(8) * level ) + this.atributes.constitution
-    this.atributes.speed = -60
-
     this.hitboxes = [
       new HitBoxCircle(
-        { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
-        0, // rotation
-        (otherElement: ObjectElement, selfElement: ObjectElement) => {
+        { x: this.coordinates.x + super.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
+        0,
+        (otherElement: ObjectElement) => {
           if (otherElement instanceof SimpleBullet) {
             this.takeDamage(otherElement.damage, otherElement.id);
           }
         },
-        8 // radius
-      )];
-
+        8
+    )];
+    
+    this.atributes.hp = (Dice.rollDice(8) * level ) + this.atributes.constitution
+    this.atributes.speed = -60
+    
+      
     this.setEvents();
   }
 
   //? ----------- Methods -----------
 
+  public update(deltaTime: number): void {
+    this.move(deltaTime);
+  }
 
   private setEvents() {
     gameEvents.on("playerMoved", this.onLastPlayerPos.bind(this) )
   }
 
+
   public override move(deltaTime: number) {
     this.state = 'walking';
-    this.movementSinceLastUpdate = true;
     const displacement = this.atributes.speed * deltaTime
 
     // Define a direção e magnitude da velocidade, mas sem o deltaTime.
@@ -61,10 +64,6 @@ export default class BlackEnemy extends Enemy {
       .add(this.accelator);
     
     super.updatePosition();
-  }
-
-  public update(deltaTime: number): void {
-    this.move(deltaTime);
   }
 
   public onLastPlayerPos( playerCoordinates: {x: number; y: number} ) {
@@ -79,7 +78,5 @@ export default class BlackEnemy extends Enemy {
       { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }, this.rotation
     ));
   }
-
-  //? ----------- Getters and Setters -----------
 
 }

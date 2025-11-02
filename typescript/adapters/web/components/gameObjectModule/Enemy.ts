@@ -6,10 +6,7 @@ export type EnemyConstructorParams = GameObjectConstructorParams;
 
 /** @class Enemy Herda de `GameObjectElement` e usa sua funcionalidade padrão de sprite. */
 export default class Enemy extends GameObjectElement {
-  /**
-   * O construtor é protegido para permitir que subclasses (como BlackEnemy) o chamem
-   * com parâmetros diferentes, enquanto a criação normal ainda é feita via factory.
-   */
+
   protected constructor(initialState: EnemyConstructorParams['initialState'], config: SpriteConfig | undefined, image: HTMLImageElement) {
     super(initialState, config, image);
   }
