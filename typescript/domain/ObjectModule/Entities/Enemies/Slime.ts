@@ -18,8 +18,8 @@ export default class Slime extends Enemy {
     level :number,
     baseXp: number,
     coordinates :{ x:number, y:number },
+    attributes: Attribute,
     objectId :objectTypeId = "slime",
-    attributes: Attribute
   ){ 
     super(id, level, baseXp, coordinates, objectId, attributes, "waiting") 
     

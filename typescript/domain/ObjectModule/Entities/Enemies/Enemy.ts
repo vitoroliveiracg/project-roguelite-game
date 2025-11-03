@@ -11,14 +11,11 @@ export default abstract class Enemy extends Entity {
     private baseXp: number,
     coordinates : { x: number, y :number },
     objectId: objectTypeId,
-    attributes: { strength: number, dexterity: number, inteligence: number, wisdown: number, charisma: number, constitution: number },
+    attributes: Attributes,
     state: any  
   ){
     const size = { width: 16, height: 16 };
-    const hpDiceFaces = 8;
-    const enemyAttributes = new Attributes(hpDiceFaces, level, attributes.strength, attributes.constitution, attributes.dexterity, attributes.inteligence, attributes.wisdown, attributes.charisma);
-
-    super(id, coordinates, size, objectId, state, enemyAttributes);
+    super(id, coordinates, size, objectId, state, attributes);
 
   }
 

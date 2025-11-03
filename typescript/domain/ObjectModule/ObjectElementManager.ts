@@ -42,7 +42,8 @@ export default class ObjectElementManager {
     const spacing = 24;  // Espaço entre inimigos. Raio da hitbox é 8, diâmetro é 16. 24px garante que não colidam.
     const startPos = { x: 200, y: 200 };
 
-    for (let i = 0; i < enemyCount; i++) {
+   setInterval(()=>{
+     for (let i = 0; i < enemyCount; i++) {
       const col = i % gridCols;
       const row = Math.floor(i / gridCols);
 
@@ -51,13 +52,14 @@ export default class ObjectElementManager {
 
       this.spawn(id => new Slime(
         id,
-        1,
+        50,
         50,
         { x, y },
-        "slime", 
         new Attributes( 8, 1, 12, 8, 5, 5, 2, 15)
       ));
     }
+   }, 5000)
+   
   }
   /** Configura os listeners para eventos de domínio que afetam os objetos gerenciados. */
   private setupEventListeners(): void {

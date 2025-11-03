@@ -14,7 +14,7 @@ export default class Slime extends Enemy {
   }
 
   public static override createWithSprite({ initialState, configs, imageCache }: EnemyConstructorParams): Slime {
-    const {config, image} = Enemy.spritesStrategy({ initialState, configs, imageCache }, "")
+    const {config, image} = Enemy.spritesStrategy({ initialState, configs, imageCache }, "walking")
     return new Slime(initialState, config, image );
   }
 }

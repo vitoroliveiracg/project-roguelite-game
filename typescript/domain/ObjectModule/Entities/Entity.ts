@@ -60,7 +60,7 @@ export default abstract class Entity extends ObjectElement {
     
     //! Nunca usa console.log no domínio. console.log(this.attributes.hp)
     const atackPercentage = (atack.totalDamage / this.attributes.hp) * this.hurtLaunchFactor
-    this.attributes.hp = -atack.totalDamage;
+    this.attributes.hp = atack.totalDamage;
     
     if (this.attributes.hp <= 0) {
       this.state = 'dead'; // Muda o estado para 'morto'
