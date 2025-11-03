@@ -9,6 +9,8 @@ import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import { SimpleBullet } from "../bullets/SimpleBullet";
 import type ObjectElement from "../../ObjectElement";
 import Enemy from "../Enemies/Enemy";
+import Attack from "../../Items/Attack";
+import { type DamageInfo } from "../Entity";
 
 export type playerStates = 'idle' | 'walking'
 
@@ -27,33 +29,25 @@ export default class Player extends Entity {
     const size = { width: 16, height: 16 }; //? jogador (16x16)
     super(id, coordinates, size, 'player', state, attributes);
     
-    this.hitboxes = [
-      new HitBoxCircle(
-        { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
-        0,
-        (otherElement: ObjectElement) => {
-          if (otherElement instanceof Enemy){
-            super.takeDamage(otherElement.onStrike())
-          }
-        
-        },
-        7
-      )
-    ];
+    this.hitboxes = [ ...this.setHitboxes() ];
   }
 
-  public override move( deltaTime: number): void {
-    this.state = 'walking';
-    this.movementSinceLastUpdate = true;
-    const displacement = this.attributes.speed * deltaTime
+  private setHitboxes () :HitBoxCircle[]{
 
-    this.velocity = this.direction
-      .normalize()
-      .multiply(displacement)
-      .add(this.accelator);
-    
-    this.updatePosition();
+    return [new HitBoxCircle(
+      { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
+      0,
+      7,
+      (otherElement: ObjectElement) => {
+        if (otherElement instanceof Enemy){
+          const enemyAttack = otherElement.onStrike();
+          const directionToPlayer = new Vector2D(this.coordinates.x - otherElement.coordinates.x, this.coordinates.y - otherElement.coordinates.y).normalize();
+          enemyAttack.execute(this, directionToPlayer);
+        }
+      }
+    )]
   }
+
 
   /** Avança o estado interno do jogador. Chamado a cada frame pelo DomainFacade. */
   public update(deltaTime: number): void {
@@ -63,6 +57,20 @@ export default class Player extends Entity {
     this.movementSinceLastUpdate = false;
     
     this.direction.reset()
+  }
+
+  /**
+   * Sobrescreve o método takeDamage para adicionar uma lógica específica do jogador:
+   * disparar o evento 'playerDied' quando sua vida chega a zero.
+   */
+  public override takeDamage(damageInfo: DamageInfo): number {
+    const damageDealt = super.takeDamage(damageInfo);
+
+    if (this.attributes.hp <= 0) {
+      gameEvents.dispatch('playerDied', {});
+    }
+
+    return damageDealt;
   }
 
   protected override updatePosition() {
@@ -77,15 +85,7 @@ export default class Player extends Entity {
     logger.log("domain", "(Entity) player moved");
   }
 
-  /** * Adiciona experiência ao jogador. * @param xpAmount A quantidade de experiência a ser adicionada. * @param xpTable A tabela de progressão de XP. */
-  public gainXp(xpAmount: number, xpTable: IXPTable): void {
-    this.attributes.addXp(xpAmount, xpTable);
-  }
-
-  /** Retorna o estado atual do jogador. */
-  public getState(): 'idle' | 'walking' {
-    return this.state;
-  }
+  //? ----------- Main actions -----------
 
 
   private dashToDirection( direction:Vector2D ):void {
@@ -110,16 +110,14 @@ export default class Player extends Entity {
       
       this.shooted = true
 
+      const playerAttack = new Attack(
+        this,
+        10,
+        'physical'
+      );
+
       gameEvents.dispatch('spawn', {
-        factory: (id) => new SimpleBullet(
-          id,
-          {...this.coordinates},
-          direction.normalize(),
-          10,
-          'phisical',
-          false,
-          this.id
-        )
+        factory: (id) => new SimpleBullet(id, {...this.coordinates}, direction.normalize(), playerAttack)
       });
 
       setTimeout(() => {
@@ -128,24 +126,34 @@ export default class Player extends Entity {
     }
   }
 
-  //? ----------- On input methods -----------
+  public override move( deltaTime: number): void {
+    this.state = 'walking';
+    this.movementSinceLastUpdate = true;
+    const displacement = this.attributes.speed * deltaTime
+
+    this.velocity = this.direction
+      .normalize()
+      .multiply(displacement)
+      .add(this.accelator);
+    
+    this.updatePosition();
+  }
+
+  //? ----------- On Input Handlers -----------
 
   public onUpAction (): void {
     this.direction.y -= 1
   }
-
   public onDownAction (): void {
     this.direction.y += 1
   }
-
   public onLeftAction (): void {
     this.direction.x -= 1
   }
-
   public onRightAction (): void {
     this.direction.x += 1
   }
-
+  
   public onShiftAction (): void {
     this.dashToDirection(this.direction)
   }
@@ -166,4 +174,16 @@ export default class Player extends Entity {
     
     this.dashToDirection(direction)
   }
+
+  //? ----------- Helpers -----------
+
+  /** * Adiciona experiência ao jogador. * @param xpAmount A quantidade de experiência a ser adicionada. * @param xpTable A tabela de progressão de XP. */
+  public gainXp(xpAmount: number, xpTable: IXPTable): void {
+    this.attributes.addXp(xpAmount, xpTable);
+  }
+  /** Retorna o estado atual do jogador. */
+  public getState(): 'idle' | 'walking' {
+    return this.state;
+  }
+
 }

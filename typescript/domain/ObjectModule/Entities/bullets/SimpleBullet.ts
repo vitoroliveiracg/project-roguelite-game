@@ -1,8 +1,8 @@
-import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import Vector2D from "../../../shared/Vector2D";
-import type { damageType } from "../../Items/IAtack";
+import Attack from "../../Items/Attack";
 import type ObjectElement from "../../ObjectElement";
 import Enemy from "../Enemies/Enemy";
+import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import Bullet, { type bulletStates } from "./Bullet";
 
 export class SimpleBullet extends Bullet {
@@ -14,38 +14,40 @@ export class SimpleBullet extends Bullet {
         id: number,
         coordinates: { x: number; y: number; },
         direction: Vector2D,
-        totalDamage: number,
-        damageType:damageType,
-        isCritical:boolean,
-        atackerId: number,
+        attack: Attack,
         state :bulletStates = 'travelling',
     ){
-        const size = { width: 8, height: 8 }; //? jogador (8x8)
-        super(
-            id, 
-            coordinates, 
-            size, 
-            "simpleBullet", 
-            state, 
-            atackerId,
-            totalDamage,
-            damageType,
-            isCritical
-        );
+        const size ={ width: 8, height: 8 }; //? jogador (8x8)
+        super(id, coordinates, size, "simpleBullet", state);
 
-        this.hitboxes = [
-            new HitBoxCircle(
-                { x: this.coordinates.x + size.width / 2, y: this.coordinates.y + size.height / 2 },
-                0, // rotation
-                (otherElement: ObjectElement) => {
-                    if (otherElement instanceof Enemy)
-                        super.destroy()
-                },
-                size.width / 2
-            )];
+        this.hitboxes = [...this.setHitboxes(size, attack)]
         this.direction = direction
         this.rotation = this.direction.angle()
         this.generateRandomNoiseAccelerator()
+    }
+
+    private setHitboxes(size :{ width :number, height :number }, attack :Attack ) :HitBoxCircle[]{
+        return [ new HitBoxCircle(
+            { x: this.coordinates.x + size.width / 2, y: this.coordinates.y + size.height / 2 },
+            0, //* rotation
+            size.width / 2, //* radius
+            (otherElement: ObjectElement) => {
+
+                if (otherElement instanceof Enemy && otherElement.id !== attack.attacker.id) {
+                    attack.execute(otherElement, this.direction);
+                    super.destroy()
+                }
+            }
+        )]
+    }
+
+    public update(deltaTime: number): void {
+        this.move(deltaTime)
+    }
+
+    protected override updatePosition(): void {
+        super.updatePosition();
+        this.hitboxes?.forEach(hb => hb.updatePosition({ x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }));
     }
 
     public override move(deltaTime: number): void {
@@ -63,15 +65,6 @@ export class SimpleBullet extends Bullet {
         this.rotation = this.direction.angle()
 
         this.updatePosition();
-    }
-
-    protected override updatePosition(): void {
-        super.updatePosition();
-        this.hitboxes?.forEach(hb => hb.updatePosition({ x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }));
-    }
-
-    public update(deltaTime: number): void {
-        this.move(deltaTime)
     }
 
     private generateRandomNoiseAccelerator(): void {

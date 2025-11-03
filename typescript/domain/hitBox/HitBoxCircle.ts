@@ -11,8 +11,8 @@ export class HitBoxCircle extends HitBox {
     constructor(
         coordinates: {x:number, y:number}, 
         rotation: number = 0,
-        onColision: (otherElement: ObjectElement) => void,
         private radius: number,
+        onColision: (otherElement: ObjectElement) => void,
     ) 
     {
         super( coordinates, rotation, onColision );

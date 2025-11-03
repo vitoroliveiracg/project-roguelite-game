@@ -1,5 +1,5 @@
 /** @file Contém a classe GameAdapter, o orquestrador principal da camada de Adaptação (apresentação). */
-//* import { gameEvents } from "../../../domain/eventDispacher/eventDispacher";
+import { gameEvents } from "../../../domain/eventDispacher/eventDispacher";
 import { logger } from "../shared/Logger"; 
 import type { IGameDomain } from "../../../domain/ports/domain-contracts";
 
@@ -38,6 +38,7 @@ export default class GameAdapter {
   public async initialize(){
     logger.log('init', 'GameAdapter initializing...');
     this.inputManager = new InputManager();
+    this.setupEventListeners();
     
     const canvas = new Canvas(document.body, 0, 0);
     this.setupResponsiveCanvas(canvas.element);
@@ -88,6 +89,14 @@ export default class GameAdapter {
   }
 
   //? ----------- Main Methods -----------
+
+  private isReloading :boolean = false;
+  private setupEventListeners(): void {
+    gameEvents.on('playerDied', () => {
+      logger.log('domain', 'Player has died. Reloading page...');
+      if(!this.isReloading){ location.reload(); this.isReloading = true}
+    });
+  }
   /** Fase de Update (Sincronização): Compara o estado do domínio com os objetos visuais (`IRenderable`), criando/atualizando-os para refletir o estado atual do jogo. @private @async */
   private syncRenderables(): void {
     logger.log('sync', 'Syncing renderables...');

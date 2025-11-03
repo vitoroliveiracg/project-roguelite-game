@@ -1,12 +1,11 @@
 import { logger } from "../../../../adapters/web/shared/Logger";
 import Vector2D from "../../../shared/Vector2D";
-import type { damageType, IAtack } from "../../Items/IAtack";
 import ObjectElement from "../../ObjectElement";
 import type { objectTypeId } from "../../objectType.type";
 
 export type bulletStates = 'travelling' | 'stopped' | 'lounched'
 
-export default abstract class Bullet extends ObjectElement implements IAtack {
+export default abstract class Bullet extends ObjectElement {
     protected velocity: Vector2D = new Vector2D(0, 0);
     public direction: Vector2D = new Vector2D(0, 0);
 
@@ -16,11 +15,6 @@ export default abstract class Bullet extends ObjectElement implements IAtack {
         size: { width: number; height: number; },
         objectId: objectTypeId,
         state :bulletStates,
-
-        public atackerId: number,
-        public totalDamage:number,
-        public damageType:damageType,
-        public isCritical:boolean
     ){ 
         super(size, coordinates, id, state, objectId) 
     }

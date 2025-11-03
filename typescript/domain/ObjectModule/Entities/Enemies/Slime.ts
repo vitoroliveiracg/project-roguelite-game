@@ -5,7 +5,6 @@ import Vector2D from "../../../shared/Vector2D";
 import type { objectTypeId } from "../../objectType.type";
 import Enemy from "./Enemy";
 import ObjectElement from "../../ObjectElement";
-import Bullet from "../bullets/Bullet";
 import Attribute from "../Attributes";
 
 export default class Slime extends Enemy {
@@ -50,16 +49,14 @@ export default class Slime extends Enemy {
     
     return new HitBoxCircle(
       { x: this.coordinates.x + super.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
-      0,
+      0, // rotation
+      8, // radius
       (otherElement: ObjectElement) => {
-        if (otherElement instanceof Bullet) {
-          super.takeDamage(otherElement);
-        }
-        if (otherElement instanceof Enemy ) {
+        // A única responsabilidade da hitbox do Slime é se afastar de outros inimigos para não ficarem empilhados.
+        if (otherElement instanceof Enemy && otherElement.id !== this.id) {
           super.disperseFrom(otherElement)
         }
-      },
-      8
+      }
     )
 
   }
@@ -76,7 +73,7 @@ export default class Slime extends Enemy {
     const displacement = desiredVelocity.clone().multiply(deltaTime);
     const nextPosition = { x: this.coordinates.x + displacement.x, y: this.coordinates.y + displacement.y };
 
-    const futureHitbox = new HitBoxCircle({ x: nextPosition.x + this.size.width / 2, y: nextPosition.y + this.size.height / 2 }, 0, () => {}, 8);
+    const futureHitbox = new HitBoxCircle({ x: nextPosition.x + this.size.width / 2, y: nextPosition.y + this.size.height / 2 }, 0, 8, ()=> {});
 
     let willCollide = false;
 
