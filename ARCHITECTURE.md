@@ -47,14 +47,16 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
         - **`Player.ts`**: A implementação concreta da entidade controlada pelo usuário. Sua responsabilidade é traduzir as intenções do jogador (recebidas do `ActionManager` via métodos como `onUpAction` e `onLeftClickAction`) em ações de jogo concretas. Ela gerencia o estado de movimento, dispara eventos para criar projéteis (`shootBullet`) e emite o evento `playerMoved` para que outras entidades (como a IA dos inimigos) possam reagir à sua posição.
         - **`Classes/Class.ts`**: Uma classe abstrata que define o conceito de uma "Classe de Personagem" (ex: Guerreiro, Mago). Sua principal responsabilidade é associar um nome a uma `IXPTable`, permitindo que cada classe tenha sua própria curva de progressão de experiência de forma desacoplada.
       - **`Enemies/`**: Contém a hierarquia de classes para inimigos.
-        - **`Enemy.ts`**: Classe abstrata que herda de `Entity`. Define o contrato base para todos os inimigos, estabelecendo que eles têm um `level`, concedem `xpGiven` ao serem derrotados, e possuem um ataque base (`onStrike`) que retorna um DTO `IAtack`.
-        - **`Slime.ts`**: Uma implementação concreta de `Enemy`. Demonstra uma IA simples, ouvindo o evento `playerMoved` para atualizar a direção em que deve se mover. Sua responsabilidade é definir seu próprio comportamento e reagir a colisões, delegando a lógica de dano para a classe `Entity`.
+        - **`Enemy.ts`**: Classe abstrata que herda de `Entity`. Define o contrato base para todos os inimigos, estabelecendo que eles têm um `level`, concedem `xpGiven` ao serem derrotados, e possuem um ataque de contato (`onStrike`) com cooldown, que retorna um objeto `Attack` configurado para causar dano e aplicar recuo no próprio atacante.
+        - **`Slime.ts`**: Uma implementação concreta de `Enemy`. Sua principal responsabilidade é implementar uma IA de movimento avançada (`moveSlime`), que utiliza "steering behaviors" para perseguir o jogador e desviar de outros inimigos, evitando bloqueios e permitindo que um grupo de Slimes cerque o alvo de forma mais inteligente.
       - **`bullets/`**: Contém a hierarquia de classes para projéteis.
-        - **`Bullet.ts`**: Classe abstrata que herda de `ObjectElement` e implementa a interface `IAtack`. Ela define o contrato de um projétil: um objeto que se move e carrega consigo todas as informações de um ataque (dano, tipo, criticidade, quem atacou).
-        - **`SimpleBullet.ts`**: Uma implementação concreta de `Bullet`. É responsável por definir sua própria velocidade, tempo de vida (baseado na distância percorrida), e sua `HitBox`. Adiciona uma lógica de `generateRandomNoiseAccelerator` para dar uma variação sutil à sua trajetória, tornando o comportamento mais orgânico.
+        - **`Bullet.ts`**: Classe abstrata que herda de `ObjectElement`. Define o contrato de um projétil: um objeto que se move pelo mundo. Não possui lógica de dano.
+        - **`SimpleBullet.ts`**: Uma implementação concreta de `Bullet`. Sua responsabilidade é "carregar" um objeto `Attack` que lhe é fornecido no construtor. Ao colidir com um inimigo, ela invoca o método `execute` do `Attack` que carrega. Também gerencia sua própria velocidade, tempo de vida e uma variação sutil na trajetória para um movimento mais orgânico.
       - **`geometryForms/`**: Contém classes para formas geométricas simples que podem existir no mundo.
         - **`circleForm.ts`**: Uma implementação concreta de `ObjectElement` que representa um círculo. É uma entidade simples com capacidade de movimento, servindo como um bom exemplo de um objeto de jogo básico, útil para testes de colisão, efeitos visuais ou como base para elementos de cenário mais complexos.
     - **`Items/`**: Contém a hierarquia de classes para todos os itens.
+      - **`IAtack.ts`**: Uma interface que define o contrato para um objeto de ataque (`execute`) e seus tipos de dados relacionados, como `OnHitAction` e `AttackContext`.
+      - **`Attack.ts`**: A implementação concreta e central do sistema de combate. Esta classe encapsula toda a lógica de um ataque: recebe um dano base, adiciona bônus de atributos do atacante, calcula acertos críticos, aplica o dano ao alvo (via `takeDamage`) e executa uma lista de efeitos `OnHitAction` (como recuo ou roubo de vida).
       - **`Item.ts`**: Classe base abstrata para todos os itens, definindo um contrato rico de propriedades (raridade, valor, etc.).
       - **`Weapons/Weapon.ts`**: Classe abstrata para armas, adicionando `baseDamage` e `attackSpeed`.
       - **`Weapons/RangedWeapons/RangedWeapon.ts`**: Especialização para armas de longo alcance, que disparam projéteis via eventos.
@@ -223,7 +225,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
           -   Se não existe, ele usa a `RenderableFactory` para criar um novo objeto visual.
       -   Ele também remove da tela quaisquer objetos visuais cujas entidades não existem mais no domínio.
       -   > **AVISO:** O método `syncRenderables` atualmente cria dois novos `Set`s (`activeIds` e `activeDebugIds`) a cada frame. Em um jogo com muitos objetos, isso pode levar a uma pressão desnecessária no Garbage Collector. Uma otimização futura poderia ser reutilizar esses `Set`s, limpando-os a cada frame em vez de recriá-los.
-
+  
   5.  **`render` (Desenho na Tela):**
       -   Após o `update` terminar, o `Game.ts` chama `gameAdapter.draw()`.
       -   O `GameAdapter` atualiza o alvo da `Camera` (geralmente o jogador).
@@ -255,8 +257,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   O sistema invoca os callbacks `onColision` de ambas as hitboxes, passando a entidade com a qual colidiram: `hitboxA.onColision(elementB)` e `hitboxB.onColision(elementA)`.
       -   É aqui que a lógica de negócio acontece. Por exemplo:
           -   A `HitBox` de um `Bullet` tem um `onColision` que verifica se o `elementB` é um `Enemy`. Se for, ele dispara um evento `despawn` para si mesmo.
-          -   A `HitBox` de um `Enemy` tem um `onColision` que verifica se o `elementB` é um `Bullet`. Se for, ele chama seu próprio método `takeDamage()`.
-      -   > **AVISO:** O log atual em `ObjectElementManager.checkCollisions` (`logger.log("hitbox", \`object ${JSON.stringify(elementA)} colided ${JSON.stringify(elementA)}\`)`) contém um erro de digitação ("colided") e está logando o mesmo objeto duas vezes. Isso pode ser confuso durante a depuração e deve ser corrigido para `...colided with ${JSON.stringify(elementB)}`.
+          -   A `HitBox` de um `Player` tem um `onColision` que verifica se o `elementB` é um `Enemy`. Se for, ele chama o método `onStrike()` do inimigo e executa o ataque resultante em si mesmo.
 
 ### 3.4. Fluxo de Criação de Projétil (`spawn`)
 
@@ -269,13 +270,12 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   2.  **Comando para o Domínio (Adapter -> Domain):**
       -   O `GameAdapter` invoca `domain.handlePlayerInteractions()`, passando a ação `'leftClick'` e as coordenadas do mundo calculadas.
-      -   > **AVISO:** O `GameAdapter` passa o `deltaTime` para `handlePlayerInteractions`, mas a `DomainFacade` não utiliza este parâmetro, o que representa uma pequena inconsistência na assinatura do método.
 
   3.  **Processamento da Ação (Domain):**
       -   A `DomainFacade` repassa a ação para o `ActionManager`.
       -   O `ActionManager` chama o método correspondente na entidade `Player`: `player.onLeftClickAction(mouseWorldCoordinates)`.
-      -   Dentro do `Player`, o método `onLeftClickAction` (ou um método chamado por ele, como `shootBullet`) calcula a direção do tiro.
-      -   O `Player` então dispara um evento de domínio: `gameEvents.dispatch('spawn', { factory: (id) => new SimpleBullet(...) })`. O payload do evento não é a bala em si, mas uma **função de fábrica** que sabe como criar uma.
+      -   Dentro do `Player`, o método `shootBullet` calcula a direção do tiro, cria um objeto `Attack` com o dano e os efeitos do jogador.
+      -   O `Player` então dispara um evento de domínio: `gameEvents.dispatch('spawn', { factory: (id) => new SimpleBullet(..., playerAttack) })`. O payload do evento não é a bala em si, mas uma **função de fábrica** que sabe como criar uma, passando o objeto `Attack` para ela.
 
   4.  **Criação da Entidade (Domain):**
       -   O `ObjectElementManager`, que está ouvindo o evento `'spawn'`, recebe a `factory`.
@@ -296,21 +296,18 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   1.  **Gatilho do Movimento (Domain - Player):**
       -   Quando o `Player` processa uma ação de movimento (ex: `onUpAction`), seu método `move(deltaTime)` é chamado, o que altera suas coordenadas.
-      -   Após atualizar sua posição, o `Player` dispara um evento global para o domínio: `gameEvents.dispatch('playerMoved', { newPosition: this.coordinates })`.
+      -   Após atualizar sua posição, o `Player` dispara um evento global para o domínio: `gameEvents.dispatch('playerMoved', { x: this.coordinates.x, y: this.coordinates.y })`.
 
   2.  **Recepção do Evento (Domain - Enemy):**
       -   A classe `Slime`, em seu construtor, se registrou como ouvinte do evento `'playerMoved'`.
-      -   O `EventHandler` notifica todos os ouvintes, incluindo cada instância de `Slime`. O método `onPlayerMoved(payload)` do `Slime` é executado.
+      -   O `EventHandler` notifica todos os ouvintes, incluindo cada instância de `Slime`. O método `onLastPlayerPos(payload)` do `Slime` é executado.
 
   3.  **Lógica da IA (Domain - Enemy):**
-      -   Dentro de `onPlayerMoved`, o `Slime` recebe a nova posição do jogador.
-      -   Ele calcula o vetor de direção de sua posição atual para a posição do jogador.
-      -   Ele normaliza esse vetor e o armazena em sua propriedade `direction`. A partir deste momento, o `Slime` "sabe" para onde deve se mover.
-      -   > **AVISO DE PERFORMANCE:** No modelo atual, cada instância de inimigo se registra individualmente para o evento `playerMoved`. Com centenas de inimigos, isso pode criar uma sobrecarga de notificações. Uma otimização futura poderia ser um "Gerenciador de IA" que ouve o evento uma única vez e atualiza os inimigos próximos ao jogador, em vez de notificar todos eles.
+      -   Dentro de `onLastPlayerPos`, o `Slime` armazena a nova posição do jogador. Esta posição será usada no próximo ciclo de `update` para calcular a direção do movimento.
 
   4.  **Execução do Movimento (Domain - `updateAll`):**
       -   No mesmo ciclo de jogo, o `ObjectElementManager.updateAll()` chama o método `update(deltaTime)` de cada `Slime`.
-      -   O `Slime.update()` chama seu método `move(deltaTime)` (herdado de `Entity`), que usa a propriedade `direction` (atualizada no passo anterior) para calcular e aplicar o movimento, alterando as coordenadas do `Slime`.
+      -   O `Slime.update()` dispara um evento `requestNeighbors` para obter uma lista de outros Slimes próximos. No callback desse evento, o método `moveSlime` é executado, que contém a IA de perseguição e desvio de obstáculos.
 
   5.  **Visualização (Adapter):**
       -   O fluxo segue o padrão: `syncRenderables` detecta a nova posição do `Slime`, atualiza o `GameObjectElement` correspondente, e o `Renderer` o desenha no novo local no próximo ciclo de `draw`.
@@ -321,22 +318,20 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   1.  **Gatilho (Colisão):** O fluxo começa como uma continuação do **Fluxo de Colisão (3.3)**. O `ObjectElementManager` detecta uma colisão entre um `Bullet` e um `Enemy`.
 
-  2.  **Invocação do Callback:** O `checkCollisions` invoca `hitboxB.onColision(elementA)`, onde `hitboxB` é a hitbox do `Enemy` e `elementA` é o `Bullet`.
+  2.  **Invocação do Callback:** O `checkCollisions` invoca `hitboxA.onColision(elementB)`, onde `hitboxA` é a hitbox do `Bullet` e `elementB` é o `Enemy`.
 
-  3.  **Lógica de Reação (Domain - Enemy):**
-      -   O callback `onColision` da `HitBox` do `Enemy` verifica se o `elementA` é uma instância de `Bullet`.
-      -   Se for, ele chama seu próprio método `takeDamage(bullet)`.
-      -   > **AVISO:** Atualmente, o método `takeDamage` na classe `Entity` recebe o objeto de ataque (`IAtack`), o que é um bom design. Isso permite que a entidade que recebe o dano reaja a diferentes tipos de dano, efeitos críticos, etc., no futuro.
+  3.  **Lógica de Reação (Domain - Bullet):**
+      -   O callback `onColision` da `HitBox` do `Bullet` verifica se o `elementB` é um `Enemy`.
+      -   Se for, ele chama `attack.execute(enemy, direction)`, onde `attack` é o objeto `Attack` que a bala carrega.
 
   4.  **Aplicação do Dano (Domain - Entity/Attributes):**
-      -   O método `takeDamage` (na classe `Entity`) calcula o dano final após aplicar a defesa (`this.attributes.defence`).
-      -   Ele então subtrai o dano do HP da entidade: `this.attributes.hp -= finalDamage`.
+      -   Dentro do `attack.execute`, o dano total é calculado (base + atributos + crítico).
+      -   O método `target.takeDamage(damageInfo)` é chamado.
+      -   O método `takeDamage` na classe `Entity` calcula o dano final após aplicar a defesa (`this.attributes.defence`) e subtrai o resultado do HP da entidade.
 
   5.  **Verificação de Morte (Domain - Entity):**
       -   Após aplicar o dano, `takeDamage` verifica se `this.attributes.hp <= 0`.
-      -   Se o HP for zero ou menos, a entidade dispara dois eventos:
-          1.  `gameEvents.dispatch('enemyDefeated', { xpGiven: this.xpGiven, killedBy: attackerId })` para notificar o sistema sobre a recompensa.
-          2.  `gameEvents.dispatch('despawn', { objectId: this.id })` para solicitar sua própria remoção do jogo.
+      -   Se o HP for zero ou menos, a entidade muda seu estado para `'dead'` e dispara um evento `despawn` para si mesma.
 
   6.  **Remoção da Entidade (Domain - `ObjectElementManager`):**
       -   O `ObjectElementManager`, que ouve o evento `'despawn'`, recebe o ID do inimigo e o remove de seu mapa `elements`. A partir do próximo frame, o inimigo não existe mais no domínio.
@@ -345,19 +340,18 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
 Este fluxo descreve como o jogador ganha experiência e sobe de nível após derrotar um inimigo.
 
-1.  **Gatilho (Morte do Inimigo):** O fluxo começa quando um `Enemy` morre e dispara o evento `enemyDefeated` (passo 5 do fluxo anterior).
+1.  **Gatilho (Morte do Inimigo):** O fluxo começa quando um `Enemy` morre. A entidade que causou o dano (ex: o `Player` através do `Attack`) precisa ser responsável por verificar a morte e coletar o XP.
 
 2.  **Recepção do Evento (Domain - Player):**
-    -   A entidade `Player`, em seu construtor, se registrou como ouvinte do evento `'enemyDefeated'`.
-    -   Seu método `onEnemyDefeated(payload)` é chamado, e ele verifica se foi o assassino (`payload.killedBy === this.id`).
+    -   > **AVISO:** Atualmente, não há um evento `enemyDefeated`. A lógica de ganho de XP precisa ser implementada. Uma sugestão é o método `takeDamage` retornar não apenas o dano, mas também um booleano indicando se a entidade foi derrotada. A classe `Attack` poderia então verificar esse retorno e, se o alvo morreu, obter o `xpGiven` e adicioná-lo ao `attacker`.
 
 3.  **Adição de Experiência (Domain - Player/Attributes):**
-    -   Se o jogador foi o assassino, ele chama `this.attributes.addXp(payload.xpGiven, this.class.xpTable)`.
+    -   Quando a lógica de ganho de XP for implementada, ela chamará `attacker.attributes.addXp(target.xpGiven, ...)`.
     -   O método `addXp` na classe `Attributes` adiciona a experiência, aplica bônus de `insight` e entra em um loop `while` para verificar se o XP atual ultrapassa o necessário para o próximo nível.
 
 4.  **Level Up:**
     -   Se o jogador sobe de nível dentro do loop `while`, seu `_level` é incrementado, o XP atual é ajustado e o XP necessário para o próximo nível é recalculado com base na `IXPTable` da classe do jogador.
-    -   > **AVISO:** O método `addXp` atualmente não dispara um evento de "level up". Adicionar um `gameEvents.dispatch('levelUp', { newLevel: this._level })` seria uma excelente melhoria, permitindo que outros sistemas (como a UI ou um sistema de efeitos visuais) reajam a este marco importante sem acoplar-se diretamente à classe `Attributes`.
+    -   > **AVISO:** O método `addXp` atualmente não dispara um evento de "level up". Adicionar um `gameEvents.dispatch('levelUp', { entityId: this.owner.id, newLevel: this._level })` seria uma excelente melhoria, permitindo que outros sistemas (como a UI ou um sistema de efeitos visuais) reajam a este marco importante sem acoplar-se diretamente à classe `Attributes`.
 
 ## 4. Guia do Desenvolvedor (How-To)
 
@@ -442,6 +436,36 @@ Este fluxo descreve como o jogador ganha experiência e sobe de nível após der
         gameEvents.dispatch('spawn', { factory: (id) => new Fireball(...) });
         ```
 
+### 4.5. Como Criar um Ataque com Efeito Especial (Ex: Roubo de Vida)
+
+  O sistema de combate é construído em torno da classe `Attack` e da interface `OnHitAction`, que permitem a criação de comportamentos complexos de forma modular.
+
+  1.  **Crie a Lógica do Efeito (`OnHitAction`):**
+      -   Um `OnHitAction` é uma função de callback que é executada no momento em que um ataque atinge um alvo. Ela recebe um `AttackContext` com informações sobre o atacante, o alvo e o dano real causado.
+      -   Em um local apropriado (ex: `domain/ObjectModule/Items/Effects.ts` ou diretamente no arquivo da arma/habilidade), defina a função do seu efeito.
+
+      ```typescript
+      // Exemplo de um efeito de roubo de vida
+      import type { OnHitAction, AttackContext } from "../Items/IAtack";
+
+      export const lifeStealAction: OnHitAction = (context: AttackContext) => {
+        const { attacker, damageDealt } = context;
+        const lifeStolen = Math.floor(damageDealt * 0.10); // Rouba 10% do dano causado
+        attacker.attributes.hp += lifeStolen; // Adiciona a vida de volta ao atacante
+      };
+      ```
+
+  2.  **Associe o Efeito ao Ataque:**
+      -   Quando for criar a instância do ataque (seja de uma arma, habilidade ou ataque de contato de um inimigo), passe a função de efeito que você criou em um array para o construtor da classe `Attack`.
+
+      ```typescript
+      // Exemplo dentro de uma arma ou na ação de ataque do jogador
+      import { lifeStealAction } from "./Effects"; // Supondo que o efeito esteja em um arquivo separado
+
+      const vampiricAttack = new Attack(player, 15, 'physical', [lifeStealAction]);
+      // Agora, sempre que 'vampiricAttack' for executado, ele aplicará o roubo de vida.
+      ```
+
 ### 4.4. Como Adicionar um Novo Estado de Animação ao Jogador (Ex: "attack")
 
   1.  **Adicione o Asset:** Coloque o spritesheet `player-attack.png` em `adapters/web/assets/entities/player/`.
@@ -457,7 +481,7 @@ Este fluxo descreve como o jogador ganha experiência e sobe de nível após der
       ```
   4.  **Verifique a Sincronização:** A classe `Player` da camada de adaptação (`adapters/web/components/gameObjectModule/playerModule/Player.ts`) já está programada para ouvir as mudanças de estado. Quando o `syncRenderables` passar o novo DTO com `state: 'attack'`, ela automaticamente procurará a configuração `'player-attack'` e trocará a animação. Não é necessário fazer mais nada!
 
-### 4.5. Como Criar um Novo Item Consumível (Ex: Poção de Cura)
+### 4.8. Como Criar um Novo Item Consumível (Ex: Poção de Cura)
 
   Itens consumíveis têm um fluxo diferente, pois geralmente não têm uma representação visual contínua no mundo após serem coletados.
 

@@ -126,7 +126,7 @@ export default class ObjectElementManager {
 
       this.spawn(id => new Slime(
         id,
-        10,
+        1,
         50,
         { x, y },
         new Attributes( 8, 3, 12, 8, 5, 5, 2, 15)

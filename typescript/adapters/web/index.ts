@@ -6,7 +6,7 @@ import { logger } from "./shared/Logger";
 /** Configuração inicial do jogo, contendo dados que o domínio precisa para criar seu estado inicial. A posição inicial do jogador foi movida para o centro para evitar problemas de câmera na borda do mapa. */
 const gameConfig = {
   //? Deixei o level assim para ele ter uma vida legal e conseguir morrer
-  player: { id: 1, level: 10, initialPos: { x: 512, y: 512 } }
+  player: { id: 1, level: 1, initialPos: { x: 512, y: 512 } }
 };
 
 /** Função principal (`main`) que orquestra a inicialização. O uso de `async` é necessário para aguardar o carregamento de assets (ex: imagens) antes que o jogo efetivamente comece a rodar. */

@@ -8,9 +8,10 @@ import ObjectElement from "../../ObjectElement";
 import Attribute from "../Attributes";
 
 export default class Slime extends Enemy {
-  
+  /** @private Armazena a última posição conhecida do jogador para a perseguição. */
   private lastPlayerPos: {x: number; y: number} = {x:0,y:0}
-  private readonly speedModifier: number = 0.50;
+  /** @private Um multiplicador para ajustar a velocidade de movimento específica do Slime. */
+  private readonly speedModifier: number = 0.50; // Reduz a velocidade para 50% do valor base.
 
   //? ----------- Constructor -----------
   constructor(
@@ -46,6 +47,7 @@ export default class Slime extends Enemy {
     gameEvents.on("playerMoved", this.onLastPlayerPos.bind(this) )
   }
 
+  /** * Cria e configura a HitBox do Slime. * A sua principal responsabilidade na colisão é se afastar de outros inimigos * para evitar que fiquem empilhados, usando o método `disperseFrom`. * @returns Uma instância de `HitBoxCircle`. */
   private setHitbox() :HitBoxCircle {
     
     return new HitBoxCircle(
@@ -63,16 +65,19 @@ export default class Slime extends Enemy {
 
   }
 
+  /** * Contém a lógica de IA (Inteligência Artificial) para o movimento do Slime. * Ele tenta se mover em direção ao jogador, mas usa uma técnica de "steering" * para desviar de outros Slimes que estejam em seu caminho. Fazendo isso em 5 etapas:  * 1. Define linha reta até a última posição conhecida do jogador.* 2. Verifica se vai colidir simplesmente usando essa reta * 3. Se a rota principal está bloqueada, tenta desviar. * 4. Se tiver bloqueada, tenta para esquerda, depois apra a dieita * 5. Aplica o movimento se uma direção válida foi encontrada. * @param deltaTime O tempo decorrido desde o último frame. * @param neighbors Uma lista de `ObjectElement`s próximos, fornecida pelo `ObjectElementManager`. */
   public moveSlime(deltaTime: number, neighbors: ObjectElement[]): void {
     this.state = 'walking';
   
+    //* 1. Define linha reta até a última posição conhecida do jogador.
     const primaryDirection = new Vector2D(
       this.lastPlayerPos.x - this.coordinates.x,
       this.lastPlayerPos.y - this.coordinates.y
     ).normalize();
   
-    // Função auxiliar para verificar se uma direção causa colisão
+    //* 2. Verifica se vai colidir
     const willCollideInDirection = (direction: Vector2D): boolean => {
+
       const displacement = direction.multiply(this.attributes.speed * this.speedModifier * deltaTime);
       const nextPosition = { x: this.coordinates.x + displacement.x, y: this.coordinates.y + displacement.y };
       const futureHitbox = new HitBoxCircle({ x: nextPosition.x + this.size.width / 2, y: nextPosition.y + this.size.height / 2 }, 0, 8, () => {});
@@ -90,26 +95,31 @@ export default class Slime extends Enemy {
   
     let finalDirection = null;
   
+    //* 3. Tenta a direção primária primeiro
     if (!willCollideInDirection(primaryDirection)) {
       finalDirection = primaryDirection;
-    } else {
-
+    } 
+    else { //* 4. Se a rota principal está bloqueada, tenta desviar.
+      
+      //? 45 graus para a esquerda e 45 para a direita.
       const leftDirection = primaryDirection.clone().rotate(-45);
       const rightDirection = primaryDirection.clone().rotate(45);
   
-      if (!willCollideInDirection(leftDirection)) {
-        finalDirection = leftDirection;
-      } else if (!willCollideInDirection(rightDirection)) {
-        finalDirection = rightDirection;
-      }
+      //* Tenta a rota da esquerda
+      if (!willCollideInDirection(leftDirection)) finalDirection = leftDirection; 
+      //* Se não der, rota da direita
+      else if (!willCollideInDirection(rightDirection)) finalDirection = rightDirection;
+
+      //* Se todas as três direções (frente, esquerda, direita) estiverem bloqueadas, fica parado mesmo
     }
   
+    //* 5. Aplica o movimento se uma direção válida foi encontrada.
     if (finalDirection) {
       this.velocity = finalDirection.multiply(this.attributes.speed * this.speedModifier * deltaTime);
       super.updatePosition();
-    } else {
-      this.velocity.reset();
-    }
+    } 
+    else this.velocity.reset();
+    
   }
 
   public onLastPlayerPos( playerCoordinates: {x: number; y: number} ) {
