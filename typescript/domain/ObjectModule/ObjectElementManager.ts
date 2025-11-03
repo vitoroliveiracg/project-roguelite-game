@@ -35,32 +35,6 @@ export default class ObjectElementManager {
   
   //? ----------- Methods -----------
 
-  /** * Popula o mundo com os elementos iniciais (inimigos, NPCs, itens, etc.). Este método pode ser expandido para ler de uma configuração de nível no futuro. */
-  public spawnInitialElements(): void { 
-    const enemyCount = 50;
-    const gridCols = 10; // 10 inimigos por linha
-    const spacing = 24;  // Espaço entre inimigos. Raio da hitbox é 8, diâmetro é 16. 24px garante que não colidam.
-    const startPos = { x: 200, y: 200 };
-
-   setInterval(()=>{
-     for (let i = 0; i < enemyCount; i++) {
-      const col = i % gridCols;
-      const row = Math.floor(i / gridCols);
-
-      const x = startPos.x + col * spacing;
-      const y = startPos.y + row * spacing;
-
-      this.spawn(id => new Slime(
-        id,
-        50,
-        50,
-        { x, y },
-        new Attributes( 8, 1, 12, 8, 5, 5, 2, 15)
-      ));
-    }
-   }, 5000)
-   
-  }
   /** Configura os listeners para eventos de domínio que afetam os objetos gerenciados. */
   private setupEventListeners(): void {
 
@@ -81,11 +55,6 @@ export default class ObjectElementManager {
       payload.callback(neighbors);
     });
   }
-  /** Define os limites do mundo, essenciais para a inicialização da Quadtree. */
-  public setWorldBounds(width: number, height: number): void {
-    this.worldBounds = { x: 0, y: 0, width, height };
-    this.collisionTree = new Quadtree(this.worldBounds);
-  }
 
   /** * Executa o método `update` de todas as entidades gerenciadas. * @param deltaTime O tempo decorrido desde o último frame. */
   public updateAll(deltaTime: number, player: Player): void {
@@ -100,6 +69,13 @@ export default class ObjectElementManager {
         element.update(deltaTime);
       }
     }
+
+    // Após todas as atualizações, garante que ninguém saiu dos limites do mapa.
+    for (const element of this.elements.values()) {
+      this.clampToWorldBounds(element);
+    }
+    // O jogador também precisa ser verificado.
+    this.clampToWorldBounds(player);
 
     this.checkCollisions(allElements);
   }
@@ -119,6 +95,46 @@ export default class ObjectElementManager {
     return this.elements.delete(id);
   }
 
+   /** Define os limites do mundo, essenciais para a inicialização da Quadtree. */
+  public setWorldBounds(width: number, height: number): void {
+    this.worldBounds = { x: 0, y: 0, width, height };
+    this.collisionTree = new Quadtree(this.worldBounds);
+  }
+  /** * Garante que a posição de um elemento esteja dentro dos limites do mundo. * @param element O elemento a ser verificado e corrigido. */
+  private clampToWorldBounds(element: ObjectElement): void {
+    const { coordinates, size } = element;
+    const { width: worldWidth, height: worldHeight } = this.worldBounds;
+
+    coordinates.x = Math.max(0, Math.min(coordinates.x, worldWidth - size.width));
+    coordinates.y = Math.max(0, Math.min(coordinates.y, worldHeight - size.height));
+  }
+
+  /** * Popula o mundo com os elementos iniciais (inimigos, NPCs, itens, etc.). Este método pode ser expandido para ler de uma configuração de nível no futuro. */
+  public spawnInitialElements(): void { 
+    const enemyCount = 20;
+    const gridCols = 10; //? 10 inimigos por linha
+    const spacing = 24;  //? Espaço entre inimigos. Raio da hitbox é 8, diâmetro é 16. 24px garante que não colidam no spawn
+    const startPos = { x: 200, y: 200 };
+
+   setInterval(()=>{
+     for (let i = 0; i < enemyCount; i++) {
+      const col = i % gridCols;
+      const row = Math.floor(i / gridCols);
+
+      const x = startPos.x + col * spacing;
+      const y = startPos.y + row * spacing;
+
+      this.spawn(id => new Slime(
+        id,
+        10,
+        50,
+        { x, y },
+        new Attributes( 8, 3, 12, 8, 5, 5, 2, 15)
+      ));
+    }
+   }, 5000)
+   
+  }
   /** * Retorna uma lista de DTOs (`EntityRenderableState`) para todas as entidades gerenciadas. * @returns Um array com o estado renderizável de cada entidade. */
   public getAllRenderableStates(): EntityRenderableState[] {
     const states: EntityRenderableState[] = [];
@@ -147,7 +163,6 @@ export default class ObjectElementManager {
       this.collisionTree.insert(element);
     }
   }
-
   private checkCollisions(elements: ObjectElement[]): void {
     const processedPairs = new Set<string>();
     for (const elementA of elements) {

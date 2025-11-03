@@ -4,6 +4,10 @@ import Attributes from "../Attributes";
 import Attack from "../../Items/Attack";
 
 export default abstract class Enemy extends Entity {
+
+  private lastAttackTimestamp: number = 0;
+  private readonly attackCooldown: number = 500;
+  protected baseContactDamage: number = 10;
     
   constructor (
     id: number,
@@ -20,15 +24,22 @@ export default abstract class Enemy extends Entity {
 
   /** * Calcula a quantidade de XP que este inimigo concede ao ser derrotado. * A fórmula pode ser ajustada para um balanceamento mais complexo. */
   public get xpGiven(): number {
-    // Exemplo: XP base + 20% do XP base por nível acima do 1.
     return Math.floor(this.baseXp * (1 + (this.level - 1) * 0.2));
   }
 
-  public onStrike(): Attack {
-    return new Attack(
-      this,
-      10,         //? Dano base de contato
-      'physical'
-    );
+  public onStrike(): Attack | null {
+    const now = Date.now();
+    if (now - this.lastAttackTimestamp < this.attackCooldown) return null;
+    this.lastAttackTimestamp = now;
+
+    const selfKnockbackAction = () => {
+      const knockbackDirection = this.direction.clone().multiply(-1);
+       //? Define distância da força da empurrada
+      this.accelator.add(knockbackDirection.multiply(8));
+    };
+
+    const totalContactDamage = this.baseContactDamage * (this.level + 2);
+
+    return new Attack(this, totalContactDamage, 'physical', [selfKnockbackAction]);
   }
 }

@@ -41,8 +41,11 @@ export default class Player extends Entity {
       (otherElement: ObjectElement) => {
         if (otherElement instanceof Enemy){
           const enemyAttack = otherElement.onStrike();
-          const directionToPlayer = new Vector2D(this.coordinates.x - otherElement.coordinates.x, this.coordinates.y - otherElement.coordinates.y).normalize();
-          enemyAttack.execute(this, directionToPlayer);
+          
+          if (enemyAttack) {
+            const directionToPlayer = new Vector2D(this.coordinates.x - otherElement.coordinates.x, this.coordinates.y - otherElement.coordinates.y).normalize();
+            enemyAttack.execute(this, directionToPlayer);
+          }
         }
       }
     )]
@@ -110,9 +113,11 @@ export default class Player extends Entity {
       
       this.shooted = true
 
+      const baseDamage = 10 * (this.attributes.level + 2)  + Math.floor(this.attributes.strength / 2);
+
       const playerAttack = new Attack(
         this,
-        10,
+        baseDamage,
         'physical'
       );
 

@@ -30,24 +30,21 @@ export default class Attack implements IAtack {
    * @param direction O vetor de direção do ataque, para knockback.
    */
   public execute(target: Entity, direction: Vector2D): void {
-    // 1. Verificar se o ataque é crítico
+
     const isCritical = Math.random() * 100 < this._attacker.attributes.critChance;
 
-    // 2. Calcular o dano total
     let totalDamage = this.baseDamage; // Começa com o dano base
-    // Adiciona bônus de atributos (ex: força para dano físico)
+
     if (this.damageType === 'physical') {
       totalDamage += this._attacker.attributes.strength;
     } else if (this.damageType === 'magical') {
       totalDamage += this._attacker.attributes.inteligence;
     }
 
-    // Aplica o multiplicador de dano crítico, se for o caso
     if (isCritical) {
       totalDamage *= (this._attacker.attributes.critDamage / 100);
     }
 
-    // 3. Aplicar o dano ao alvo. O método `takeDamage` no alvo é quem aplica as defesas e reduz o HP.
     const damageDealt = target.takeDamage({
       totalDamage: Math.floor(totalDamage),
       damageType: this.damageType,
@@ -56,8 +53,11 @@ export default class Attack implements IAtack {
       attacker: this._attacker,
     });
 
-    // 4. Executar todas as ações "OnHit"
     const context = { attacker: this._attacker, target, damageDealt };
     this.onHitActions.forEach(action => action(context));
+
+    setTimeout(() => {
+      this._attacker.resetAccelerator();
+    }, 150);
   }
 }

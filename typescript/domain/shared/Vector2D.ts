@@ -100,6 +100,22 @@ export default class Vector2D {
         return this
     }
 
+    /**
+     * Rotaciona o vetor por um determinado ângulo em graus.
+     * @param {number} degrees O ângulo em graus para rotacionar.
+     * @returns {Vector2D} O próprio vetor, agora rotacionado.
+     */
+    public rotate(degrees: number): Vector2D {
+        const radians = degrees * (Math.PI / 180);
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        const newX = this.x * cos - this.y * sin;
+        const newY = this.x * sin + this.y * cos;
+        this.x = newX;
+        this.y = newY;
+        return this;
+    }
+
     //? --- Métodos de Retorno (Retornam um novo Vector2D ou um valor) ---
 
     /**

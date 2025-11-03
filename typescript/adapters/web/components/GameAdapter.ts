@@ -79,11 +79,11 @@ export default class GameAdapter {
     if (playerRenderable) this.camera.setTarget(playerRenderable);
 
     this.renderer.clear();
-    // Concatena os renderizáveis normais com os de depuração
+
     const allRenderables = [...this.renderables.values()];
-    if (this.isDebugMode) {
-      allRenderables.push(...this.debugRenderables.values());
-    }
+
+    if (this.isDebugMode)  allRenderables.push(...this.debugRenderables.values());
+
 
     this.renderer.drawFrame(this.map, world, allRenderables);
   }

@@ -28,7 +28,7 @@ export default abstract class Entity extends ObjectElement {
     state :any,
     public attributes :Attributes,
     protected accelator:Vector2D = new Vector2D(0,0),
-    protected hurtLaunchFactor:number = 2
+    protected hurtLaunchFactor:number = 10
   ){ 
     super(size, coordinates, id, state, objectId) 
   }
@@ -53,7 +53,7 @@ export default abstract class Entity extends ObjectElement {
       finalDamage = Math.max(1, damageInfo.totalDamage - this.attributes.defence);
     }
 
-    const atackPercentage = (finalDamage / this.attributes.hp) * this.hurtLaunchFactor
+    // Aplica o dano ao HP
     this.attributes.hp = finalDamage;
     
     if (this.attributes.hp <= 0) {
@@ -61,7 +61,8 @@ export default abstract class Entity extends ObjectElement {
       super.destroy()
       return finalDamage;
     }
-    const accelatorVectorInfluency = damageInfo.direction.multiply(atackPercentage) 
+    // Calcula a força do knockback com base no fator de lançamento, não mais na vida do alvo.
+    const accelatorVectorInfluency = damageInfo.direction.multiply(this.hurtLaunchFactor);
     this.accelator.add(accelatorVectorInfluency)
 
     setTimeout(() => {
@@ -69,6 +70,10 @@ export default abstract class Entity extends ObjectElement {
     }, 100);
 
     return finalDamage;
+  }
+
+  public resetAccelerator(): void {
+    this.accelator.reset();
   }
 
 
