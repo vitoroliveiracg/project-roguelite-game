@@ -9,3 +9,13 @@ declare module '*.json' {
   const value: any;
   export default value;
 }
+
+/**
+ * Declaração para o sufixo `?raw` do Vite.
+ * Isso informa ao TypeScript que, ao importar um arquivo com esse sufixo,
+ * o módulo resultante será uma string contendo o conteúdo bruto do arquivo.
+ */
+declare module '*?raw' {
+  const content: string;
+  export default content;
+}

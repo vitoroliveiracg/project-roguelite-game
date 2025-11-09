@@ -1,8 +1,8 @@
 /** @file Ponto de entrada (entrypoint) da aplicação, responsável por instanciar as camadas principais (Domínio e Adapter), injetar as dependências e iniciar o ciclo de vida do jogo. */
 import DomainFacade from "../../domain/DomainFacade";
 import GameAdapter from "./components/GameAdapter";
-
 import { logger } from "./shared/Logger";
+
 /** Configuração inicial do jogo, contendo dados que o domínio precisa para criar seu estado inicial. A posição inicial do jogador foi movida para o centro para evitar problemas de câmera na borda do mapa. */
 const gameConfig = {
   //? Deixei o level assim para ele ter uma vida legal e conseguir morrer
@@ -13,6 +13,7 @@ const gameConfig = {
 async function main() {
   const domain = new DomainFacade(gameConfig, logger);
   const gameAdapter: GameAdapter = new GameAdapter(domain);
+
   try {
     await gameAdapter.initialize();
   } catch (error) {

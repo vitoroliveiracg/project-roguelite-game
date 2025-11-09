@@ -1,32 +1,39 @@
 /** @file Contém a classe GameAdapter, o orquestrador principal da camada de Adaptação (apresentação). */
 import { gameEvents } from "../../../domain/eventDispacher/eventDispacher";
-import { logger } from "../shared/Logger"; 
-import type { IGameDomain } from "../../../domain/ports/domain-contracts";
+import { logger } from "../shared/Logger";
+import type { EntityRenderableState, IGameDomain } from "../../../domain/ports/domain-contracts";
 
 import { initializeGame } from "./Game";
 
 import Camera from "./cameraModule/Camera";
 import Canvas from "./canvasModule/Canvas";
-import GameMap from "./mapModule/Map";
-import Renderer from "./renderModule/Renderer";
-import { InputManager } from "./keyboardModule/InputManager";
+import { InputManager } from "./keyboardModule/InputManager"; 
 
-import type IRenderable from "./renderModule/IRenderable";
+import type IRenderableObject from "./renderModule/IRenderable";
 import { RenderableFactory } from "./renderModule/RenderableFactory";
 import DebugCircle from "./renderModule/DebugCircle";
+import XpBarGui from "../GUIS/xpBarHudModule/XpBarGui";
 import type { action } from "../../../domain/eventDispacher/actions.type";
+import WebGPURenderer, { type SpriteConfig } from "./renderModule/WebGPURenderer";
+import Renderer from "./renderModule/Renderer";
+import type IRenderer from "./renderModule/IRenderer";
+import { AnimationManager } from "./renderModule/AnimationManager";
+import GameMap from "./mapModule/Map";
 
 /** @class GameAdapter O "Adaptador" principal que conecta a lógica de domínio (`IGameDomain`) com as tecnologias da web (Canvas, Input, DOM), traduzindo eventos e dados entre as camadas e gerenciando o ciclo de vida dos componentes de apresentação. */
 export default class GameAdapter {
   private domain: IGameDomain;
-  private readonly isDebugMode = true; /** @private Flag para controlar a renderização de elementos de depuração, como hitboxes. */
-  private renderer!: Renderer; /** @private A instância do `Renderer` responsável por desenhar no canvas. */
-  private map!: GameMap; /** @private A instância do `GameMap` que gerencia o mapa de fundo. */
+  private readonly isDebugMode = false; /** @private Flag para controlar a renderização de elementos de depuração, como hitboxes. */
+  private renderer!: IRenderer<any>; /** @private A instância do `Renderer` responsável por desenhar no canvas. */
   private camera!: Camera; /** @private A instância da `Camera` que controla a viewport do jogo. */
-  private renderables: Map<number, IRenderable> = new Map(); /** @private Um mapa de objetos renderizáveis, indexados pelo ID da entidade de domínio. */
-  private debugRenderables: Map<string, IRenderable> = new Map(); /** @private Um mapa para renderizáveis de depuração, como hitboxes. */
+  private map?: GameMap; /** @private A instância do `GameMap` que gerencia o mapa de fundo, opcional. */
+  private animationManagers: Map<number, AnimationManager> = new Map(); /** @private Gerencia o estado da animação para cada entidade. */
+  private renderables: Map<number, IRenderableObject> = new Map(); /** @private Um mapa de objetos renderizáveis, indexados pelo ID da entidade de domínio. */
+  private debugRenderables: Map<string, IRenderableObject> = new Map(); /** @private Um mapa para renderizáveis de depuração, como hitboxes. */
   private renderableFactory!: RenderableFactory; /** @private A fábrica para criar novos objetos `IRenderable`. */
   private inputManager!: InputManager; /** @private O gerenciador de input que traduz eventos brutos em ações de jogo. */
+  private xpBarGui! :XpBarGui;
+  
   /** @constructor @param domain Uma instância que implementa a interface do domínio. A injeção de dependência via interface permite que o Adapter seja agnóstico à implementação do domínio. */
   constructor(domain: IGameDomain) {
     logger.log('init', 'GameAdapter instantiated.');
@@ -38,58 +45,91 @@ export default class GameAdapter {
   public async initialize(){
     logger.log('init', 'GameAdapter initializing...');
     this.inputManager = new InputManager();
+    this.xpBarGui = new XpBarGui();
     this.setupEventListeners();
     
     const canvas = new Canvas(document.body, 0, 0);
     this.setupResponsiveCanvas(canvas.element);
     
-    const mapImageUrl = new URL('../assets/maps/map.jpeg', import.meta.url).href;
-    this.map = new GameMap(mapImageUrl);
-    await this.map.waitUntilLoaded();
-    
-    const worldState = { width: this.map.width, height: this.map.height };
-    this.domain.setWorld(worldState.width, worldState.height);
-    logger.log('init', 'Domain world set with:', worldState);
-    
     this.camera = new Camera(canvas, 3);
     
-    this.renderer = new Renderer(canvas, this.camera);
+    try {
+      this.renderer = new WebGPURenderer(canvas);
+      await this.renderer.initialize();
+      // No modo WebGPU, o mapa é apenas uma textura no atlas, então definimos um tamanho fixo para o mundo.
+      const worldState = { width: 1024, height: 1024 };
+      this.domain.setWorld(worldState.width, worldState.height);
+      logger.log('init', 'Successfully initialized WebGPU renderer.');
+    } catch (error) {
+      logger.log('error', `WebGPU initialization failed: ${(error as Error).message}. Falling back to Canvas 2D renderer.`);
+      this.renderer = new Renderer(canvas, this.camera);
+      await this.renderer.initialize(); // O initialize do Renderer antigo é síncrono, mas o await não causa problemas.
+
+      // No modo Canvas 2D, carregamos o mapa de verdade para definir o tamanho do mundo.
+      const mapImageUrl = new URL('../assets/maps/map.jpeg', import.meta.url).href;
+      this.map = new GameMap(mapImageUrl);
+      await this.map.waitUntilLoaded();
+      const worldState = { width: this.map.width, height: this.map.height };
+      this.domain.setWorld(worldState.width, worldState.height);
+      logger.log('init', 'Initialized Canvas 2D renderer and loaded map.');
+    }
+
     this.renderableFactory = new RenderableFactory();
-    // Pré-carrega todos os assets e aguarda a conclusão ANTES de prosseguir.
     await this.renderableFactory.preloadAssets();
     logger.log('init', 'All assets preloaded.');
-    
-    this.syncRenderables(); // Sincroniza os renderizáveis pela primeira vez para criar o jogador e outros objetos iniciais.
+    this.syncRenderables();
     initializeGame(this.update.bind(this), this.draw.bind(this));
     
     window.dispatchEvent(new Event('resize'));
   }
   /** Fase de Update (Lógica do Adapter): Função principal do ciclo de vida, chamada a cada frame para processar inputs, delegar a atualização de lógica para o domínio, sincronizar o estado visual e atualizar a câmera. @private @param deltaTime O tempo em segundos desde o último frame. */
-  private update(deltaTime: number): void { 
+  private update(deltaTime: number): void {
     this.handlePlayerInteractions();
     this.domain.update(deltaTime);
     this.syncRenderables();
+
+    // Atualiza a UI da barra de XP com os dados mais recentes do jogador.
+    const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
+    if (playerState) {
+      this.xpBarGui.update(playerState); // Agora é type-safe
+    }
+
+    for (const animManager of this.animationManagers.values()) {
+      animManager.update(deltaTime); // O delta time do update é passado aqui
+    }
   }
   /** Fase de Desenho: Função final do ciclo de vida, chamada a cada frame após o `update` para delegar a responsabilidade de desenhar o frame atual para o `Renderer`. */
-  private draw(): void {
+  private async draw(): Promise<void> {
     logger.log('render', 'Drawing frame...');
 
-    const { world } = this.domain.getRenderState();
-    const playerRenderable = this.renderables.get(1);
-    if (playerRenderable) this.camera.setTarget(playerRenderable);
+    const domainState = this.domain.getRenderState();
+    const cameraTarget = domainState.renderables.find(r => r.id === 1); // ID 1 é o jogador
 
-    this.renderer.clear();
+    if (this.renderer instanceof WebGPURenderer) {
+      // Lógica para WebGPU
+      const renderablesWithAnimation = domainState.renderables.map(r => {
+        const animManager = this.animationManagers.get(r.id);
+        const animationData = animManager ? { currentFrame: animManager.currentFrame } : { currentFrame: 0 };
+        return { ...r, ...animationData };
+      });
+      const webGpuDomainState = { world: domainState.world, renderables: renderablesWithAnimation };
+      await this.renderer.drawFrame(webGpuDomainState, cameraTarget);
+    } else {
+      // Lógica para Canvas 2D
+      const cameraTargetRenderable = cameraTarget ? this.renderables.get(cameraTarget.id) : undefined;
+      if (cameraTargetRenderable) this.camera.setTarget(cameraTargetRenderable);
 
-    const allRenderables = [...this.renderables.values()];
+      this.renderer.clear();
+      const allRenderables = [...this.renderables.values()];
+      if (this.isDebugMode) allRenderables.push(...this.debugRenderables.values());
 
-    if (this.isDebugMode)  allRenderables.push(...this.debugRenderables.values());
-
-
-    this.renderer.drawFrame(this.map, world, allRenderables);
+      // Passa a lista de objetos visuais (IRenderableObject) para o renderer antigo.
+      const canvasDomainState = { world: domainState.world, renderables: allRenderables };
+      await (this.renderer as Renderer).drawFrame(canvasDomainState, cameraTarget, this.map);
+    }
   }
 
   //? ----------- Main Methods -----------
-
   private isReloading :boolean = false;
   private setupEventListeners(): void {
     gameEvents.on('playerDied', () => {
@@ -98,7 +138,7 @@ export default class GameAdapter {
     });
   }
   /** Fase de Update (Sincronização): Compara o estado do domínio com os objetos visuais (`IRenderable`), criando/atualizando-os para refletir o estado atual do jogo. @private @async */
-  private syncRenderables(): void {
+  private syncRenderables(deltaTime?: number): void {
     logger.log('sync', 'Syncing renderables...');
     
     const { renderables: domainStates } = this.domain.getRenderState();
@@ -109,13 +149,28 @@ export default class GameAdapter {
     for (const state of domainStates) {
       activeIds.add(state.id); //? Match id com o do domínio
 
-      // Sincroniza o renderizável principal (sprite do inimigo, jogador, etc.)
-      if (this.renderables.has(state.id)) {
-        this.renderables.get(state.id)!.updateState(state);
+      if (this.renderer instanceof WebGPURenderer) {
+        // Sincroniza o gerenciador de animação para WebGPU
+        if (this.animationManagers.has(state.id)) {
+          const config = this.renderer.getSpriteConfig(state.entityTypeId, state.state);
+          if (config) {
+            this.animationManagers.get(state.id)!.setConfig(config);
+          }
+        } else {
+          const config = this.renderer.getSpriteConfig(state.entityTypeId, state.state);
+          if (config) {
+            this.animationManagers.set(state.id, new AnimationManager(config));
+          }
+        }
       } else {
-        const newRenderable = this.renderableFactory.create(state);
-        if (newRenderable) {
-          this.renderables.set(state.id, newRenderable);
+        // Sincroniza os objetos IRenderable para o Canvas 2D
+        if (this.renderables.has(state.id)) {
+          this.renderables.get(state.id)!.updateState(state);
+        } else {
+          const newRenderable = this.renderableFactory.create(state);
+          if (newRenderable) {
+            this.renderables.set(state.id, newRenderable);
+          }
         }
       }
 
@@ -138,10 +193,15 @@ export default class GameAdapter {
     }
 
     // Remove os objetos visuais que não estão mais no domínio
-    for (const id of this.renderables.keys()) {
-      if (!activeIds.has(id)) {
-        this.renderables.delete(id);
-        logger.log('sync', `Renderable with ID ${id} removed.`);
+    if (this.renderer instanceof WebGPURenderer) {
+      for (const id of this.animationManagers.keys()) {
+        if (!activeIds.has(id)) this.animationManagers.delete(id);
+      }
+    } else {
+      for (const id of this.renderables.keys()) {
+        if (!activeIds.has(id)) {
+          this.renderables.delete(id);
+        }
       }
     }
     if (this.isDebugMode) {

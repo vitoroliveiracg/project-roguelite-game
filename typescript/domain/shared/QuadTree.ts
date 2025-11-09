@@ -1,5 +1,3 @@
-import type ObjectElement from "../ObjectModule/ObjectElement";
-
 /**
  * Define a interface para um retângulo, usada para limites e objetos.
  * A Quadtree precisa que os objetos tenham uma caixa delimitadora (bounding box).
@@ -15,89 +13,123 @@ interface IRectangle {
  * Representa um nó em uma Quadtree.
  * Cada nó pode conter objetos ou ser subdividido em quatro sub-nós.
  */
-export default class Quadtree {
-  private boundary: IRectangle;
-  private capacity: number;
-  private objects: ObjectElement[] = [];
-  private divided: boolean = false;
-
-  // Filhos da Quadtree
-  private northwest: Quadtree | null = null;
-  private northeast: Quadtree | null = null;
-  private southwest: Quadtree | null = null;
-  private southeast: Quadtree | null = null;
+export default class Quadtree<T> {
+  private max_objects: number;
+  private max_levels: number;
+  private level: number;
+  private elements: (T & IRectangle)[];
+  private bounds: IRectangle;
+  private nodes: Quadtree<T>[];
 
   /**
    * @param boundary Os limites (x, y, largura, altura) deste nó da árvore.
-   * @param capacity O número máximo de objetos que um nó pode conter antes de se subdividir.
+   * @param max_objects O número máximo de objetos que um nó pode conter antes de se subdividir.
+   * @param max_levels A profundidade máxima da árvore.
+   * @param level O nível de profundidade atual deste nó.
    */
-  constructor(boundary: IRectangle, capacity: number = 4) {
-    this.boundary = boundary;
-    this.capacity = capacity;
+  constructor(boundary: IRectangle, max_objects: number = 10, max_levels: number = 4, level: number = 0) {
+    this.max_objects = max_objects;
+    this.max_levels = max_levels;
+    this.level = level;
+    this.bounds = boundary;
+    this.elements = [];
+    this.nodes = [];
   }
 
   /**
    * Subdivide o nó atual em quatro quadrantes filhos.
    */
   private subdivide(): void {
-    const { x, y, width, height } = this.boundary;
-    const hw = width / 2; // half-width
-    const hh = height / 2; // half-height
+    const nextLevel = this.level + 1;
+    const subWidth = this.bounds.width / 2;
+    const subHeight = this.bounds.height / 2;
+    const x = this.bounds.x;
+    const y = this.bounds.y;
 
-    // Cria os limites para cada um dos quatro novos quadrantes.
-    const nw = { x: x, y: y, width: hw, height: hh };
-    const ne = { x: x + hw, y: y, width: hw, height: hh };
-    const sw = { x: x, y: y + hh, width: hw, height: hh };
-    const se = { x: x + hw, y: y + hh, width: hw, height: hh };
-
-    // Instancia os filhos.
-    this.northwest = new Quadtree(nw, this.capacity);
-    this.northeast = new Quadtree(ne, this.capacity);
-    this.southwest = new Quadtree(sw, this.capacity);
-    this.southeast = new Quadtree(se, this.capacity);
-
-    this.divided = true;
-
-    // Move os objetos deste nó para os filhos apropriados.
-    for (const obj of this.objects) {
-      this.northwest.insert(obj);
-      this.northeast.insert(obj);
-      this.southwest.insert(obj);
-      this.southeast.insert(obj);
-    }
-    // Limpa os objetos do nó pai, pois agora eles residem nos filhos.
-    this.objects = [];
+    this.nodes[0] = new Quadtree<T>({ x: x + subWidth, y: y, width: subWidth, height: subHeight }, this.max_objects, this.max_levels, nextLevel);
+    this.nodes[1] = new Quadtree<T>({ x: x, y: y, width: subWidth, height: subHeight }, this.max_objects, this.max_levels, nextLevel);
+    this.nodes[2] = new Quadtree<T>({ x: x, y: y + subHeight, width: subWidth, height: subHeight }, this.max_objects, this.max_levels, nextLevel);
+    this.nodes[3] = new Quadtree<T>({ x: x + subWidth, y: y + subHeight, width: subWidth, height: subHeight }, this.max_objects, this.max_levels, nextLevel);
   }
 
   /**
-   * Insere um objeto na Quadtree.
-   * @param object O objeto a ser inserido. Precisa ter `coordinates` e `size`.
-   * @returns `true` se o objeto foi inserido com sucesso, `false` caso contrário.
+   * Determina em qual quadrante um objeto pertence.
+   * @param element O objeto a ser verificado.
+   * @returns O índice do nó (0-3) ou -1 se não couber completamente em nenhum filho.
    */
-  public insert(object: ObjectElement): boolean {
-    // Se o objeto não estiver dentro dos limites deste nó, ignore-o.
-    if (!this.intersects(object)) {
-      return false;
+  private getIndex(element: IRectangle): number {
+    let index = -1;
+    const verticalMidpoint = this.bounds.x + (this.bounds.width / 2);
+    const horizontalMidpoint = this.bounds.y + (this.bounds.height / 2);
+
+    const topQuadrant = (element.y < horizontalMidpoint && element.y + element.height < horizontalMidpoint);
+    const bottomQuadrant = (element.y > horizontalMidpoint);
+
+    if (element.x < verticalMidpoint && element.x + element.width < verticalMidpoint) {
+      if (topQuadrant) {
+        index = 1;
+      } else if (bottomQuadrant) {
+        index = 2;
+      }
+    } else if (element.x > verticalMidpoint) {
+      if (topQuadrant) {
+        index = 0;
+      } else if (bottomQuadrant) {
+        index = 3;
+      }
+    }
+    return index;
+  }
+
+  /** Insere um elemento na Quadtree. */
+  public insert(element: T & IRectangle): void {
+    if (this.nodes[0]) {
+      const index = this.getIndex(element);
+
+      // Se o elemento cabe em um quadrante filho, insira-o lá.
+      if (index !== -1) {
+        const node = this.nodes[index];
+        if (node) { // Garante que o nó existe antes de usá-lo
+          node.insert(element);
+        }
+        return;
+      }
     }
 
-    // Se o nó ainda tem capacidade, adiciona o objeto aqui.
-    if (this.objects.length < this.capacity && !this.divided) {
-      this.objects.push(object);
-      return true;
+    // Se não couber em nenhum filho (ou se o nó não foi subdividido),
+    // adicione o elemento à lista deste nó.
+    this.elements.push(element);
+
+    if (this.elements.length > this.max_objects && this.level < this.max_levels) {
+      // Se o nó estiver cheio e não tiver filhos, subdivida.
+      if (!this.nodes[0]) {
+        this.subdivide();
+      }
+
+      let i = 0;
+      while (i < this.elements.length) {
+        const element = this.elements[i];
+        // Adiciona uma verificação de segurança para garantir que o elemento existe.
+        if (!element) {
+          i++;
+          continue;
+        }
+        const index = this.getIndex(element);
+        // Tente mover o elemento para um quadrante filho.
+        if (index !== -1) {
+          const node = this.nodes[index];
+          if (node) { // Garante que o nó existe antes de usá-lo
+            // Remove o elemento da lista atual e o insere no nó filho.
+            // Usamos a variável 'element' que já sabemos que não é indefinida.
+            node.insert(element);
+            this.elements.splice(i, 1);
+          } else { i++; } // Se o nó não existir, avança para evitar loop infinito.
+        } else { 
+          // Se não couber, deixe-o neste nó e vá para o próximo.
+          i++;
+        }
+      }
     }
-
-    // Se a capacidade foi atingida, subdivide o nó.
-    if (!this.divided) {
-      this.subdivide();
-    }
-
-    // Após subdividir, passa o objeto para os filhos tentarem inseri-lo.
-    if (this.northwest!.insert(object)) return true;
-    if (this.northeast!.insert(object)) return true;
-    if (this.southwest!.insert(object)) return true;
-    if (this.southeast!.insert(object)) return true;
-
-    return false;
   }
 
   /**
@@ -105,58 +137,52 @@ export default class Quadtree {
    * @param object O objeto (ou área) para o qual se deseja encontrar colisões potenciais.
    * @returns Um array de `ObjectElement`s.
    */
-  public retrieve(area: { coordinates: {x: number, y: number}, size: {width: number, height: number}} | IRectangle): ObjectElement[] {
-    let found: ObjectElement[] = [];
+  public retrieve(area: IRectangle): (T & IRectangle)[] {
+    let returnElements = [...this.elements]; // Começa com os elementos deste nó
 
-    // Se a área de busca não intercepta este quadrante, não há o que fazer.
-    if (!this.intersects(area)) {
-      return found;
+    // Se houver nós filhos, verifica em quais deles a área se sobrepõe
+    if (this.nodes[0]) {
+      const index = this.getIndex(area);
+
+      // Se a área cabe inteiramente em um quadrante filho, busca apenas nele
+      if (index !== -1) {
+        const node = this.nodes[index];
+        if (node) { // Garante que o nó existe antes de usá-lo
+          returnElements = returnElements.concat(node.retrieve(area));
+        }
+      } else {
+        // Se a área se sobrepõe a múltiplos filhos, busca em cada um deles
+        for (let i = 0; i < this.nodes.length; i++) {
+          const node = this.nodes[i];
+          // A verificação 'intersects' evita buscar em quadrantes que não se tocam
+          if (node && node.intersects(area)) {
+            returnElements = returnElements.concat(node.retrieve(area));
+          }
+        }
+      }
     }
-
-    // Se o nó está dividido, busca recursivamente nos filhos.
-    if (this.divided) {
-      found = found.concat(this.northwest!.retrieve(area));
-      found = found.concat(this.northeast!.retrieve(area));
-      found = found.concat(this.southwest!.retrieve(area));
-      found = found.concat(this.southeast!.retrieve(area));
-    }
-
-    // Adiciona os objetos deste nó (e de todos os filhos relevantes) à lista.
-    // O filtro evita que um objeto seja comparado consigo mesmo.
-    found.push(...this.objects);
-
-    return found;
+    return returnElements;
   }
 
   /**
    * Verifica se a caixa delimitadora de um objeto se sobrepõe aos limites deste nó.
    * @param object O objeto a ser verificado.
    */
-  private intersects(area: { coordinates: {x: number, y: number}, size: {width: number, height: number}} | IRectangle): boolean {
-    let objBounds: IRectangle;
-
-    if ('coordinates' in area) { // É um ObjectElement-like
-      objBounds = {
-        x: area.coordinates.x,
-        y: area.coordinates.y,
-        width: area.size.width,
-        height: area.size.height,
-      };
-    } else { // É um IRectangle-like
-      objBounds = {
-        x: area.x, y: area.y, width: area.width, height: area.height
-      };
-    }
-    
-
-    const boundary = this.boundary;
+  private intersects(area: IRectangle): boolean {
+    const boundary = this.bounds;
 
     // Verifica se não há sobreposição. Retorna a negação.
     return !(
-      objBounds.x > boundary.x + boundary.width ||
-      objBounds.x + objBounds.width < boundary.x ||
-      objBounds.y > boundary.y + boundary.height ||
-      objBounds.y + objBounds.height < boundary.y
+      area.x > boundary.x + boundary.width ||
+      area.x + area.width < boundary.x ||
+      area.y > boundary.y + boundary.height ||
+      area.y + area.height < boundary.y
     );
+  }
+
+  /** Limpa a Quadtree, removendo todos os elementos e nós filhos. */
+  public clear(): void {
+    this.elements = [];
+    this.nodes = [];
   }
 }

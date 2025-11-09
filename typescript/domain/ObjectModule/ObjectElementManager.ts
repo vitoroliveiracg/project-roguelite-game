@@ -6,9 +6,7 @@ import type Player from "./Entities/Player/Player";
 import Entity from "./Entities/Entity";
 import CircleForm from "./Entities/geometryForms/circleForm";
 import ObjectElement from "./ObjectElement";
-import Quadtree from "../shared/QuadTree";
 import { gameEvents } from "../eventDispacher/eventDispacher";
-import { logger } from "../../adapters/web/shared/Logger";
 import Attributes from "./Entities/Attributes";
 
 /** * @class ObjectElementManager * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis). * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar * grupos de entidades, permitindo que a `DomainFacade` delegue essa * responsabilidade e permaneça focada na orquestração de alto nível. */
@@ -17,18 +15,15 @@ export default class ObjectElementManager {
   private elements: Map<number, ObjectElement> = new Map();
   /** @private Um contador para gerar IDs únicos para novas entidades. Começa em 100 para evitar colisões com IDs estáticos (como o do jogador). */
   private nextId: number = 100;
-  /** @private A estrutura de dados de particionamento espacial para otimizar a detecção de colisão. */
-  private collisionTree!: Quadtree;
   /** @private Armazena os limites do mundo para recriar a Quadtree. */
   private worldBounds: { x: number, y: number, width: number, height: number } = { x: 0, y: 0, width: 0, height: 0 };
-  /** @private Rastreia os pares de entidades que colidiram recentemente para evitar chamadas repetidas. A chave é uma string como 'id1-id2' e o valor é o timestamp de quando o cooldown expira. */
-  private collisionCooldowns: Map<string, number> = new Map();
   
-  /** @private O tempo em milissegundos que uma colisão entre um par de entidades deve ser ignorada antes de ser processada novamente. */
-  private readonly COLLISION_COOLDOWN_MS = 30;
+  private collisionWorker: Worker;
+  private isCheckingCollisions: boolean = false;
 
   constructor() {
-    logger.log('init', 'ObjectElementManager instantiated.');
+    gameEvents.dispatch('log', { channel: 'init', message: 'ObjectElementManager instantiated.', params: [] });
+    this.collisionWorker = new Worker(new URL('./Collision.worker.ts', import.meta.url), { type: 'module' });
     this.setupEventListeners();
   }
 
@@ -48,19 +43,15 @@ export default class ObjectElementManager {
     });
 
     gameEvents.on('requestNeighbors', (payload) => {
-
-      const queryBounds = { x: payload.requester.coordinates.x - payload.radius, y: payload.requester.coordinates.y - payload.radius, width: payload.radius * 2, height: payload.radius * 2 };
-      const neighbors = this.collisionTree.retrieve(queryBounds);
-      
-      payload.callback(neighbors);
+      // Esta funcionalidade precisaria ser reimplementada com o worker ou de outra forma.
+      // Por enquanto, retornamos uma lista vazia para evitar quebras.
+      payload.callback([]);
     });
   }
 
   /** * Executa o método `update` de todas as entidades gerenciadas. * @param deltaTime O tempo decorrido desde o último frame. */
-  public updateAll(deltaTime: number, player: Player): void {
-    // Primeiro, reconstruímos a árvore com as posições do frame anterior.
+  public async updateAll(deltaTime: number, player: Player): Promise<void> {
     const allElements = [player, ...this.elements.values()];
-    this.rebuildCollisionTree(allElements);
 
     // Em seguida, atualizamos cada elemento. Durante seu update, ele pode pedir vizinhos.
     for (const element of this.elements.values()) {
@@ -77,7 +68,7 @@ export default class ObjectElementManager {
     // O jogador também precisa ser verificado.
     this.clampToWorldBounds(player);
 
-    this.checkCollisions(allElements);
+    await this.checkCollisions(allElements);
   }
   /** * Cria e adiciona uma nova entidade ao gerenciador usando uma função de fábrica. * Este método abstrai a criação de qualquer tipo de `ObjectElement`. * @param factoryFn Uma função que recebe um ID e retorna uma nova instância de `ObjectElement` (ou uma subclasse como `Enemy`, `Projectile`, etc.). * @returns A instância da entidade criada. * @template T O tipo específico da entidade a ser criada, que deve estender `ObjectElement`. */
   public spawn<T extends ObjectElement>(factoryFn: (id: number) => T): T {
@@ -98,7 +89,6 @@ export default class ObjectElementManager {
    /** Define os limites do mundo, essenciais para a inicialização da Quadtree. */
   public setWorldBounds(width: number, height: number): void {
     this.worldBounds = { x: 0, y: 0, width, height };
-    this.collisionTree = new Quadtree(this.worldBounds);
   }
   /** * Garante que a posição de um elemento esteja dentro dos limites do mundo. * @param element O elemento a ser verificado e corrigido. */
   private clampToWorldBounds(element: ObjectElement): void {
@@ -129,7 +119,7 @@ export default class ObjectElementManager {
         1,
         50,
         { x, y },
-        new Attributes( 8, 3, 12, 8, 5, 5, 2, 15)
+        new Attributes( 8, 3, 12, 8, 5, 5, 2, 15),
       ));
     }
    }, 5000)
@@ -157,51 +147,52 @@ export default class ObjectElementManager {
     return states;
   }
 
-  private rebuildCollisionTree(elements: ObjectElement[]): void {
-    this.collisionTree = new Quadtree(this.worldBounds);
-    for (const element of elements) {
-      this.collisionTree.insert(element);
-    }
-  }
-  private checkCollisions(elements: ObjectElement[]): void {
-    const processedPairs = new Set<string>();
-    for (const elementA of elements) {
-
-      if (!elementA.hitboxes || elementA.hitboxes.length === 0) continue;
-
-      const potentialColliders = this.collisionTree.retrieve(elementA);
-
-      for (const elementB of potentialColliders) {
-
-        if (elementA.id === elementB.id || !elementB.hitboxes || elementB.hitboxes.length === 0) continue;
-
-        const pairKey = elementA.id < elementB.id ? `${elementA.id}-${elementB.id}` : `${elementB.id}-${elementA.id}`;
-
-        if (processedPairs.has(pairKey)) continue; 
-
-        const now = Date.now();
-        const cooldownTimestamp = this.collisionCooldowns.get(pairKey);
-        if (cooldownTimestamp && now < cooldownTimestamp) continue;
-
-        for (const hitboxA of elementA.hitboxes!) {
-
-          for (const hitboxB of elementB.hitboxes!) {
-            
-            if (hitboxA.intersects(hitboxB)) {
-              hitboxA.onColision(elementB);
-              hitboxB.onColision(elementA);
-              
-              logger.log("hitbox", `Collision detected between ${elementA.objectId} (ID: ${elementA.id}) and ${elementB.objectId} (ID: ${elementB.id})`);
-              this.collisionCooldowns.set(pairKey, now + this.COLLISION_COOLDOWN_MS);
-              processedPairs.add(pairKey);
-              break;
-            }
-          }
-          
-          if (processedPairs.has(pairKey)) break;
-        }
+  private checkCollisions(elements: ObjectElement[]): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.isCheckingCollisions) {
+        resolve();
+        return;
       }
-    }
+      this.isCheckingCollisions = true;
+
+      // Envia apenas os dados necessários para o worker, não a instância completa da classe.
+      // Extrai apenas os dados puros das hitboxes para evitar o erro de clonagem de função.
+      const plainElements = elements.map(element => ({
+        id: element.id,
+        x: element.coordinates.x,
+        y: element.coordinates.y,
+        width: element.size.width,
+        height: element.size.height,
+        // Ajusta a estrutura da hitbox para o formato que o worker espera (sem 'coordinates' aninhado).
+        hitboxes: element.hitboxes?.map(hb => {
+          const shape = hb.getDebugShape();
+          return {
+            ...shape,
+            x: shape.coordinates.x,
+            y: shape.coordinates.y,
+          };
+        }) ?? null,
+      }));
+
+      this.collisionWorker.onmessage = (event: MessageEvent<[number, number][]>) => {
+        const collidingPairs = event.data;
+        for (const [idA, idB] of collidingPairs) {
+          // Busca os elementos no array original que foi enviado para o worker,
+          // pois ele contém a referência para o jogador e para os outros elementos.
+          const elementA = elements.find(e => e.id === idA);
+          const elementB = elements.find(e => e.id === idB);
+
+          if (elementA && elementB) {
+            elementA.hitboxes?.[0]?.onColision(elementB);
+            elementB.hitboxes?.[0]?.onColision(elementA);
+          }
+        }
+        this.isCheckingCollisions = false;
+        resolve();
+      };
+
+      this.collisionWorker.postMessage({ elements: plainElements, worldBounds: this.worldBounds });
+    });
   }
 
   

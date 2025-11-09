@@ -32,6 +32,12 @@ export interface EntityRenderableState extends BaseRenderableState {
   state? : string; // Ex: 'idle', 'walking', 'attacking', 'open'
   /** Uma lista opcional de formas de hitbox para depuração visual. */
   hitboxes?: readonly HitboxDebugShape[];
+
+  //? Propriedades específicas para a UI, como a barra de XP.
+  /** O nível atual da entidade, se aplicável. */
+  level?: number;
+  currentXp?: number;
+  xpToNextLevel?: number;
 }
 
 /** Tipo união para todos os possíveis estados de objetos renderizáveis, permitindo que o sistema seja estendido com outros tipos (ex: partículas) no futuro. */

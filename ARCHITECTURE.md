@@ -36,7 +36,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
     - **`ObjectElementManager.ts`**: Um dos pilares da arquitetura do domínio. Este gerenciador é o coração pulsante do mundo do jogo, responsável pelo ciclo de vida completo de **todas** as entidades dinâmicas, com exceção do `Player` (que é gerenciado diretamente pela `DomainFacade`). Suas responsabilidades incluem:
       - **Criação e Remoção (`spawn`/`despawn`):** Ouve eventos de domínio para criar e destruir dinamicamente inimigos, projéteis, itens, etc., usando um sistema de `factory`.
       - **Atualização de Estado:** Itera sobre todos os elementos a cada frame, chamando seus respectivos métodos `update`.
-      - **Detecção de Colisão Otimizada:** A cada frame, reconstrói uma `Quadtree` com a posição atual de todos os objetos e a utiliza para verificar eficientemente as colisões, disparando os eventos `onColision` nas `HitBox`es correspondentes.
+      - **Detecção de Colisão Otimizada:** A cada frame, delega a tarefa de detecção de colisão para um Web Worker especializado (`Collision.worker.ts`). Ele envia uma representação simplificada (dados puros) de todos os objetos para o worker. Ao receber de volta uma lista de pares de IDs dos objetos que colidiram, ele recupera as instâncias originais e invoca os callbacks `onColision` apropriados. Este desacoplamento move o processamento pesado para uma thread separada, mantendo a thread principal do jogo fluida.
       Ele efetivamente desacopla a `DomainFacade` da complexidade de gerenciar uma coleção massiva e mutável de objetos.
     - **`objectType.type.ts`**: Um arquivo de tipo (`type`) que define uma união de strings literais (`'player' | 'slime' | ...`). Ele fornece uma maneira centralizada e com segurança de tipo (type-safe) para identificar os diferentes tipos de `ObjectElement` no jogo. Isso é crucial para a `RenderableFactory` na camada de adaptação, que o utiliza para decidir qual sprite ou animação carregar para cada entidade.
     - **`Entities/`**: Contém as classes que representam seres "vivos" ou com comportamento autônomo no jogo.
@@ -82,6 +82,8 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
     - **`domain-contracts.ts`**: Contém a **Porta Primária** `IGameDomain` e os DTOs (`RenderableState`) que o domínio usa para se comunicar com o exterior.
     - **`ILogger.ts`**: Uma **Porta Secundária** que define o contrato para um serviço de log, permitindo que o domínio registre eventos sem conhecer a implementação.
 
+  - **`Collision.worker.ts`**: Um Web Worker especializado que vive dentro do domínio. Sua única responsabilidade é receber uma lista de dados de objetos, construir uma `Quadtree` para otimização, calcular todos os pares de objetos que colidem e retornar uma lista desses pares (como IDs) para a thread principal. Ele encapsula o processamento pesado, mas não contém nenhuma lógica de negócio sobre *o que acontece* após uma colisão.
+
 ### 2.2. Camada de Adaptação (`typescript/adapters/web`)
 
   Implementa a interface de usuário e interage com as tecnologias web.
@@ -120,8 +122,13 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
     - **`renderModule/IRenderable.ts`**: A interface fundamental da camada de apresentação. Define o contrato para qualquer objeto que possa ser desenhado na tela (`draw`) e sincronizado com o domínio (`updateState`). É a chave para o polimorfismo, permitindo que o `Renderer` trate todos os objetos visuais (sprites, formas de debug, etc.) de maneira uniforme.
       - **Coesão:** **Máxima (Coesão de Comunicação).** Como interface, sua única responsabilidade é definir um contrato, uma linguagem comum para a renderização.
 
-    - **`renderModule/Renderer.ts`**: O orquestrador do processo de desenho. Sua única responsabilidade é, a cada frame, limpar o canvas, aplicar a transformação da câmera e iterar sobre uma lista de `IRenderable`s, chamando o método `draw` de cada um.
-      - **Coesão:** **Altíssima (Coesão Funcional/Sequencial).** Ele não sabe *o que* está desenhando, apenas que precisa executar uma sequência de passos para renderizar um frame. É um especialista focado.
+    - **`renderModule/Renderer.ts`**: A implementação do renderizador para **Canvas 2D**. Sua única responsabilidade é, a cada frame, limpar o canvas, aplicar a transformação da câmera e iterar sobre uma lista de objetos `IRenderable`, chamando o método `draw` de cada um. É um renderizador polimórfico e orientado a objetos.
+      - **Coesão:** **Altíssima (Coesão Funcional/Sequencial).** Ele não sabe *o que* está desenhando, apenas que precisa executar uma sequência de passos para renderizar um frame. É um especialista focado no pipeline de Canvas 2D.
+
+    - **`renderModule/WebGPURenderer.ts`**: A implementação do renderizador de alta performance para **WebGPU**. Diferente do `Renderer` de Canvas 2D, ele não trabalha com objetos `IRenderable`. Em vez disso, ele recebe uma lista de DTOs de estado puro (`EntityRenderableState`) e utiliza técnicas avançadas como **desenho por instância (instanced drawing)** e **texture atlasing** para desenhar centenas de objetos em uma única chamada de desenho (draw call). Ele possui seu próprio conjunto de `spriteConfigs` que mapeiam entidades para coordenadas dentro de um único "atlas" de texturas.
+      - **Coesão:** **Alta (Coesão Funcional).** É um especialista altamente otimizado para o pipeline da WebGPU. Gerencia buffers, shaders, pipelines e a comunicação de baixo nível com a GPU.
+
+    - **`renderModule/AnimationManager.ts`**: Um componente auxiliar usado exclusivamente pelo caminho de renderização WebGPU. Como o `WebGPURenderer` não lida com objetos de estado (como `GameObjectElement`), a lógica de animação (qual frame mostrar e quando avançar) é extraída para esta classe. O `GameAdapter` mantém um mapa de `AnimationManager`s, um para cada entidade, e os atualiza a cada frame, passando o `currentFrame` resultante para o `WebGPURenderer`.
 
     - **`renderModule/RenderableFactory.ts`**: Uma implementação do padrão Factory. Sua responsabilidade é desacoplar o `GameAdapter` da criação de objetos visuais concretos. Ele mapeia o `entityTypeId` de um DTO do domínio para a classe `IRenderable` correta (ex: `Player`, `Slime`) e a instancia. Também gerencia o pré-carregamento e o cache de assets (imagens), centralizando a gestão de recursos visuais.
       - **Coesão:** **Alta (Coesão Funcional).** Todo o seu propósito gira em torno da criação de `IRenderable`s. O gerenciamento de cache e o pré-carregamento são responsabilidades que suportam diretamente sua função principal.
@@ -179,8 +186,12 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   Chama `gameAdapter.initialize()`.
 
   2.  **Orquestração do Adaptador (`GameAdapter.initialize`):**
-      -   Cria os componentes da camada de adaptação: `InputManager`, `Canvas`, `GameMap`.
-      -   Inicia o carregamento de assets visuais essenciais (ex: imagem do mapa) e aguarda sua conclusão (`map.waitUntilLoaded()`).
+      -   Cria os componentes da camada de adaptação: `InputManager`, `Canvas`, `Camera`.
+      -   **Tenta inicializar o `WebGPURenderer`**.
+          -   **Se sucesso:** O jogo usará o pipeline de alta performance. O `GameAdapter` informa ao domínio um tamanho de mundo fixo, pois o "mapa" é apenas parte de uma textura no atlas.
+          -   **Se falhar (try-catch):** O `GameAdapter` entra no modo **fallback**. Ele instancia o `Renderer` de Canvas 2D. Neste modo, ele carrega a imagem real do mapa (`GameMap`) para definir os limites do mundo.
+      -   Informa o domínio sobre os limites do mundo (`domain.setWorld()`).
+      -   Instancia a `RenderableFactory` e pré-carrega todos os assets (`preloadAssets`). Isso é feito para ambos os renderizadores, garantindo que os assets estejam prontos para o fallback ou para uso futuro.
 
   3.  **Travessia da Fronteira (Adapter -> Domain):**
       -   O `GameAdapter` chama `domain.setWorld()`, passando as dimensões do mapa que acabou de carregar. Esta é a primeira grande interação com o domínio.
@@ -190,9 +201,8 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   O `ObjectElementManager` é instruído a popular o mundo com os inimigos iniciais (`spawnInitialElements`).
 
   5.  **Finalização da Inicialização do Adaptador (`GameAdapter.initialize`):**
-      -   Com o domínio pronto, o adaptador cria os componentes restantes que dependem do mundo: `Camera`, `Renderer`, `RenderableFactory`.
-      -   A `RenderableFactory` pré-carrega todos os outros assets (`preloadAssets`).
-      -   O `GameAdapter` executa `syncRenderables()` pela primeira vez para criar as representações visuais (`IRenderable`) dos objetos que já existem no domínio (jogador e inimigos iniciais).
+      -   Se estiver no modo Canvas 2D, o `GameAdapter` executa `syncRenderables()` pela primeira vez para criar as representações visuais (`IRenderable`) dos objetos que já existem no domínio (jogador e inimigos iniciais).
+      -   Se estiver no modo WebGPU, ele cria os `AnimationManager`s iniciais.
       -   Finalmente, `initializeGame()` é chamado, passando os métodos `update` e `draw` do `GameAdapter`, dando início ao game loop.
 
 ### 3.2. O Ciclo Principal do Jogo (Game Loop)
@@ -214,47 +224,44 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   A `DomainFacade` delega a chamada para o `Player` e para o `ObjectElementManager`.
       -   O `ObjectElementManager.updateAll()` é o passo mais complexo:
           -   Ele itera sobre todas as entidades (`Slime`, `Bullet`, etc.), chamando o método `update()` de cada uma para que elas executem sua IA, movimento, etc.
-          -   Ele reconstrói a `Quadtree` com as novas posições de todos os objetos.
-          -   Ele chama `checkCollisions()`, que usa a `Quadtree` para encontrar pares de objetos que podem colidir e, em seguida, verifica a intersecção de suas `HitBox`es.
+          -   Ele chama `checkCollisions()`, que prepara os dados dos objetos e os envia para o `Collision.worker.ts` para processamento assíncrono. A reação à colisão ocorrerá quando o worker responder.
 
   4.  **`sync` (Sincronização Visual):**
       -   A última ação dentro de `update` é `syncRenderables()`.
       -   O `GameAdapter` chama `domain.getRenderState()` para obter uma "fotografia" do estado atual de todos os objetos do jogo (posição, estado, etc.) na forma de DTOs.
-      -   Ele itera sobre esses DTOs. Para cada um, ele verifica se já existe um objeto visual (`IRenderable`) correspondente no seu mapa `renderables`.
-          -   Se existe, ele chama `renderable.updateState(dto)` para atualizar sua aparência (ex: mudar a animação de 'idle' para 'walking').
-          -   Se não existe, ele usa a `RenderableFactory` para criar um novo objeto visual.
-      -   Ele também remove da tela quaisquer objetos visuais cujas entidades não existem mais no domínio.
+      -   **Se estiver no modo WebGPU:** Ele itera sobre os DTOs e atualiza os `AnimationManager`s correspondentes, trocando a configuração da animação se o estado da entidade mudou (ex: de 'idle' para 'walking'). Ele também cria novos `AnimationManager`s para novas entidades e remove os de entidades que não existem mais.
+      -   **Se estiver no modo Canvas 2D:** Ele itera sobre os DTOs e sincroniza o mapa de objetos `IRenderable`. Se um objeto já existe, ele chama `renderable.updateState(dto)`. Se não existe, ele usa a `RenderableFactory` para criar um novo. Ele também remove da tela quaisquer objetos visuais cujas entidades não existem mais no domínio.
       -   > **AVISO:** O método `syncRenderables` atualmente cria dois novos `Set`s (`activeIds` e `activeDebugIds`) a cada frame. Em um jogo com muitos objetos, isso pode levar a uma pressão desnecessária no Garbage Collector. Uma otimização futura poderia ser reutilizar esses `Set`s, limpando-os a cada frame em vez de recriá-los.
   
   5.  **`render` (Desenho na Tela):**
       -   Após o `update` terminar, o `Game.ts` chama `gameAdapter.draw()`.
-      -   O `GameAdapter` atualiza o alvo da `Camera` (geralmente o jogador).
-      -   Ele chama `renderer.drawFrame()`.
-      -   O `Renderer` limpa o canvas, aplica a transformação da câmera (zoom e translação) e, finalmente, itera sobre todos os `IRenderable`s (incluindo o mapa e os objetos de debug), chamando o método `draw()` de cada um para que eles se desenhem na tela.
+      -   **Se estiver no modo WebGPU:** O `GameAdapter` combina os DTOs do domínio com os dados de frame atual dos `AnimationManager`s e passa essa lista de dados puros para `renderer.drawFrame()`. O `WebGPURenderer` então atualiza seus buffers de instância e executa uma única chamada de desenho para renderizar todos os objetos.
+      -   **Se estiver no modo Canvas 2D:** O `GameAdapter` atualiza o alvo da `Camera`, que por sua vez aplica a transformação ao contexto do canvas. O `Renderer` então limpa o canvas e itera sobre a lista de objetos `IRenderable`, chamando o método `draw()` de cada um.
 
 ### 3.3. Fluxo de Colisão (`hitbox`)
 
   Este fluxo descreve como o jogo detecta e resolve colisões entre entidades. Ele é iniciado dentro do passo 3 (`domain`) do ciclo principal do jogo.
 
   1.  **Início no Gerenciador (`ObjectElementManager.updateAll`):**
-      -   Após atualizar a posição de todas as entidades, o método chama `checkCollisions()`.
+      -   Após atualizar a posição de todas as entidades, o método chama `checkCollisions()`, passando a lista de todos os objetos do jogo.
 
-  2.  **Otimização com Quadtree (`checkCollisions`):**
-      -   O método itera sobre cada `elementA` no jogo que possui hitboxes.
-      -   Em vez de comparar `elementA` com *todos* os outros objetos (complexidade O(n²)), ele consulta a `Quadtree` (`collisionTree.retrieve(elementA)`). Isso retorna uma lista muito menor de `potentialColliders` que estão na mesma região do espaço, otimizando drasticamente a performance.
+  2.  **Delegação para o Worker (`checkCollisions`):**
+      -   O método prepara uma lista de `plainElements`, que são objetos de dados puros contendo apenas as informações essenciais para a colisão (ID, posição, tamanho e geometria das hitboxes). Isso é feito para evitar erros ao enviar instâncias de classes para o worker.
+      -   Ele envia essa lista de dados para o `Collision.worker.ts` via `postMessage`.
 
-  3.  **Verificação de Pares:**
-      -   Para cada `elementB` na lista de `potentialColliders`, o sistema realiza algumas verificações para evitar trabalho desnecessário:
-          -   Ignora se `elementA` e `elementB` são o mesmo objeto.
-          -   Usa um `Set` (`processedPairs`) para garantir que cada par de objetos (A-B) seja verificado apenas uma vez por frame, evitando a detecção duplicada (B-A).
+  3.  **Processamento no Worker (`Collision.worker.ts`):**
+      -   O worker recebe os dados.
+      -   Ele constrói uma `Quadtree` para otimizar a busca por colisões.
+      -   Ele itera sobre os elementos, usando a `Quadtree` para encontrar pares potenciais.
+      -   Para cada par, ele executa a lógica matemática para verificar se suas hitboxes se intersectam.
+      -   Ao final, ele envia de volta para a thread principal uma lista contendo apenas os **IDs** dos pares que colidiram (ex: `[[1, 101], [102, 103]]`).
 
-  4.  **Intersecção de Hitboxes:**
-      -   O sistema itera sobre todas as `hitboxA` de `elementA` e todas as `hitboxB` de `elementB`.
-      -   Ele chama `hitboxA.intersects(hitboxB)`, que contém a lógica matemática específica para verificar se as duas formas (ex: dois círculos) se sobrepõem.
+  4.  **Reação na Thread Principal (`ObjectElementManager.onmessage`):**
+      -   O `ObjectElementManager` recebe a lista de pares de IDs do worker.
+      -   Para cada par `[idA, idB]`, ele usa o array original de elementos para encontrar as **instâncias de classe completas** correspondentes a esses IDs.
+      -   Com as instâncias reais em mãos, ele finalmente invoca os callbacks `onColision` de suas hitboxes: `elementA.hitboxes[0].onColision(elementB)` e vice-versa.
 
-  5.  **Reação à Colisão (Callback):**
-      -   Se `intersects` retorna `true`, a colisão é confirmada.
-      -   O sistema invoca os callbacks `onColision` de ambas as hitboxes, passando a entidade com a qual colidiram: `hitboxA.onColision(elementB)` e `hitboxB.onColision(elementA)`.
+  5.  **Lógica de Negócio:**
       -   É aqui que a lógica de negócio acontece. Por exemplo:
           -   A `HitBox` de um `Bullet` tem um `onColision` que verifica se o `elementB` é um `Enemy`. Se for, ele dispara um evento `despawn` para si mesmo.
           -   A `HitBox` de um `Player` tem um `onColision` que verifica se o `elementB` é um `Enemy`. Se for, ele chama o método `onStrike()` do inimigo e executa o ataque resultante em si mesmo.
@@ -283,12 +290,11 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   5.  **Sincronização Visual (Domain -> Adapter):**
       -   No mesmo ciclo de `update`, o `GameAdapter` chama `syncRenderables()`.
-      -   Ele obtém a lista de DTOs do domínio via `domain.getRenderState()`, que agora inclui o estado da nova bala.
-      -   O `syncRenderables` percebe que não há um objeto visual para o ID da nova bala e chama a `RenderableFactory.create(bulletState)`.
-      -   A `RenderableFactory` usa sua estratégia para `'simpleBullet'`, instancia a representação visual (`gameObjectModule/bullets/Bullet.ts`) e a adiciona ao mapa `renderables` do `GameAdapter`.
+      -   **No modo Canvas 2D:** O `syncRenderables` percebe que não há um objeto visual para o ID da nova bala e chama a `RenderableFactory.create(bulletState)` para criar a instância visual.
+      -   **No modo WebGPU:** O `syncRenderables` percebe um novo ID e cria um `AnimationManager` para a bala.
 
   6.  **Renderização (Adapter):**
-      -   No passo de `draw` do mesmo frame, o `Renderer` recebe a lista de `renderables` que agora inclui a bala. Ele chama o método `draw()` da bala, e ela aparece na tela pela primeira vez.
+      -   No passo de `draw` do mesmo frame, o renderizador apropriado (Canvas 2D ou WebGPU) recebe os dados da nova bala e a desenha na tela.
 
 ### 3.5. Fluxo de IA do Inimigo (`playerMoved`)
 
@@ -362,23 +368,29 @@ Este fluxo descreve como o jogador ganha experiência e sobe de nível após der
   Criar uma nova entidade requer passos em ambas as camadas (Domínio e Adaptação) para garantir que a lógica e a apresentação estejam conectadas.
 
   1.  **Camada de Domínio (Lógica):**
-      -   **Crie a Classe de Lógica:** Em `domain/ObjectModule/Entities/Enemies/`, crie um novo arquivo `Goblin.ts`. A classe `Goblin` deve herdar de `Enemy`.
+      -   **Crie a Classe de Lógica:** Em `domain/ObjectModule/Entities/Enemies/`, crie `Goblin.ts`. A classe `Goblin` deve herdar de `Enemy`.
       -   **Defina o Comportamento:** Implemente o construtor e, se necessário, sobrescreva o método `update(deltaTime)` para dar ao Goblin uma IA ou comportamento único (ex: talvez ele se mova mais rápido ou atire projéteis).
       -   **Defina o Tipo:** Abra `domain/ObjectModule/objectType.type.ts` e adicione `'goblin'` à união de tipos `objectTypeId`. Isso garante a segurança de tipo em todo o sistema.
       -   **Faça-o Aparecer:** Para testar, vá para `domain/ObjectModule/ObjectElementManager.ts` e, no método `spawnInitialElements()`, adicione uma chamada para criar uma instância do seu novo `Goblin`.
 
   2.  **Camada de Adaptação (Visual):**
       -   **Adicione os Assets:** Coloque os arquivos de imagem (ex: `goblin-idle.png`, `goblin-walking.png`) no diretório `adapters/web/assets/entities/`.
-      -   **Configure os Sprites:** Em `adapters/web/components/renderModule/RenderableFactory.ts`, adicione as configurações para as animações do seu Goblin ao mapa `spriteConfigs`.
-        ```typescript
-        // Exemplo em spriteConfigs:
-        ['goblin-idle', { imageSrc: new URL('../../assets/entities/goblin-idle.png', import.meta.url).href, ... }],
-        ['goblin-walking', { imageSrc: new URL('../../assets/entities/goblin-walking.png', import.meta.url).href, ... }],
-        ```
-      -   **Crie a Classe Visual:** Em `adapters/web/components/gameObjectModule/Enemies/`, crie um arquivo `Goblin.ts`. Esta classe deve herdar da classe visual `Enemy` (de `Enemies/Enemy.ts`). Na maioria dos casos, esta será uma classe "casca" que apenas reutiliza a lógica do pai, semelhante ao `Slime.ts`.
+      -   **Configure os Sprites (WebGPU):** Em `adapters/web/components/renderModule/WebGPURenderer.ts`, no método `loadSpriteConfigs`, adicione as configurações para as animações do Goblin. **Isso é crucial.** Você precisará definir o `atlasOffset` (a posição X, Y do spritesheet do Goblin dentro da imagem do atlas principal) e o `spriteSize`.
+          ```typescript
+          // Exemplo em WebGPURenderer.ts -> loadSpriteConfigs:
+          this.spriteConfigs.set('goblin-idle', { atlasOffset: { x: 128, y: 0 }, spriteSize: { width: 32, height: 32 }, ... });
+          this.spriteConfigs.set('goblin-walking', { atlasOffset: { x: 128, y: 32 }, spriteSize: { width: 32, height: 32 }, ... });
+          ```
+      -   **Configure os Sprites (Canvas 2D - Fallback):** Em `adapters/web/components/renderModule/RenderableFactory.ts`, adicione as configurações para as animações do seu Goblin ao mapa `spriteConfigs`.
+          ```typescript
+          // Exemplo em RenderableFactory.ts -> spriteConfigs:
+          ['goblin-idle', { imageSrc: new URL('../../assets/entities/goblin-idle.png', import.meta.url).href, ... }],
+          ['goblin-walking', { imageSrc: new URL('../../assets/entities/goblin-walking.png', import.meta.url).href, ... }],
+          ```
+      -   **Crie a Classe Visual (Canvas 2D - Fallback):** Em `adapters/web/components/gameObjectModule/Enemies/`, crie um arquivo `Goblin.ts`. Esta classe deve herdar da classe visual `Enemy`. Na maioria dos casos, esta será uma classe "casca" que apenas reutiliza a lógica do pai, semelhante ao `Slime.ts`.
 
   3.  **Conecte as Camadas:**
-      -   **Registre na Fábrica:** Em `adapters/web/components/renderModule/RenderableFactory.ts`, importe sua nova classe visual `Goblin` e adicione-a ao mapa `creationStrategies`. A chave deve corresponder ao `objectTypeId` que você definiu.
+      -   **Registre na Fábrica (Canvas 2D - Fallback):** Em `adapters/web/components/renderModule/RenderableFactory.ts`, importe sua nova classe visual `Goblin` e adicione-a ao mapa `creationStrategies`. A chave deve corresponder ao `objectTypeId` que você definiu.
         ```typescript
         // Exemplo em creationStrategies:
         import Goblin from "../gameObjectModule/Enemies/Goblin";
@@ -386,7 +398,7 @@ Este fluxo descreve como o jogador ganha experiência e sobe de nível após der
         ['goblin', (params) => Goblin.createWithSprite(params)],
         ```
 
-  Pronto! Ao iniciar o jogo, o `ObjectElementManager` criará a entidade `Goblin` no domínio. O `GameAdapter` receberá seu DTO, e a `RenderableFactory` usará a estratégia `'goblin'` para criar sua representação visual com o sprite correto.
+  Pronto! Ao iniciar o jogo, o `ObjectElementManager` criará a entidade `Goblin` no domínio. Se estiver no modo WebGPU, o `WebGPURenderer` usará as novas configurações de atlas para desenhá-lo. Se estiver no modo Canvas 2D, a `RenderableFactory` usará a estratégia `'goblin'` para criar sua representação visual.
 
 ### 4.2. Como Habilitar/Desabilitar a Visualização de Debug
 
@@ -413,16 +425,17 @@ Este fluxo descreve como o jogador ganha experiência e sobe de nível após der
       -   **Defina o Tipo:** Em `domain/ObjectModule/objectType.type.ts`, adicione `'fireball'` à união de tipos `objectTypeId`.
 
   2.  **Camada de Adaptação (Visual):**
-      -   **Adicione o Asset:** Coloque a imagem `fireball.png` em `adapters/web/assets/entities/`.
-      -   **Configure o Sprite:** Em `adapters/web/components/renderModule/RenderableFactory.ts`, adicione a configuração para a animação da `Fireball` ao mapa `spriteConfigs`.
-        ```typescript
-        // Exemplo em spriteConfigs:
-        ['fireball-travelling', { imageSrc: new URL('../../assets/entities/fireball.png', import.meta.url).href, ... }],
-        ```
-      -   **Crie a Classe Visual:** Em `adapters/web/components/gameObjectModule/bullets/`, crie `Fireball.ts`. Esta classe deve herdar da classe visual `Bullet` e, na maioria dos casos, não precisará de lógica adicional.
+      -   **Adicione o Asset:** Coloque a imagem `fireball.png` em `adapters/web/assets/entities/` (e no seu atlas de texturas para WebGPU).
+      -   **Configure o Sprite (WebGPU):** Em `WebGPURenderer.ts`, adicione a configuração da `Fireball` ao mapa `spriteConfigs`, especificando seu `atlasOffset`.
+      -   **Configure o Sprite (Canvas 2D):** Em `RenderableFactory.ts`, adicione a configuração para a animação da `Fireball` ao mapa `spriteConfigs`.
+          ```typescript
+          // Exemplo em RenderableFactory.ts -> spriteConfigs:
+          ['fireball-travelling', { imageSrc: new URL('../../assets/entities/fireball.png', import.meta.url).href, ... }],
+          ```
+      -   **Crie a Classe Visual (Canvas 2D):** Em `adapters/web/components/gameObjectModule/bullets/`, crie `Fireball.ts`. Esta classe deve herdar da classe visual `Bullet`.
 
   3.  **Conecte as Camadas:**
-      -   **Registre na Fábrica:** Em `adapters/web/components/renderModule/RenderableFactory.ts`, importe sua nova classe visual `Fireball` e adicione-a ao mapa `creationStrategies`.
+      -   **Registre na Fábrica (Canvas 2D):** Em `RenderableFactory.ts`, importe sua nova classe visual `Fireball` e adicione-a ao mapa `creationStrategies`.
         ```typescript
         // Exemplo em creationStrategies:
         import Fireball from "../gameObjectModule/bullets/Fireball";
@@ -468,18 +481,19 @@ Este fluxo descreve como o jogador ganha experiência e sobe de nível após der
 
 ### 4.4. Como Adicionar um Novo Estado de Animação ao Jogador (Ex: "attack")
 
-  1.  **Adicione o Asset:** Coloque o spritesheet `player-attack.png` em `adapters/web/assets/entities/player/`.
-  2.  **Configure o Sprite:** Em `adapters/web/components/renderModule/RenderableFactory.ts`, adicione a nova configuração de animação ao mapa `spriteConfigs`.
+  1.  **Adicione o Asset:** Coloque o spritesheet `player-attack.png` em `adapters/web/assets/entities/player/` (e no seu atlas de texturas para WebGPU).
+  2.  **Configure o Sprite (WebGPU):** Em `WebGPURenderer.ts`, adicione a configuração `'player-attack'` ao mapa `spriteConfigs`.
+  3.  **Configure o Sprite (Canvas 2D):** Em `RenderableFactory.ts`, adicione a nova configuração de animação ao mapa `spriteConfigs`.
       ```typescript
       ['player-attack', { imageSrc: new URL('../../assets/entities/player/player-attack.png', import.meta.url).href, ... }],
       ```
-  3.  **Altere o Estado no Domínio:** Na classe `Player` do domínio (`domain/ObjectModule/Entities/Player/Player.ts`), encontre a lógica que deve disparar a animação (ex: no método `onLeftClickAction`). Nesse ponto, altere a propriedade `state` da entidade.
+  4.  **Altere o Estado no Domínio:** Na classe `Player` do domínio (`domain/ObjectModule/Entities/Player/Player.ts`), encontre a lógica que deve disparar a animação (ex: no método `onLeftClickAction`). Nesse ponto, altere a propriedade `state` da entidade.
       ```typescript
       // Em algum método do Player.ts do domínio
       this.state = 'attack';
       // Opcional: Adicionar um timer para voltar ao estado 'idle' após a animação
       ```
-  4.  **Verifique a Sincronização:** A classe `Player` da camada de adaptação (`adapters/web/components/gameObjectModule/playerModule/Player.ts`) já está programada para ouvir as mudanças de estado. Quando o `syncRenderables` passar o novo DTO com `state: 'attack'`, ela automaticamente procurará a configuração `'player-attack'` e trocará a animação. Não é necessário fazer mais nada!
+  5.  **Verifique a Sincronização:** A lógica em `GameAdapter.syncRenderables` já está preparada para lidar com a mudança de estado. No modo WebGPU, ela atualizará o `AnimationManager`. No modo Canvas 2D, ela chamará `updateState` no objeto `Player` visual, que por sua vez trocará a animação.
 
 ### 4.8. Como Criar um Novo Item Consumível (Ex: Poção de Cura)
 

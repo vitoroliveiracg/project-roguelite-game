@@ -3,7 +3,6 @@ import Vector2D from "../../../shared/Vector2D";
 import Entity from "../Entity";
 import Attributes from "../Attributes";
 import type IXPTable from "../IXPTable";
-import { logger } from "../../../../adapters/web/shared/Logger";
 import { gameEvents } from "../../../eventDispacher/eventDispacher";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import { SimpleBullet } from "../bullets/SimpleBullet";
@@ -13,6 +12,12 @@ import Attack from "../../Items/Attack";
 import { type DamageInfo } from "../Entity";
 
 export type playerStates = 'idle' | 'walking'
+
+/** Tabela de XP padrão para o jogador, usada antes da implementação do sistema de classes. */
+const defaultXpTable: IXPTable = {
+  fixedBase: 100,
+  levelScale: 1.2,
+};
 
 export default class Player extends Entity {
 
@@ -85,7 +90,7 @@ export default class Player extends Entity {
     ));
 
     gameEvents.dispatch("playerMoved", { x: this.coordinates.x, y: this.coordinates.y })
-    logger.log("domain", "(Entity) player moved");
+    gameEvents.dispatch('log', { channel: 'domain', message: "(Entity) player moved", params: [] });
   }
 
   //? ----------- Main actions -----------
@@ -182,9 +187,12 @@ export default class Player extends Entity {
 
   //? ----------- Helpers -----------
 
-  /** * Adiciona experiência ao jogador. * @param xpAmount A quantidade de experiência a ser adicionada. * @param xpTable A tabela de progressão de XP. */
-  public gainXp(xpAmount: number, xpTable: IXPTable): void {
-    this.attributes.addXp(xpAmount, xpTable);
+  /**
+   * Adiciona experiência ao jogador.
+   * @param xpAmount A quantidade de experiência a ser adicionada.
+   */
+  public gainXp(xpAmount: number): void {
+    this.attributes.addXp(xpAmount, defaultXpTable);
   }
   /** Retorna o estado atual do jogador. */
   public getState(): 'idle' | 'walking' {

@@ -1,11 +1,11 @@
 import ObjectElement from "../ObjectElement";
 import Vector2D from "../../shared/Vector2D";
 
-import { logger } from "../../../adapters/web/shared/Logger";
 import type { objectTypeId } from "../objectType.type";
 import type Attributes from "./Attributes";
 import type { HitBox } from "../../hitBox/HitBox";
-import type { DamageType } from "../Items/IAtack";
+import type { DamageType } from "../Items/IAtack";;
+import { gameEvents } from "../../eventDispacher/eventDispacher";
 
 export interface DamageInfo {
   totalDamage: number;
@@ -42,7 +42,7 @@ export default abstract class Entity extends ObjectElement {
     this.coordinates.x += this.velocity.x;
     this.coordinates.y += this.velocity.y;
     
-    logger.log("domain", "(Entity) moved");
+    gameEvents.dispatch('log', { channel: 'domain', message: `(Entity) ${this.id}-${this.objectId} moved`, params: [] });
   }
 
   /** Aplica dano à entidade e retorna se ela foi derrotada. * @param damageInfo DTO contendo as informações do dano a ser aplicado - objeto simplificado do ataque. * @returns O dano real causado após a aplicação das defesas. */
@@ -81,8 +81,6 @@ export default abstract class Entity extends ObjectElement {
     //? Calcula o deslocamento para este frame (velocidade * tempo) e o aplica.
     this.velocity.multiply(deltaTime)
     
-    logger.log("domain", `(Entity) ${this.id}-${this.objectId} moved`);
-
     this.updatePosition()
   }
 

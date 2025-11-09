@@ -7,7 +7,7 @@ import ObjectElementManager from "./ObjectModule/ObjectElementManager";
 import World from "./World";
 import Attributes from "./ObjectModule/Entities/Attributes";
 import type { action } from "./eventDispacher/actions.type";
-import ActionManager from "./eventDispacher/ActionManager"; "./eventDispacher/ActionManager";
+import ActionManager from "./eventDispacher/ActionManager";
 
 /** Define a estrutura de dados para a configuração inicial do domínio. */
 interface DomainConfig {
@@ -37,10 +37,14 @@ export default class DomainFacade implements IGameDomain {
 
   /** Fase de Update (Lógica): Avança o estado de todas as entidades do domínio. Chamado a cada frame pelo Adapter. @param deltaTime O tempo em segundos decorrido desde o último frame. */
   public update(deltaTime: number): void {
-    this.logger.log('domain', `Update cycle started (deltaTime: ${deltaTime})`);
-    
-    this.player.update(deltaTime);
-    this.objectManager.updateAll(deltaTime, this.player);
+    // Limita o deltaTime a um valor máximo razoável (ex: 1/30 de segundo)
+    // para evitar "saltos" de física se o jogo engasgar.
+    const clampedDeltaTime = Math.min(deltaTime, 1 / 30);
+
+    this.logger.log('domain', `Update cycle started (deltaTime: ${clampedDeltaTime})`);
+
+    this.player.update(clampedDeltaTime);
+    this.objectManager.updateAll(clampedDeltaTime, this.player);
   }
 
   /** Fase de Inicialização: Cria as instâncias das entidades de domínio (`World`, `Player`) com base no contexto fornecido pelo Adapter. @param width A largura do mundo. @param height A altura do mundo. */
@@ -54,7 +58,7 @@ export default class DomainFacade implements IGameDomain {
       this.config.player.initialPos,
       new Attributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10)
     );
-    this.actionManager = new ActionManager(this.player)
+    this.actionManager = new ActionManager(this.player, this.logger)
     this.logger.log('domain', 'Player entity created:', this.player);
     
 
@@ -75,14 +79,18 @@ export default class DomainFacade implements IGameDomain {
 
     const playerHitboxes = this.player.hitboxes?.map(hb => hb.getDebugShape()) ?? [];
 
-    const playerState: RenderableState = {
+    // Agora, o estado do jogador inclui dados para a UI, como XP e nível.
+    const playerState = {
       id: this.player.id,
       entityTypeId: this.player.objectId,
       coordinates: this.player.coordinates,
       size: this.player.size,
       state: this.player.state,
       rotation: this.player.rotation,
-      hitboxes: playerHitboxes
+      hitboxes: playerHitboxes,
+      level: this.player.attributes.level,
+      currentXp: this.player.attributes.currentXp,
+      xpToNextLevel: this.player.attributes.xpToNextLevel,
     };
 
     const otherStates = this.objectManager.getAllRenderableStates();

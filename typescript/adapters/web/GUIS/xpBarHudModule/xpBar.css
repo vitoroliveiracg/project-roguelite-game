@@ -1,0 +1,53 @@
+/* /home/kkphoenix/Documents/Workspace/rpg-roguelite-game/typescript/adapters/web/GUIS/xpBarHudModule/xpBar.css */
+#xp-hud-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    /* position: fixed; já cria um contexto de posicionamento para os filhos. */
+    width: 400px; /* Garante que o container tenha a mesma largura da barra */
+}
+
+.level-display {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    bottom: 100%; /* Posiciona acima da barra */
+    margin-bottom: 4px; /* Pequeno espaço entre o número e a barra */
+    font-family: 'Minecraft', sans-serif; /* Sugestão de fonte para o estilo */
+    font-size: 16px;
+    font-weight: bold;
+    color: #55FFFF; /* Ciano claro para o número */
+    text-shadow: 2px 2px 0px #000000; /* Sombra dura, estilo pixel art */
+}
+
+#xp-bar-wrapper {
+    width: 100%; /* Ocupa a largura do container pai */
+    height: 10px;
+    background-color: #000000; /* Fundo preto */
+    border: 2px solid #111; /* Borda cinza bem escura */
+    padding: 1px;
+    box-shadow: inset 0px 2px 1px rgba(0,0,0,0.7); /* Sombra interna para profundidade */
+}
+
+#xp-bar-background {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* Efeito de segmentos (nodes) como no Minecraft */
+    background-image: repeating-linear-gradient(
+        90deg, /* Linhas verticais */
+        transparent,
+        transparent 19px, /* Espaço transparente do segmento */
+        #002a3a 19px, /* Cor da divisão (azul muito escuro) */
+        #002a3a 20px  /* Largura da divisão (1px) */
+    );
+}
+
+#xp-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(to bottom, #00D0FF, #00A2E8); /* Gradiente azul para a barra */
+    transition: width 0.2s ease-out;
+}

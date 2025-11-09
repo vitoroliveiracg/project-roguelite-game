@@ -71,7 +71,6 @@ export default class Attributes {
       this._currentXp -= this._xpToNextLevel;
       this._level++;
       this._xpToNextLevel = xpTable.fixedBase * Math.pow(xpTable.levelScale, this._level - 1);
-      // Aqui você pode disparar um evento de "level up"!
     }
   }
   
@@ -108,6 +107,8 @@ export default class Attributes {
   public get level(): number { return this._level; }
   /** The current experience points. */
   public get currentXp(): number { return this._currentXp; }
+  /** The experience points needed to reach the next level. */
+  public get xpToNextLevel(): number { return this._xpToNextLevel; }
 
 
   /** Entity's movement speed modifier. Based on Dexterity. */

@@ -18,7 +18,7 @@ export class SimpleBullet extends Bullet {
         state :bulletStates = 'travelling',
     ){
         const size ={ width: 8, height: 8 }; //? jogador (8x8)
-        super(id, coordinates, size, "simpleBullet", state);
+        super(id, coordinates, size, "simpleBullet", state, );
 
         this.hitboxes = [...this.setHitboxes(size, attack)]
         this.direction = direction

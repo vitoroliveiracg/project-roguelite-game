@@ -1,5 +1,7 @@
 import type Entity from "../Entities/Entity";
 import type Vector2D from "../../shared/Vector2D";
+import Player from "../Entities/Player/Player";
+import Enemy from "../Entities/Enemies/Enemy";
 import type { DamageType, IAtack, OnHitAction } from "./IAtack";
 
 /**
@@ -52,6 +54,13 @@ export default class Attack implements IAtack {
       direction: direction,
       attacker: this._attacker,
     });
+
+    // Se o alvo foi derrotado e o atacante é o jogador, concede o XP.
+    if (target.attributes.hp <= 0 && this._attacker instanceof Player) {
+      if (target instanceof Enemy) {
+        this._attacker.gainXp(target.xpGiven);
+      }
+    }
 
     const context = { attacker: this._attacker, target, damageDealt };
     this.onHitActions.forEach(action => action(context));
