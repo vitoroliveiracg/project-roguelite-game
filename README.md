@@ -5,6 +5,7 @@ RPG roquelite bullet hell like game project
 Flag debug: //! --debug
 
 [dontpad](https://dontpad.com/project-roguelite-game)
+[wireframe arquitetura](https://excalidraw.com/#json=uoWk2Ucdi7I9x9wuhYLxw,rPDiN6lqLhYRIG_CKTUXhQ)
 
 ## TODO (Organização)
 
