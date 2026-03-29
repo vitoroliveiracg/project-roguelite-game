@@ -313,7 +313,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   4.  **Execução do Movimento (Domain - `updateAll`):**
       -   No mesmo ciclo de jogo, o `ObjectElementManager.updateAll()` chama o método `update(deltaTime)` de cada `Slime`.
-      -   O `Slime.update()` dispara um evento `requestNeighbors` para obter uma lista de outros Slimes próximos. No callback desse evento, o método `moveSlime` é executado, que contém a IA de perseguição e desvio de obstáculos.
+      -   O `Slime.update()` dispara um evento `requestNeighbors` para obter uma lista de outros Slimes próximos. No callback desse evento, o método `moveSlime` é executado, que contém a IA de perseguição e desvio de obstáculos. Atualmente, a implementação do listener para `requestNeighbors` no `ObjectElementManager` está "stubada" e retorna uma lista vazia, mas a estrutura da IA do `Slime` está pronta para utilizar os vizinhos quando a funcionalidade for completada.
 
   5.  **Visualização (Adapter):**
       -   O fluxo segue o padrão: `syncRenderables` detecta a nova posição do `Slime`, atualiza o `GameObjectElement` correspondente, e o `Renderer` o desenha no novo local no próximo ciclo de `draw`.
@@ -344,20 +344,21 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
 ### 3.7. Fluxo de Experiência e Level Up (`xp`)
 
-Este fluxo descreve como o jogador ganha experiência e sobe de nível após derrotar um inimigo.
+Este fluxo descreve como o jogador ganha experiência e sobe de nível após derrotar um inimigo. Ele é uma continuação direta do **Fluxo de Ataque e Dano (3.6)**.
 
-1.  **Gatilho (Morte do Inimigo):** O fluxo começa quando um `Enemy` morre. A entidade que causou o dano (ex: o `Player` através do `Attack`) precisa ser responsável por verificar a morte e coletar o XP.
+1.  **Gatilho (Verificação Pós-Dano):** O fluxo começa dentro do método `Attack.execute`.
 
-2.  **Recepção do Evento (Domain - Player):**
-    -   > **AVISO:** Atualmente, não há um evento `enemyDefeated`. A lógica de ganho de XP precisa ser implementada. Uma sugestão é o método `takeDamage` retornar não apenas o dano, mas também um booleano indicando se a entidade foi derrotada. A classe `Attack` poderia então verificar esse retorno e, se o alvo morreu, obter o `xpGiven` e adicioná-lo ao `attacker`.
+2.  **Concessão de XP (Domain - Attack):**
+    -   Após chamar `target.takeDamage()`, o método `Attack.execute` verifica se o alvo foi derrotado (`target.attributes.hp <= 0`).
+    -   Se o alvo morreu e o atacante (`_attacker`) é uma instância de `Player`, o método `gainXp` do jogador é chamado, passando o `xpGiven` do inimigo derrotado.
 
 3.  **Adição de Experiência (Domain - Player/Attributes):**
-    -   Quando a lógica de ganho de XP for implementada, ela chamará `attacker.attributes.addXp(target.xpGiven, ...)`.
+    -   O método `player.gainXp()` delega a chamada para `player.attributes.addXp()`.
     -   O método `addXp` na classe `Attributes` adiciona a experiência, aplica bônus de `insight` e entra em um loop `while` para verificar se o XP atual ultrapassa o necessário para o próximo nível.
 
-4.  **Level Up:**
+4.  **Level Up (Domain - Attributes):**
     -   Se o jogador sobe de nível dentro do loop `while`, seu `_level` é incrementado, o XP atual é ajustado e o XP necessário para o próximo nível é recalculado com base na `IXPTable` da classe do jogador.
-    -   > **AVISO:** O método `addXp` atualmente não dispara um evento de "level up". Adicionar um `gameEvents.dispatch('levelUp', { entityId: this.owner.id, newLevel: this._level })` seria uma excelente melhoria, permitindo que outros sistemas (como a UI ou um sistema de efeitos visuais) reajam a este marco importante sem acoplar-se diretamente à classe `Attributes`.
+    -   > **AVISO:** O método `addXp` atualmente não dispara um evento de "level up". Adicionar um `gameEvents.dispatch('levelUp', ...)` seria uma excelente melhoria, permitindo que outros sistemas (como a UI ou um sistema de efeitos visuais) reajam a este marco importante sem acoplar-se diretamente à classe `Attributes`.
 
 ## 4. Guia do Desenvolvedor (How-To)
 
@@ -497,7 +498,9 @@ Este fluxo descreve como o jogador ganha experiência e sobe de nível após der
 
 ### 4.8. Como Criar um Novo Item Consumível (Ex: Poção de Cura)
 
-  Itens consumíveis têm um fluxo diferente, pois geralmente não têm uma representação visual contínua no mundo após serem coletados.
+  > **Nota:** Esta seção descreve um fluxo de implementação para uma funcionalidade futura, já que o sistema de inventário ainda não foi construído.
+
+  Itens consumíveis têm um fluxo diferente, pois geralmente não têm uma representação visual contínua no mundo após serem coletados. O plano é o seguinte:
 
   1.  **Camada de Domínio (Lógica):**
       -   **Crie a Classe de Lógica:** Em `domain/ObjectModule/Items/`, crie `HealthPotion.ts`. A classe deve herdar de `Item`.
