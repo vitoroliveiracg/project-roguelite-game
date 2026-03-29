@@ -1,6 +1,7 @@
 /** @file Ponto de entrada (entrypoint) da aplicação, responsável por instanciar as camadas principais (Domínio e Adapter), injetar as dependências e iniciar o ciclo de vida do jogo. */
 import DomainFacade from "../../domain/DomainFacade";
 import GameAdapter from "./components/GameAdapter";
+import { EventHandler } from "../../domain/eventDispacher/eventDispacher";
 import { logger } from "./shared/Logger";
 
 /** Configuração inicial do jogo, contendo dados que o domínio precisa para criar seu estado inicial. A posição inicial do jogador foi movida para o centro para evitar problemas de câmera na borda do mapa. */
@@ -11,8 +12,9 @@ const gameConfig = {
 
 /** Função principal (`main`) que orquestra a inicialização. O uso de `async` é necessário para aguardar o carregamento de assets (ex: imagens) antes que o jogo efetivamente comece a rodar. */
 async function main() {
-  const domain = new DomainFacade(gameConfig, logger);
-  const gameAdapter: GameAdapter = new GameAdapter(domain);
+  const eventManager = new EventHandler();
+  const domain = new DomainFacade(gameConfig, logger, eventManager);
+  const gameAdapter: GameAdapter = new GameAdapter(domain, eventManager);
 
   try {
     await gameAdapter.initialize();

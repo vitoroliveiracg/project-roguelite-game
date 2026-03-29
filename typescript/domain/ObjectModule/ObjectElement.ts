@@ -1,4 +1,4 @@
-import { gameEvents } from "../eventDispacher/eventDispacher";
+import type { IEventManager } from "../eventDispacher/IGameEvents";
 import type { HitBox } from "../hitBox/HitBox";
 import type { objectTypeId } from "./objectType.type";
 
@@ -10,13 +10,14 @@ export default class ObjectElement {
     private readonly _size: { width: number; height: number; },
     private _coordinates: { x: number; y: number; },
     public id: number ,
-    public state :any = "",
     private _objectId: objectTypeId,
-    public hitboxes :HitBox[] | null = null
+    protected eventManager: IEventManager,
+    public state :any = "",
+    public hitboxes :HitBox[] | null = null,
   ){}
   
   protected destroy():void {
-    gameEvents.dispatch('despawn', {objectId:this.id})
+    this.eventManager.dispatch('despawn', {objectId:this.id})
   }
 
   //? ----------- Getters and Setters -----------

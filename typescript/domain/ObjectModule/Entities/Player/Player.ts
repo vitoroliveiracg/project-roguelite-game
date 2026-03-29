@@ -3,7 +3,7 @@ import Vector2D from "../../../shared/Vector2D";
 import Entity from "../Entity";
 import Attributes from "../Attributes";
 import type IXPTable from "../IXPTable";
-import { gameEvents } from "../../../eventDispacher/eventDispacher";
+import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import { SimpleBullet } from "../bullets/SimpleBullet";
 import type ObjectElement from "../../ObjectElement";
@@ -29,10 +29,11 @@ export default class Player extends Entity {
     id: number,
     coordinates : { x: number, y :number },
     attributes :Attributes,
+    eventManager: IEventManager,
     state: playerStates = 'idle'
   ){
     const size = { width: 16, height: 16 }; //? jogador (16x16)
-    super(id, coordinates, size, 'player', state, attributes);
+    super(id, coordinates, size, 'player', attributes, eventManager, state);
     
     this.hitboxes = [ ...this.setHitboxes() ];
   }
@@ -75,7 +76,7 @@ export default class Player extends Entity {
     const damageDealt = super.takeDamage(damageInfo);
 
     if (this.attributes.hp <= 0) {
-      gameEvents.dispatch('playerDied', {});
+      this.eventManager.dispatch('playerDied', {});
     }
 
     return damageDealt;
@@ -89,8 +90,8 @@ export default class Player extends Entity {
       { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }, this.rotation
     ));
 
-    gameEvents.dispatch("playerMoved", { x: this.coordinates.x, y: this.coordinates.y })
-    gameEvents.dispatch('log', { channel: 'domain', message: "(Entity) player moved", params: [] });
+    this.eventManager.dispatch("playerMoved", { x: this.coordinates.x, y: this.coordinates.y })
+    this.eventManager.dispatch('log', { channel: 'domain', message: "(Entity) player moved", params: [] });
   }
 
   //? ----------- Main actions -----------
@@ -126,8 +127,8 @@ export default class Player extends Entity {
         'physical'
       );
 
-      gameEvents.dispatch('spawn', {
-        factory: (id) => new SimpleBullet(id, {...this.coordinates}, direction.normalize(), playerAttack)
+      this.eventManager.dispatch('spawn', {
+        factory: (id) => new SimpleBullet(id, {...this.coordinates}, direction.normalize(), playerAttack, this.eventManager)
       });
 
       setTimeout(() => {

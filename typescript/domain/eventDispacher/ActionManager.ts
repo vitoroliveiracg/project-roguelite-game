@@ -1,4 +1,4 @@
-import { gameEvents } from "./eventDispacher";
+import type { IEventManager } from "./IGameEvents";
 import type Player from "../ObjectModule/Entities/Player/Player";
 import type { action } from "./actions.type";
 import type { ILogger } from "../ports/ILogger";
@@ -7,8 +7,8 @@ export default class ActionManager {
 
   public mouseLastCoordinates:{x:number,y:number} = {x:0,y:0} 
 
-  constructor(private player: Player, private logger: ILogger){
-    gameEvents.on('log', ({ channel, message, params }) => {
+  constructor(private player: Player, private logger: ILogger, private eventManager: IEventManager){
+    this.eventManager.on('log', ({ channel, message, params }) => {
       this.logger.log(channel as any, message, ...params);
     });
   }
@@ -49,9 +49,9 @@ export default class ActionManager {
       case 'scrollClick':
         break;
         
-      default: gameEvents.dispatch('log', { channel: 'input', message: "(EventManager) event not managed", params: [action] });
+      default: this.eventManager.dispatch('log', { channel: 'input', message: "(EventManager) event not managed", params: [action] });
       }
-      gameEvents.dispatch('log', { channel: 'input', message: "(EventManager) event managed", params: [action] });
+      this.eventManager.dispatch('log', { channel: 'input', message: "(EventManager) event managed", params: [action] });
 
   }
 

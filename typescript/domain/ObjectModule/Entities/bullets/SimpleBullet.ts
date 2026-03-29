@@ -4,6 +4,7 @@ import type ObjectElement from "../../ObjectElement";
 import Enemy from "../Enemies/Enemy";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import Bullet, { type bulletStates } from "./Bullet";
+import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 
 export class SimpleBullet extends Bullet {
     public accelator: Vector2D = new Vector2D(0, 0);
@@ -15,10 +16,11 @@ export class SimpleBullet extends Bullet {
         coordinates: { x: number; y: number; },
         direction: Vector2D,
         attack: Attack,
+    eventManager: IEventManager,
         state :bulletStates = 'travelling',
     ){
         const size ={ width: 8, height: 8 }; //? jogador (8x8)
-        super(id, coordinates, size, "simpleBullet", state, );
+    super(id, coordinates, size, "simpleBullet", eventManager, state);
 
         this.hitboxes = [...this.setHitboxes(size, attack)]
         this.direction = direction

@@ -9,3 +9,8 @@ export interface GameEventMap {
   log: { channel: string, message: string, params: any[] };
 }
 export type EventKey = keyof GameEventMap;
+
+export interface IEventManager {
+  on<K extends EventKey>(key: K, listener: (payload: GameEventMap[K]) => void): void;
+  dispatch<K extends EventKey>(key: K, payload: GameEventMap[K]): void;
+}

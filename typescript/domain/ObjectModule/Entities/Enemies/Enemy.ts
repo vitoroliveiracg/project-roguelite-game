@@ -2,6 +2,7 @@ import type { objectTypeId } from "../../objectType.type";
 import Entity from "../Entity";
 import Attributes from "../Attributes";
 import Attack from "../../Items/Attack";
+import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 
 export default abstract class Enemy extends Entity {
 
@@ -16,10 +17,11 @@ export default abstract class Enemy extends Entity {
     coordinates : { x: number, y :number },
     objectId: objectTypeId,
     attributes: Attributes,
-    state: any  
+    eventManager: IEventManager,
+    state: any = ""
   ){
     const size = { width: 16, height: 16 };
-    super(id, coordinates, size, objectId, state, attributes);
+    super(id, coordinates, size, objectId, attributes, eventManager, state);
   }
 
   /** * Calcula a quantidade de XP que este inimigo concede ao ser derrotado. * A fórmula pode ser ajustada para um balanceamento mais complexo. */

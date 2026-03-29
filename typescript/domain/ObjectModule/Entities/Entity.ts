@@ -5,7 +5,7 @@ import type { objectTypeId } from "../objectType.type";
 import type Attributes from "./Attributes";
 import type { HitBox } from "../../hitBox/HitBox";
 import type { DamageType } from "../Items/IAtack";;
-import { gameEvents } from "../../eventDispacher/eventDispacher";
+import type { IEventManager } from "../../eventDispacher/IGameEvents";
 
 export interface DamageInfo {
   totalDamage: number;
@@ -25,12 +25,13 @@ export default abstract class Entity extends ObjectElement {
     coordinates: { x: number; y: number; },
     size: { width: number; height: number; },
     objectId: objectTypeId,
-    state :any,
     public attributes :Attributes,
+    eventManager: IEventManager,
+    state :any = "",
     protected accelator:Vector2D = new Vector2D(0,0),
     protected hurtLaunchFactor:number = 10
   ){ 
-    super(size, coordinates, id, state, objectId) 
+    super(size, coordinates, id, objectId, eventManager, state) 
   }
 
   //? ----------- Methods -----------
@@ -42,7 +43,7 @@ export default abstract class Entity extends ObjectElement {
     this.coordinates.x += this.velocity.x;
     this.coordinates.y += this.velocity.y;
     
-    gameEvents.dispatch('log', { channel: 'domain', message: `(Entity) ${this.id}-${this.objectId} moved`, params: [] });
+    this.eventManager.dispatch('log', { channel: 'domain', message: `(Entity) ${this.id}-${this.objectId} moved`, params: [] });
   }
 
   /** Aplica dano à entidade e retorna se ela foi derrotada. * @param damageInfo DTO contendo as informações do dano a ser aplicado - objeto simplificado do ataque. * @returns O dano real causado após a aplicação das defesas. */

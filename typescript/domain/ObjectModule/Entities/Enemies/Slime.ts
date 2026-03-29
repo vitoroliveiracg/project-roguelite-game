@@ -1,11 +1,11 @@
-import { gameEvents } from "../../../eventDispacher/eventDispacher";
+import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import Dice from "../../../shared/Dice";
 import Vector2D from "../../../shared/Vector2D";
 import type { objectTypeId } from "../../objectType.type";
 import Enemy from "./Enemy";
 import ObjectElement from "../../ObjectElement";
-import Attribute from "../Attributes";
+import Attributes from "../Attributes";
 
 export default class Slime extends Enemy {
   /** @private Armazena a última posição conhecida do jogador para a perseguição. */
@@ -19,10 +19,11 @@ export default class Slime extends Enemy {
     level :number,
     baseXp: number,
     coordinates :{ x:number, y:number },
-    attributes: Attribute,
+    attributes: Attributes,
+    eventManager: IEventManager,
     objectId :objectTypeId = "slime",
   ){ 
-    super(id, level, baseXp, coordinates, objectId, attributes, "waiting") 
+    super(id, level, baseXp, coordinates, objectId, attributes, eventManager, "waiting") 
     
     this.hitboxes = [this.setHitbox()];
     this.attributes.hp = (Dice.rollDice(8) * level ) + this.attributes.constitution
@@ -34,7 +35,7 @@ export default class Slime extends Enemy {
 
   public update(deltaTime: number): void {
     
-    gameEvents.dispatch('requestNeighbors', {
+    this.eventManager.dispatch('requestNeighbors', {
       requester: this,
       radius: this.size.width,
       callback: (neighbors) => this.moveSlime(deltaTime, neighbors)
@@ -44,7 +45,7 @@ export default class Slime extends Enemy {
   }
 
   private setEvents() {
-    gameEvents.on("playerMoved", this.onLastPlayerPos.bind(this) )
+    this.eventManager.on("playerMoved", this.onLastPlayerPos.bind(this) )
   }
 
   /** * Cria e configura a HitBox do Slime. * A sua principal responsabilidade na colisão é se afastar de outros inimigos * para evitar que fiquem empilhados, usando o método `disperseFrom`. * @returns Uma instância de `HitBoxCircle`. */

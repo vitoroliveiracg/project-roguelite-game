@@ -1,6 +1,6 @@
 import Vector2D from "../../../shared/Vector2D";
 import ObjectElement from "../../ObjectElement";
-import { gameEvents } from "../../../eventDispacher/eventDispacher";
+import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import type { objectTypeId } from "../../objectType.type";
 
 export type circleState = 'normal'
@@ -12,10 +12,11 @@ export default class CircleForm extends ObjectElement {
         id: number,
         coordinates: { x: number; y: number; },
         size: { width: number; height: number; },
-        state :circleState,
+        eventManager: IEventManager,
+    state :circleState = 'normal',
         objectId: objectTypeId = 'circle',
     ){ 
-        super(size, coordinates, id, state, objectId) 
+    super(size, coordinates, id, objectId, eventManager, state) 
     }
 
     //? ----------- Methods -----------
@@ -26,7 +27,7 @@ export default class CircleForm extends ObjectElement {
         //? Calcula o deslocamento para este frame (velocidade * tempo) e o aplica.
         this.velocity.multiply(deltaTime)
 
-        gameEvents.dispatch('log', { channel: 'domain', message: `(CircleForm) ${this.id}-${this.objectId} moved`, params: [] });
+        this.eventManager.dispatch('log', { channel: 'domain', message: `(CircleForm) ${this.id}-${this.objectId} moved`, params: [] });
 
         this.updatePosition()
     }

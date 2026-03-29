@@ -6,8 +6,8 @@ import type Player from "./Entities/Player/Player";
 import Entity from "./Entities/Entity";
 import CircleForm from "./Entities/geometryForms/circleForm";
 import ObjectElement from "./ObjectElement";
-import { gameEvents } from "../eventDispacher/eventDispacher";
 import Attributes from "./Entities/Attributes";
+import type { IEventManager } from "../eventDispacher/IGameEvents";
 
 /** * @class ObjectElementManager * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis). * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar * grupos de entidades, permitindo que a `DomainFacade` delegue essa * responsabilidade e permaneça focada na orquestração de alto nível. */
 export default class ObjectElementManager {
@@ -21,8 +21,8 @@ export default class ObjectElementManager {
   private collisionWorker: Worker;
   private isCheckingCollisions: boolean = false;
 
-  constructor() {
-    gameEvents.dispatch('log', { channel: 'init', message: 'ObjectElementManager instantiated.', params: [] });
+  constructor(private eventManager: IEventManager) {
+    this.eventManager.dispatch('log', { channel: 'init', message: 'ObjectElementManager instantiated.', params: [] });
     this.collisionWorker = new Worker(new URL('./Collision.worker.ts', import.meta.url), { type: 'module' });
     this.setupEventListeners();
   }
@@ -33,16 +33,16 @@ export default class ObjectElementManager {
   /** Configura os listeners para eventos de domínio que afetam os objetos gerenciados. */
   private setupEventListeners(): void {
 
-    gameEvents.on('spawn', (payload) => {
+    this.eventManager.on('spawn', (payload) => {
       const newElement = this.spawn(payload.factory);
       payload.onSpawned?.(newElement);
     });
     
-    gameEvents.on('despawn', payload => {
+    this.eventManager.on('despawn', payload => {
       this.removeByID(payload.objectId);
     });
 
-    gameEvents.on('requestNeighbors', (payload) => {
+    this.eventManager.on('requestNeighbors', (payload) => {
       // Esta funcionalidade precisaria ser reimplementada com o worker ou de outra forma.
       // Por enquanto, retornamos uma lista vazia para evitar quebras.
       payload.callback([]);
@@ -120,6 +120,7 @@ export default class ObjectElementManager {
         50,
         { x, y },
         new Attributes( 8, 3, 12, 8, 5, 5, 2, 15),
+        this.eventManager
       ));
     }
    }, 5000)

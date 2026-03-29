@@ -8,6 +8,7 @@ import World from "./World";
 import Attributes from "./ObjectModule/Entities/Attributes";
 import type { action } from "./eventDispacher/actions.type";
 import ActionManager from "./eventDispacher/ActionManager";
+import type { IEventManager } from "./eventDispacher/IGameEvents";
 
 /** Define a estrutura de dados para a configuração inicial do domínio. */
 interface DomainConfig {
@@ -25,12 +26,12 @@ export default class DomainFacade implements IGameDomain {
 
   private actionManager!: ActionManager;
   /** @constructor @param config O objeto de configuração com os dados iniciais para a criação das entidades do jogo. @param logger Uma instância de um logger que implementa a interface `ILogger`. */
-  constructor(config: DomainConfig, logger: ILogger) {
+  constructor(config: DomainConfig, logger: ILogger, private eventManager: IEventManager) {
     this.config = config;
     this.logger = logger;
     this.logger.log('init', 'DomainFacade instantiated.');
 
-    this.objectManager = new ObjectElementManager();
+    this.objectManager = new ObjectElementManager(this.eventManager);
 
   }
 
@@ -56,9 +57,10 @@ export default class DomainFacade implements IGameDomain {
     this.player = new Player(
       this.config.player.id,
       this.config.player.initialPos,
-      new Attributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10)
+      new Attributes(8, this.config.player.level, 10, 10, 10, 10, 10, 10),
+      this.eventManager
     );
-    this.actionManager = new ActionManager(this.player, this.logger)
+    this.actionManager = new ActionManager(this.player, this.logger, this.eventManager);
     this.logger.log('domain', 'Player entity created:', this.player);
     
 

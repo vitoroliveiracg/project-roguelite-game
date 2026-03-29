@@ -1,7 +1,7 @@
-import { type EventKey, type GameEventMap } from "./IGameEvents";
+import type { EventKey, GameEventMap, IEventManager } from "./IGameEvents";
 
 /** * Um dispatcher de eventos genérico e com tipagem forte.*/
-class EventHandler {
+export class EventHandler implements IEventManager {
   private listeners: { [K in EventKey]?: ((payload: GameEventMap[K]) => void)[] } = {};
 
   /**
@@ -25,5 +25,3 @@ class EventHandler {
     this.listeners[key]?.forEach(listener => listener(payload));
   }
 }
-
-export const gameEvents = new EventHandler();

@@ -1,4 +1,4 @@
-import { gameEvents } from "../../../../eventDispacher/eventDispacher";
+import type { IEventManager } from "../../../../eventDispacher/IGameEvents";
 import type { baseAttributes } from "../../../Entities/Attributes";
 import type Bullet from "../../../Entities/bullets/Bullet";
 import type { IAtack } from "../../IAtack";
@@ -37,8 +37,8 @@ export default abstract class RangedWeapon extends Weapon {
    * @param attack - Contém informações sobre o ataque (quem atirou, direção, etc.).
    * @param ammoFactory - Uma função que sabe como criar a instância da munição a ser disparada.
    */
-  public attack(attack: IAtack, ammoFactory: (id: number) => Bullet): void {
-    gameEvents.dispatch('spawn', { factory: ammoFactory });
+  public attack(attack: IAtack, eventManager: IEventManager, ammoFactory: (id: number) => Bullet): void {
+    eventManager.dispatch('spawn', { factory: ammoFactory });
   }
 
   //? ----------- Getters and Setters -----------

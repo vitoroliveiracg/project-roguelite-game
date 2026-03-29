@@ -1,5 +1,5 @@
 /** @file Contém a classe GameAdapter, o orquestrador principal da camada de Adaptação (apresentação). */
-import { gameEvents } from "../../../domain/eventDispacher/eventDispacher";
+import type { IEventManager } from "../../../domain/eventDispacher/IGameEvents";
 import { logger } from "../shared/Logger";
 import type { EntityRenderableState, IGameDomain } from "../../../domain/ports/domain-contracts";
 
@@ -35,7 +35,7 @@ export default class GameAdapter {
   private xpBarGui! :XpBarGui;
   
   /** @constructor @param domain Uma instância que implementa a interface do domínio. A injeção de dependência via interface permite que o Adapter seja agnóstico à implementação do domínio. */
-  constructor(domain: IGameDomain) {
+  constructor(domain: IGameDomain, private eventManager: IEventManager) {
     logger.log('init', 'GameAdapter instantiated.');
     this.domain = domain;
   }
@@ -132,7 +132,7 @@ export default class GameAdapter {
   //? ----------- Main Methods -----------
   private isReloading :boolean = false;
   private setupEventListeners(): void {
-    gameEvents.on('playerDied', () => {
+    this.eventManager.on('playerDied', () => {
       logger.log('domain', 'Player has died. Reloading page...');
       if(!this.isReloading){ location.reload(); this.isReloading = true}
     });
