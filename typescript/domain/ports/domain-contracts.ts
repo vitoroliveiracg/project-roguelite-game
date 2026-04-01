@@ -4,6 +4,21 @@ import type { HitboxDebugShape } from "../hitBox/HitBox";
 import type { action } from "../eventDispacher/actions.type";
 import type { objectTypeId } from "../ObjectModule/objectType.type";
 
+export interface SkillNodeDTO {
+  id: string;
+  name: string;
+  type: 'active' | 'passive' | 'rare';
+  tier: number;
+  unlocked: boolean;
+  canUnlock: boolean;
+}
+
+export interface ClassDTO {
+  name: string;
+  isUnlocked: boolean;
+  isActive: boolean;
+}
+
 /** DTO (Data Transfer Object) que representa o estado imutável do mundo do jogo, usado para transferir informações do domínio para a apresentação sem expor a entidade `World` interna. */
 export interface WorldState {
   /** A largura total do mundo do jogo em unidades (pixels). */
@@ -38,6 +53,26 @@ export interface EntityRenderableState extends BaseRenderableState {
   level?: number;
   currentXp?: number;
   xpToNextLevel?: number;
+  hp?: number;
+  maxHp?: number;
+  mana?: number;
+  maxMana?: number;
+  attributes?: {
+    strength: number;
+    constitution: number;
+    dexterity: number;
+    inteligence: number;
+    wisdown: number;
+    charisma: number;
+    availablePoints: number;
+  };
+
+  backpack?: any[];
+  equipment?: any;
+  activeClass?: string | null;
+  unlockedClasses?: string[];
+  classes?: ClassDTO[];
+  skillTree?: SkillNodeDTO[];
 }
 
 /** Tipo união para todos os possíveis estados de objetos renderizáveis, permitindo que o sistema seja estendido com outros tipos (ex: partículas) no futuro. */
@@ -51,6 +86,12 @@ export interface IGameDomain {
   setWorld(width: number, height: number): void;
   /** Traduz uma intenção do usuário (capturada pela apresentação) em um comando que o domínio entende. @param command O comando de movimento. */
   handlePlayerInteractions(command: { actions: Array<action> }, mouseLastCoordinates: {x:number,y:number}): void; // eslint-disable-line
+  /** Executa um comando de inventário, como equipar ou desequipar um item. */
+  manageInventory(action: 'equip' | 'unequip', payload: any): void;
+  /** Executa um comando relacionado à árvore de habilidades, como trocar de classe selecionada ou comprar um nó. */
+  manageSkillTree(action: 'unlock' | 'changeClass', payload: any): void;
+  /** Solicita o gasto de um ponto de habilidade em um atributo primário. */
+  allocateAttribute(attribute: string): void;
   /** Solicita ao domínio uma "fotografia" do estado atual de todos os objetos visíveis, formatada como DTOs puros para a renderização. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   getRenderState(): { world: WorldState; renderables: readonly RenderableState[] };
 }

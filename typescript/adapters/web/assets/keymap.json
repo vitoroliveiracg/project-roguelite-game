@@ -6,5 +6,7 @@
   "shift": "shift",
   "mouse_left": "mouse_left",
   "mouse_middle": "mouse_middle",
-  "mouse_right": "mouse_right"
+  "mouse_right": "mouse_right",
+  "toggle_attributes": "e",
+  "toggle_skill_tree": "p"
 }

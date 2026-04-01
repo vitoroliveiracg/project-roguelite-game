@@ -6,6 +6,8 @@ import Item, { type ItemRarity } from "../Item";
 import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 
 export default abstract class Weapon extends Item {
+  public unlocksClass?: string | undefined;
+
   constructor(
     public readonly baseDamage: number,
     public readonly attackSpeed: number,
@@ -21,9 +23,11 @@ export default abstract class Weapon extends Item {
     requiredLevel: number = 1,
     requiredAttributes: Partial<baseAttributes> = {},
     isUnique: boolean = false,
-    isTradable: boolean = true
+    isTradable: boolean = true,
+    unlocksClass?: string
   ) {
     super( name, description, itemId, rarity, 'weapon', iconId, price, false, 1, durability, effects, requiredLevel, requiredAttributes, isUnique, isTradable );
+    this.unlocksClass = unlocksClass;
   }
 
   /** * Define o contrato de ataque para todas as armas. * @param attack Contém informações sobre o ataque (quem ataca, direção, etc.). * @param ammoFactory (Opcional) Uma função para criar um projétil, usada por armas de longo alcance. * As classes filhas devem implementar este método. */

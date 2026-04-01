@@ -8,6 +8,8 @@ import CircleForm from "./Entities/geometryForms/circleForm";
 import ObjectElement from "./ObjectElement";
 import Attributes from "./Entities/Attributes";
 import type { IEventManager } from "../eventDispacher/IGameEvents";
+import DroppedItem from "./Entities/DroppedItem";
+import Gun from "./Items/Weapons/RangedWeapons/Gun";
 
 /** * @class ObjectElementManager * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis). * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar * grupos de entidades, permitindo que a `DomainFacade` delegue essa * responsabilidade e permaneça focada na orquestração de alto nível. */
 export default class ObjectElementManager {
@@ -20,6 +22,9 @@ export default class ObjectElementManager {
   
   private collisionWorker: Worker;
   private isCheckingCollisions: boolean = false;
+
+  private waveTimer: number = 0;
+  private readonly WAVE_INTERVAL: number = 5; // 5 segundos de jogo para a próxima onda
 
   constructor(private eventManager: IEventManager) {
     this.eventManager.dispatch('log', { channel: 'init', message: 'ObjectElementManager instantiated.', params: [] });
@@ -53,10 +58,18 @@ export default class ObjectElementManager {
   public async updateAll(deltaTime: number, player: Player): Promise<void> {
     const allElements = [player, ...this.elements.values()];
 
+    // O timer de spawn agora respeita o deltaTime. Se o jogo pausar, o deltaTime para de somar aqui.
+    this.waveTimer += deltaTime;
+    if (this.waveTimer >= this.WAVE_INTERVAL) {
+      this.spawnWave();
+      this.waveTimer = 0;
+    }
+
     // Em seguida, atualizamos cada elemento. Durante seu update, ele pode pedir vizinhos.
     for (const element of this.elements.values()) {
       if (
-        element instanceof Entity || element instanceof CircleForm || element instanceof Bullet) {
+        element instanceof Entity || element instanceof CircleForm || element instanceof Bullet || element instanceof DroppedItem
+      ) {
         element.update(deltaTime);
       }
     }
@@ -101,13 +114,20 @@ export default class ObjectElementManager {
 
   /** * Popula o mundo com os elementos iniciais (inimigos, NPCs, itens, etc.). Este método pode ser expandido para ler de uma configuração de nível no futuro. */
   public spawnInitialElements(): void { 
+    this.spawnWave();
+
+    // Spawna a arma inicial no chão, próxima de onde o jogador nasce (512, 512)
+    this.spawn(id => new DroppedItem(id, { x: 550, y: 512 }, new Gun(), this.eventManager));
+  }
+
+  /** * Instancia uma onda de inimigos atrelada ao loop de atualização do domínio. */
+  private spawnWave(): void {
     const enemyCount = 20;
     const gridCols = 10; //? 10 inimigos por linha
     const spacing = 24;  //? Espaço entre inimigos. Raio da hitbox é 8, diâmetro é 16. 24px garante que não colidam no spawn
     const startPos = { x: 200, y: 200 };
 
-   setInterval(()=>{
-     for (let i = 0; i < enemyCount; i++) {
+    for (let i = 0; i < enemyCount; i++) {
       const col = i % gridCols;
       const row = Math.floor(i / gridCols);
 
@@ -123,8 +143,6 @@ export default class ObjectElementManager {
         this.eventManager
       ));
     }
-   }, 5000)
-   
   }
   /** * Retorna uma lista de DTOs (`EntityRenderableState`) para todas as entidades gerenciadas. * @returns Um array com o estado renderizável de cada entidade. */
   public getAllRenderableStates(): EntityRenderableState[] {

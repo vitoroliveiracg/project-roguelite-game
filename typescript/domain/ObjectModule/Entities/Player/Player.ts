@@ -9,7 +9,11 @@ import { SimpleBullet } from "../bullets/SimpleBullet";
 import type ObjectElement from "../../ObjectElement";
 import Enemy from "../Enemies/Enemy";
 import Attack from "../../Items/Attack";
+import type Item from "../../Items/Item";
+import type Weapon from "../../Items/Weapons/Weapon";
 import { type DamageInfo } from "../Entity";
+import Class from "./Classes/Class";
+import type { baseAttributes } from "../Attributes";
 
 export type playerStates = 'idle' | 'walking'
 
@@ -25,6 +29,16 @@ export default class Player extends Entity {
   private isDashing: boolean = false;
   private shooted:boolean = false;
 
+  // --- Sistema de Classes e Skills ---
+  private _unlockedClasses: Set<string> = new Set();
+  private _activeClass: string | null = null;
+  private _classes: Class[] = [];
+  private _unlockedSkills: Set<string> = new Set();
+  // -----------------------------------
+
+  public backpack: Item[] = [];
+  public equipment: { mainHand?: Weapon | undefined } = {};
+
   constructor (
     id: number,
     coordinates : { x: number, y :number },
@@ -34,7 +48,18 @@ export default class Player extends Entity {
   ){
     const size = { width: 16, height: 16 }; //? jogador (16x16)
     super(id, coordinates, size, 'player', attributes, eventManager, state);
-    
+
+    // Instancia as classes diretamente no domínio, servindo como o banco de dados das "regras"
+    this._classes = [
+      new Class('Guerreiro', defaultXpTable, []),
+      new Class('Mago', defaultXpTable, [
+          { id: 'm_t1_fireball', name: 'Axioma Inicial', type: 'active', tier: 1 },
+          { id: 'm_t2_burn', name: 'Sobrecarga de Mana', type: 'passive', tier: 2, requiredSkillId: 'm_t1_fireball' },
+          { id: 'm_t2_rare', name: 'Conhecimento Profundo', type: 'rare', tier: 2, requiredSkillId: 'm_t1_fireball' },
+      ]),
+      new Class('Gunslinger', defaultXpTable, []),
+    ];
+
     this.hitboxes = [ ...this.setHitboxes() ];
   }
 
@@ -57,9 +82,44 @@ export default class Player extends Entity {
     )]
   }
 
+  public equipItem(backpackIndex: number) {
+    const item = this.backpack[backpackIndex];
+    if (!item) return;
+
+    if (item.category === 'weapon') {
+      const weapon = item as Weapon;
+      
+      if (this.equipment.mainHand) {
+        this.backpack.push(this.equipment.mainHand); // Guarda a antiga
+      }
+      
+      this.equipment.mainHand = weapon; // Equipa a nova
+      this.backpack.splice(backpackIndex, 1); // Tira da mochila
+
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Equipped ${weapon.name}`, params: [] });
+
+      if (weapon.unlocksClass) {
+        this.unlockClass(weapon.unlocksClass);
+        this.setActiveClass(weapon.unlocksClass);
+      }
+    }
+  }
+
+  public unequipItem(slot: string) {
+    if (slot === 'mainHand' && this.equipment.mainHand) {
+      this.backpack.push(this.equipment.mainHand); // Guarda a arma antiga
+      this.equipment.mainHand = undefined;
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped mainHand`, params: [] });
+    }
+  }
 
   /** Avança o estado interno do jogador. Chamado a cada frame pelo DomainFacade. */
   public update(deltaTime: number): void {
+    if (this.state === 'dead' || this.attributes.hp <= 0) {
+      this.state = 'dead';
+      return;
+    }
+
     this.move(deltaTime)
     if (!this.movementSinceLastUpdate)  this.state = 'idle';
     
@@ -115,11 +175,19 @@ export default class Player extends Entity {
   }
 
   private shootBullet( direction: Vector2D ) {
+    if (this.state === 'dead' || this.attributes.hp <= 0) return;
+
     if(!this.shooted){
       
+      if (!this.equipment.mainHand) {
+        this.eventManager.dispatch('log', { channel: 'domain', message: "Cannot shoot without a weapon", params: [] });
+        return;
+      }
+
       this.shooted = true
 
-      const baseDamage = 10 * (this.attributes.level + 2)  + Math.floor(this.attributes.strength / 2);
+      const weapon = this.equipment.mainHand;
+      const baseDamage = weapon.baseDamage + Math.floor(this.attributes.strength / 2);
 
       const playerAttack = new Attack(
         this,
@@ -138,6 +206,8 @@ export default class Player extends Entity {
   }
 
   public override move( deltaTime: number): void {
+    if (this.state === 'dead' || this.attributes.hp <= 0) return;
+
     this.state = 'walking';
     this.movementSinceLastUpdate = true;
     const displacement = this.attributes.speed * deltaTime
@@ -200,4 +270,37 @@ export default class Player extends Entity {
     return this.state;
   }
 
+  public allocateAttribute(attribute: keyof baseAttributes) {
+    if(this.attributes.spendPoint(attribute)) {
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Allocated point to ${attribute}`, params: [] });
+    }
+  }
+
+  //? ----------- Class & Skill Management -----------
+
+  /** Desbloqueia permanentemente uma nova classe. Pode ser chamado quando pegar uma arma pela primeira vez. */
+  public unlockClass(className: string): void {
+    this._unlockedClasses.add(className);
+    this.eventManager.dispatch('log', { channel: 'domain', message: `Class unlocked: ${className}`, params: [] });
+  }
+
+  /** Define a classe ativa atual. */
+  public setActiveClass(className: string): void {
+    if (this._unlockedClasses.has(className)) {
+      this._activeClass = className;
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Class changed to: ${className}`, params: [] });
+    }
+  }
+
+  public get classes(): Class[] { return this._classes; }
+  public get unlockedSkills(): Set<string> { return this._unlockedSkills; }
+  
+  public unlockSkill(skillId: string): void {
+    // Opcional: A regra de negócio se o jogador tem pontos de skill suficientes entra aqui!
+    this._unlockedSkills.add(skillId);
+    this.eventManager.dispatch('log', { channel: 'domain', message: `Skill unlocked: ${skillId}`, params: [] });
+  }
+
+  public get activeClass(): string | null { return this._activeClass; }
+  public get unlockedClasses(): string[] { return Array.from(this._unlockedClasses); }
 }

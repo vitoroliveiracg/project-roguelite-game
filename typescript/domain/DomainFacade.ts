@@ -74,6 +74,27 @@ export default class DomainFacade implements IGameDomain {
     this.actionManager.checkEvent(command.actions, mouseLastCoordinates)
   }
 
+  public manageInventory(action: 'equip' | 'unequip', payload: any): void {
+    if (action === 'equip') {
+      this.player.equipItem(payload.index);
+    }
+    if (action === 'unequip') {
+      this.player.unequipItem(payload.slot);
+    }
+  }
+
+  public manageSkillTree(action: 'unlock' | 'changeClass', payload: any): void {
+    if (action === 'changeClass') {
+       this.player.setActiveClass(payload.className);
+    } else if (action === 'unlock') {
+       this.player.unlockSkill(payload.skillId);
+    }
+  }
+
+  public allocateAttribute(attribute: string): void {
+    this.player.allocateAttribute(attribute as any);
+  }
+
   /** Fase de Desenho (Coleta de Dados): Constrói e retorna uma representação em DTOs do estado atual do jogo para a camada de renderização. @throws {Error} Se o mundo não foi inicializado. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   public getRenderState(): { world: WorldState; renderables: readonly RenderableState[] } {
     this.logger.log('sync', 'DomainFacade getting render state...');
@@ -93,6 +114,39 @@ export default class DomainFacade implements IGameDomain {
       level: this.player.attributes.level,
       currentXp: this.player.attributes.currentXp,
       xpToNextLevel: this.player.attributes.xpToNextLevel,
+      hp: this.player.attributes.hp,
+      maxHp: this.player.attributes.maxHp,
+      mana: this.player.attributes.mana,
+      maxMana: this.player.attributes.maxMana,
+      attributes: {
+        strength: this.player.attributes.strength,
+        constitution: this.player.attributes.constitution,
+        dexterity: this.player.attributes.dexterity,
+        inteligence: this.player.attributes.inteligence,
+        wisdown: this.player.attributes.wisdown,
+        charisma: this.player.attributes.charisma,
+        availablePoints: this.player.attributes.availablePoints,
+      },
+      backpack: this.player.backpack.map(item => ({ name: item.name, iconId: item.iconId })),
+      equipment: {
+        mainHand: this.player.equipment.mainHand ? { name: this.player.equipment.mainHand.name, iconId: this.player.equipment.mainHand.iconId } : undefined
+      },
+      activeClass: this.player.activeClass,
+      unlockedClasses: this.player.unlockedClasses,
+      classes: this.player.classes.map(c => ({
+        name: c.name,
+        isUnlocked: this.player.unlockedClasses.includes(c.name),
+        isActive: this.player.activeClass === c.name
+      })),
+      skillTree: (this.player.activeClass ? this.player.classes.find(c => c.name === this.player.activeClass)?.skills.map(s => ({
+        id: s.id,
+        name: s.name,
+        type: s.type,
+        tier: s.tier,
+        unlocked: this.player.unlockedSkills.has(s.id),
+        // Só pode desbloquear se não houver skill requerida, ou se a requerida já estiver desbloqueada.
+        canUnlock: !s.requiredSkillId || this.player.unlockedSkills.has(s.requiredSkillId)
+      })) : []) ?? []
     };
 
     const otherStates = this.objectManager.getAllRenderableStates();

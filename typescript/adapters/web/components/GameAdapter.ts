@@ -32,12 +32,24 @@ export default class GameAdapter {
     logger.log('init', 'GameAdapter instantiated.');
   }
 
+  private isPaused: boolean = false;
+  public togglePauseGame = (): void => {
+    this.isPaused = !this.isPaused;
+    logger.log('init', `Game paused state: ${this.isPaused}`);
+  };
+
   //? ----------- Lifecycle -----------
 
   /** Fase de Inicialização: Orquestra a criação dos subsistemas da web (Canvas, Câmera, Renderer), carrega assets, informa o domínio sobre o mundo e inicia o game loop. @async @returns {Promise<void>} Resolve quando os assets essenciais são carregados. */
   public async initialize(){
     logger.log('init', 'GameAdapter initializing...');
-    this.uiManager = new UIManager();
+    this.uiManager = new UIManager(
+      this.togglePauseGame,
+      (index: number) => this.domain.manageInventory('equip', { index }),
+      (slot: string) => this.domain.manageInventory('unequip', { slot }),
+      (action: 'unlock' | 'changeClass', payload: any) => this.domain.manageSkillTree(action, payload),
+      (attribute: string) => this.domain.allocateAttribute(attribute)
+    );
     this.inputGateway = new InputGateway(this.domain);
     this.setupEventListeners();
     
@@ -79,14 +91,24 @@ export default class GameAdapter {
 
   /** Fase de Update (Lógica do Adapter): Função principal do ciclo de vida, chamada a cada frame para processar inputs, delegar a atualização de lógica para o domínio, sincronizar o estado visual e atualizar a câmera. @private @param deltaTime O tempo em segundos desde o último frame. */
   private update(deltaTime: number): void {
-    this.handlePlayerInteractions();
-    this.domain.update(deltaTime);
+    if (this.inputGateway.inputManager.consumeAction('toggle_attributes')) {
+      this.uiManager.toggleCharacterMenu();
+    }
+
+    if (this.inputGateway.inputManager.consumeAction('toggle_skill_tree')) {
+      this.uiManager.toggleSkillTree();
+    }
+
+    if (!this.isPaused) {
+      this.handlePlayerInteractions();
+      this.domain.update(deltaTime);
+      this.sceneManager.updateAnimations(deltaTime);
+    }
+
     this.syncScene();
 
     const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
     this.uiManager.update(playerState);
-
-    this.sceneManager.updateAnimations(deltaTime);
   }
 
   /** Fase de Desenho: Função final do ciclo de vida, chamada a cada frame após o `update` para delegar a responsabilidade de desenhar o frame atual para o `Renderer`. */

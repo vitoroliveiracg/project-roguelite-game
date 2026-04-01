@@ -4,4 +4,5 @@ export type objectTypeId =
     | 'blackEnemy'
     | 'simpleBullet'
     | 'circle'
+    | 'droppedItem'
 ;

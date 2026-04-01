@@ -1,0 +1,126 @@
+#character-menu-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 400px;
+    background-color: rgba(0, 0, 0, 0.95);
+    border: 2px solid #555;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Minecraft', 'Courier New', Courier, monospace;
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0px 4px 20px rgba(0,0,0,1);
+}
+
+.menu-tabs {
+    display: flex;
+    border-bottom: 2px solid #555;
+    background-color: #222;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    border-right: 2px solid #555;
+    color: #AAA;
+    font-size: 16px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.tab-btn:last-child { border-right: none; }
+
+.tab-btn:hover {
+    background-color: #333;
+    color: #FFF;
+}
+
+.tab-btn.active {
+    background-color: rgba(0, 0, 0, 0.95);
+    color: #FFD700;
+    font-weight: bold;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.95);
+    margin-bottom: -2px;
+}
+
+.menu-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: 100%;
+}
+
+.attributes-header {
+    text-align: center;
+    border-bottom: 2px solid #555;
+    padding-bottom: 10px;
+}
+
+.attributes-header h2 {
+    margin: 0; font-size: 24px; color: #FFD700; text-shadow: 1px 1px 0px #000;
+}
+
+.attributes-body { 
+    display: flex; flex-direction: column; gap: 10px; max-width: 300px; margin: 0 auto; width: 100%;
+}
+
+.attr-row { display: flex; justify-content: space-between; align-items: center; font-size: 18px; border-bottom: 1px dashed #333; padding-bottom: 4px; }
+.attr-label { color: #AAA; } .attr-value { color: #FFF; font-weight: bold; }
+
+.attr-add-btn { background-color: #444; color: #fff; border: 1px solid #666; border-radius: 4px; width: 20px; height: 20px; cursor: pointer; margin-left: 10px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.attr-add-btn:hover { background-color: #666; }
+.attr-add-btn:disabled { background-color: #222; color: #555; cursor: not-allowed; border-color: #333; }
+
+/* --- Aba de Inventário --- */
+.inventory-layout { display: flex; gap: 15px; height: 100%; width: 100%; }
+.paper-doll-panel { flex: 1; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+.paper-doll-panel h3, .backpack-panel h3 { margin: 0 0 10px 0; color: #FFD700; text-align: center; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 5px; width: 100%; }
+.backpack-panel { flex: 2; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; }
+
+.paper-doll-grid { display: grid; grid-template-columns: repeat(3, 45px); grid-template-rows: repeat(5, 45px); gap: 10px; margin-top: 10px; justify-content: center; }
+.eq-slot { width: 45px; height: 45px; background: #222; border: 2px dashed #555; border-radius: 4px; display: flex; justify-content: center; align-items: center; color: #777; font-size: 24px; cursor: pointer; transition: border-color 0.2s, background-color 0.2s; }
+.eq-slot:hover { border-style: solid; border-color: #FFD700; background: #333; }
+.eq-head { grid-column: 2; grid-row: 1; }
+.eq-amulet { grid-column: 3; grid-row: 1; }
+.eq-main { grid-column: 1; grid-row: 2; }
+.eq-chest { grid-column: 2; grid-row: 2; }
+.eq-off { grid-column: 3; grid-row: 2; }
+.eq-gloves { grid-column: 1; grid-row: 3; }
+.eq-pants { grid-column: 2; grid-row: 3; }
+.eq-ring1 { grid-column: 3; grid-row: 3; }
+.eq-ring2 { grid-column: 1; grid-row: 4; }
+.eq-boots { grid-column: 2; grid-row: 4; }
+.eq-ring3 { grid-column: 3; grid-row: 4; }
+.eq-book { grid-column: 1; grid-row: 5; }
+
+.backpack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); grid-auto-rows: 40px; gap: 8px; overflow-y: auto; padding: 5px; align-content: start; }
+.bp-slot { background: #222; border: 1px solid #444; border-radius: 4px; cursor: pointer; transition: border-color 0.2s, background-color 0.2s; }
+.bp-slot:hover { border-color: #FFD700; background: #333; }
+
+/* --- Aba de Skills --- */
+.skill-equip-panel { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.skill-equip-panel h3 { margin: 0 0 10px 0; color: #FFD700; text-align: center; font-size: 20px; border-bottom: 1px solid #444; padding-bottom: 5px; width: 100%; max-width: 300px;}
+.equip-section h4 { margin: 0 0 10px 0; color: #AAA; text-align: center;}
+.equip-slots { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.skill-slot { width: 45px; height: 45px; border: 2px dashed #555; background: #222; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; }
+.skill-slot.active-slot { border-radius: 50%; }
+.skill-slot.passive-slot { border-radius: 4px; transform: rotate(45deg); margin: 10px; }
+.skill-slot.passive-slot > * { transform: rotate(-45deg); }
+.skill-slot.filled { border-style: solid; border-color: #FFD700; background: #B8860B; }
+.skill-slot.locked { background: #111; color: #555; font-size: 20px; border-style: solid; border-color: #333; cursor: not-allowed;}
+.skill-lvl { position: absolute; bottom: -8px; right: -8px; background: #000; color: #FFF; font-size: 10px; padding: 2px 4px; border: 1px solid #555; border-radius: 4px; }

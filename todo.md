@@ -1,7 +1,7 @@
 
 ## TODO (Organização)
 
-* [ ] HUD Modular: Desenvolver as GUIs de HP, Mana e Status
+* [x] HUD Modular: Desenvolver as GUIs de HP, Mana e Status
 * [ ] Compositor Visual (O "Lego"): Sistema modular na fábrica visual para juntar formas simples/sprites para as magias dinâmicas, itens, armaduras, armas.
 * [ ] Sistema de Drops e Inventário: Entidades droparem itens de verdade, lógica de coleta por proximidade e armazenamento.
 * [ ] Lógica de Classes e Desbloqueio
@@ -63,19 +63,19 @@
 
 ### Épico 1: Interface de Usuário (UI) - Personagem
 
-Tarefa: Criar Moldura Principal da Interface do Personagem
+Tarefa: [~] Criar Moldura Principal da Interface do Personagem
 
-    Implementar o container principal com 3 abas navegáveis: "Inv" (Inventário), "Status", "Skill".
+    [x] Implementar o container principal com 3 abas navegáveis: "Inv" (Inventário), "Status", "Skill".
 
-    Garantir que o estado da aba selecionada seja mantido.
+    [x] Garantir que o estado da aba selecionada seja mantido.
 
-Tarefa: Implementar Aba "Inv" (Inventário)
+Tarefa: [x] Implementar Aba "Inv" (Inventário)
 
-    Sub-tarefa: Criar a grade do inventário ("Bolsa") com slots.
+    [x] Sub-tarefa: Criar a grade do inventário ("Bolsa") com slots.
 
-    Sub-tarefa: Criar a UI do "Paper Doll" (boneco de equipamento).
+    [x] Sub-tarefa: Criar a UI do "Paper Doll" (boneco de equipamento).
 
-    Sub-tarefa: Implementar os slots de equipamento específicos (ex: capacete, peitoral, arma 1, arma 2, bota, pernas, e 3 slots de acessórios/anéis, conforme image_625278.png).
+    [x] Sub-tarefa: Implementar os slots de equipamento específicos (ex: capacete, peitoral, arma 1, arma 2, bota, pernas, e 3 slots de acessórios/anéis, conforme image_625278.png).
 
     Sub-tarefa: Criar lógica de "Equipar/Desequipar" (arrastar e soltar, ou clique-direito) entre a Bolsa e o Paper Doll.
 
@@ -99,33 +99,33 @@ Tarefa: Implementar Aba "Status"
 
 ### Épico 2: Sistema de Habilidades (Skills)
 
-Tarefa: Criar UI da "Árvore de Habilidades" (Skill Tree)
+Tarefa: [~] Criar UI da "Árvore de Habilidades" (Skill Tree)
 
-    Sub-tarefa: Implementar o layout visual da árvore com nós (círculos, retângulos) e linhas de conexão (conforme image_62009f.jpg).
+    [~] Sub-tarefa: Implementar o layout visual da árvore com nós (círculos, retângulos) e linhas de conexão (conforme image_62009f.jpg).
 
-    Sub-tarefa: Criar lógica de pré-requisitos (nó só pode ser habilitado se o anterior estiver).
+    [~] Sub-tarefa: Criar lógica de pré-requisitos visual (nó bloqueado e desbloqueado).
 
-    Sub-tarefa: Diferenciar visualmente tipos de nós: "Passiva", "Hab. ativa" (Habilidade Ativa) e "RARO".
+    [~] Sub-tarefa: Diferenciar visualmente tipos de nós: "Passiva", "Hab. ativa" (Habilidade Ativa) e "RARO".
 
-    Sub-tarefa: Implementar o sistema de "Tiers" ou seções (conforme barra lateral 1, 2, 3, 4 em image_62009f.jpg).
+    [~] Sub-tarefa: Implementar o sistema de "Tiers" ou seções.
 
-    Sub-tarefa: Associar cada árvore a uma Classe (conforme ícones no topo de image_62009f.jpg: espada, cajado, arco, etc.).
+    [~] Sub-tarefa: Associar visualmente cada árvore a uma Classe no topo.
 
-Tarefa: Criar UI de Gerenciamento de Skills Ativas/Passivas
+Tarefa: [~] Criar UI de Gerenciamento de Skills Ativas/Passivas
 
-    Requisito extraído de image_625255.jpg.
+    [~] Sub-tarefa: Criar a UI para equipar skills (conforme image_625255.jpg).
 
-    Sub-tarefa: Criar a UI para equipar skills (conforme image_625255.jpg).
+    [~] Sub-tarefa: Implementar slots de skills "Ativo" (círculos) e "Passivo" (losangos).
 
-    Sub-tarefa: Implementar slots de skills "Ativo" (círculos) e "Passivo" (triângulo).
+    [~] Sub-tarefa: Implementar sistema visual de "Nível" para skills.
 
-    Sub-tarefa: Implementar sistema de "Nível" para skills (ex: "Lv 5", "Lv 4").
-
-    Sub-tarefa: Implementar sistema de desbloqueio de slots de skill (os cadeados em image_625255.jpg).
+    [~] Sub-tarefa: Implementar sistema visual de slots trancados.
 
 Tarefa: [Domínio] Lógica das Classes
 
-    Implementar a lógica: "Armas liberam classes".
+    [~] Implementar a estrutura: "classes não são ligadas as armas" (desbloqueio no Player é permanente).
+
+    [~] Implementar o gatilho: "Armas liberam classes" (depende do inventário).
 
     Implementar a lógica: "classes não são ligadas as armas" (desbloqueio é permanente).
 

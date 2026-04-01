@@ -1,0 +1,38 @@
+#player-status-container {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: 'Minecraft', 'Courier New', Courier, monospace;
+}
+
+.status-bar-container {
+    position: relative;
+    width: 250px;
+    height: 20px;
+    background-color: #000000;
+    border: 2px solid #111;
+    padding: 1px;
+    box-shadow: inset 0px 2px 1px rgba(0,0,0,0.7);
+    overflow: hidden;
+}
+
+.status-bar-fill {
+    height: 100%;
+    width: 100%;
+    transition: width 0.2s ease-out;
+}
+
+.hp-fill { background: linear-gradient(to bottom, #ff4d4d, #cc0000); }
+.mana-fill { background: linear-gradient(to bottom, #4da6ff, #0066cc); }
+
+.status-bar-text {
+    position: absolute; width: 100%; text-align: center;
+    top: 50%; left: 0; transform: translateY(-50%);
+    font-size: 14px; font-weight: bold; color: #ffffff;
+    text-shadow: 1px 1px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000;
+    pointer-events: none;
+}

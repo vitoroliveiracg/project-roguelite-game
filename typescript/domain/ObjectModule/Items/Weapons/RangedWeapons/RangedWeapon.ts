@@ -24,9 +24,10 @@ export default abstract class RangedWeapon extends Weapon {
     requiredLevel: number = 1,
     requiredAttributes: Partial<baseAttributes> = {},
     isUnique: boolean = false,
-    isTradable: boolean = true
+    isTradable: boolean = true,
+    unlocksClass?: string
   ) {
-    super(baseDamage, attackSpeed, name, description, itemId, rarity, iconId, price, durability, effects, requiredLevel, requiredAttributes, isUnique, isTradable);
+    super(baseDamage, attackSpeed, name, description, itemId, rarity, iconId, price, durability, effects, requiredLevel, requiredAttributes, isUnique, isTradable, unlocksClass);
   }
   
   //? ----------- Methods -----------

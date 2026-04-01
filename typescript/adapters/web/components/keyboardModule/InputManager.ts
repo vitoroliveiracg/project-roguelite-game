@@ -24,7 +24,9 @@ export type GameAction =
   | 'spell_6'
   | 'spell_7'
   | 'spell_8'
-  | 'spell_9';
+  | 'spell_9'
+  | 'toggle_attributes'
+  | 'toggle_skill_tree';
 
 /**  @class InputManager Gerencia todos os inputs do usuário, mapeando eventos brutos de teclado para ações de jogo específicas. Esta classe centraliza a lógica de input, permitindo bindings complexos, combos e remapeamento de teclas. */
 export class InputManager {

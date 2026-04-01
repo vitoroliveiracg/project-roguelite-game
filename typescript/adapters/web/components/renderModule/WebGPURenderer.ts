@@ -161,7 +161,9 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
     this.spriteConfigs.set('player-idle', { atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 }, frameCount: 2, animationSpeed: 20 });
     this.spriteConfigs.set('player-walking', { atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 }, frameCount: 2, animationSpeed: 10 });
     this.spriteConfigs.set('slime-walking', { atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 }, frameCount: 8, animationSpeed: 10 });
+    this.spriteConfigs.set('slime-waiting', { atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 }, frameCount: 8, animationSpeed: 10 });
     this.spriteConfigs.set('simpleBullet-travelling', { atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 }, frameCount: 1, animationSpeed: 10 });
+    this.spriteConfigs.set('droppedItem-idle', { atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 }, frameCount: 1, animationSpeed: 10 });
   }
 
   public getSpriteConfig(type: objectTypeId, state?: string): SpriteConfig | undefined {

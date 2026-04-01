@@ -1,0 +1,73 @@
+<div id="character-menu-container">
+    <div class="menu-tabs">
+        <button id="tab-btn-inv" class="tab-btn">Inv</button>
+        <button id="tab-btn-status" class="tab-btn active">Status</button>
+        <button id="tab-btn-skill" class="tab-btn">Skill</button>
+    </div>
+    <div class="menu-content">
+        <div id="tab-content-inv" class="tab-content" style="display: none;">
+            <div class="inventory-layout">
+                <div class="paper-doll-panel">
+                    <h3>Equipamentos</h3>
+                    <div class="paper-doll-grid">
+                        <div class="eq-slot eq-head" title="Capacete">🪖</div>
+                        <div class="eq-slot eq-amulet" title="Amuleto">📿</div>
+                        <div class="eq-slot eq-main" title="Mão Principal">⚔️</div>
+                        <div class="eq-slot eq-chest" title="Peitoral">👕</div>
+                        <div class="eq-slot eq-off" title="Mão Secundária">🛡️</div>
+                        <div class="eq-slot eq-gloves" title="Luvas">🧤</div>
+                        <div class="eq-slot eq-pants" title="Calça">👖</div>
+                        <div class="eq-slot eq-ring1" title="Anel 1">💍</div>
+                        <div class="eq-slot eq-ring2" title="Anel 2">💍</div>
+                        <div class="eq-slot eq-boots" title="Botas">🥾</div>
+                        <div class="eq-slot eq-ring3" title="Anel 3">💍</div>
+                        <div class="eq-slot eq-book" title="Tomo/Livro">📖</div>
+                    </div>
+                </div>
+                <div class="backpack-panel">
+                    <h3>Bolsa</h3>
+                    <div class="backpack-grid">
+                        <div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div>
+                        <div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div>
+                        <div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div>
+                        <div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div>
+                        <div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div><div class="bp-slot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-content-status" class="tab-content">
+            <div class="attributes-header">
+                <h2>Status</h2>
+                <div style="font-size: 14px; margin-top: 5px; color: #aaa;">Pontos Disponíveis: <span id="attr-points" style="color: #FFD700;">0</span></div>
+            </div>
+            <div class="attributes-body">
+                <div class="attr-row"><span class="attr-label">Força:</span> <div><span id="attr-str" class="attr-value">0</span> <button class="attr-add-btn" data-attr="strength">+</button></div></div>
+                <div class="attr-row"><span class="attr-label">Destreza:</span> <div><span id="attr-dex" class="attr-value">0</span> <button class="attr-add-btn" data-attr="dexterity">+</button></div></div>
+                <div class="attr-row"><span class="attr-label">Inteligência:</span> <div><span id="attr-int" class="attr-value">0</span> <button class="attr-add-btn" data-attr="inteligence">+</button></div></div>
+                <div class="attr-row"><span class="attr-label">Constituição:</span> <div><span id="attr-con" class="attr-value">0</span> <button class="attr-add-btn" data-attr="constitution">+</button></div></div>
+                <div class="attr-row"><span class="attr-label">Sabedoria:</span> <div><span id="attr-wis" class="attr-value">0</span> <button class="attr-add-btn" data-attr="wisdown">+</button></div></div>
+                <div class="attr-row"><span class="attr-label">Carisma:</span> <div><span id="attr-cha" class="attr-value">0</span> <button class="attr-add-btn" data-attr="charisma">+</button></div></div>
+            </div>
+        </div>
+        <div id="tab-content-skill" class="tab-content" style="display: none;">
+                <div class="skill-equip-panel">
+                    <h3>Gerenciamento</h3>
+                    <div class="equip-section">
+                        <h4>Ativas</h4>
+                        <div class="equip-slots">
+                            <div class="skill-slot active-slot filled"><span class="skill-lvl">Lv 1</span></div>
+                            <div class="skill-slot active-slot locked">🔒</div>
+                        </div>
+                    </div>
+                    <div class="equip-section">
+                        <h4>Passivas</h4>
+                        <div class="equip-slots">
+                            <div class="skill-slot passive-slot empty"></div>
+                            <div class="skill-slot passive-slot locked"><div>🔒</div></div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>

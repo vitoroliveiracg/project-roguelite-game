@@ -1,0 +1,48 @@
+#skill-tree-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px;
+    height: 500px;
+    background-color: rgba(0, 0, 0, 0.95);
+    border: 2px solid #555;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Minecraft', 'Courier New', Courier, monospace;
+    z-index: 250;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0px 4px 20px rgba(0,0,0,1);
+}
+
+.skill-header {
+    text-align: center;
+    border-bottom: 2px solid #555;
+    background-color: #222;
+    padding: 15px;
+    border-radius: 6px 6px 0 0;
+}
+
+.skill-header h2 { margin: 0; color: #FFD700; text-shadow: 1px 1px 0px #000; }
+
+.skill-tree-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden;}
+.class-selector { display: flex; justify-content: center; gap: 10px; padding: 10px; border-bottom: 1px solid #444; background: #222; }
+.class-icon { width: 40px; height: 40px; font-size: 20px; border-radius: 4px; background: #333; border: 2px solid #555; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.class-icon.active { border-color: #FFD700; background: #555; }
+.class-icon.unlocked { border-color: #4da6ff; }
+.class-icon.locked { filter: grayscale(100%) opacity(0.3); cursor: not-allowed; }
+
+.skill-tree-area { flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
+.skill-tier { display: flex; align-items: center; width: 100%; position: relative; justify-content: center; gap: 30px; margin: 10px 0; }
+.tier-label { position: absolute; left: 10px; color: #888; font-weight: bold; }
+.skill-nodes { display: flex; gap: 40px; }
+.skill-node { width: 40px; height: 40px; cursor: pointer; position: relative; border: 2px solid #555; background: #222; transition: transform 0.2s; }
+.skill-node:hover { transform: scale(1.1); }
+.skill-node.active-node { border-radius: 50%; }
+.skill-node.passive-node { border-radius: 4px; transform: rotate(45deg); margin: 0 10px; }
+.skill-node.passive-node:hover { transform: rotate(45deg) scale(1.1); }
+.skill-node.rare-node { border-radius: 4px; border-color: #A335EE; background: #401060; }
+.skill-node.unlocked { border-color: #FFD700; background: #B8860B; }
+.skill-node.locked { filter: brightness(0.5); cursor: not-allowed; }
+.skill-path-line { width: 2px; height: 30px; background: #555; }

@@ -13,9 +13,11 @@ export type baseAttributes = {
 export default class Attributes {
 
   private _hp: number = 0;
+  private _maxHp: number = 0;
   private _mana: number = 0;
   private _currentXp: number = 0;
   private _xpToNextLevel: number = 0;
+  private _availablePoints: number = 0;
 
   //? Modificação vai ser pelos bonus
   private _bonusSpeed: number = 0;
@@ -52,6 +54,7 @@ export default class Attributes {
   private setHp(hpDiceFaces :number){
     for (let i = 0; i < hpDiceFaces; i++) 
       this._hp += Dice.rollDice(hpDiceFaces);
+    this._maxHp = this._hp;
   }
 
   /**
@@ -70,8 +73,23 @@ export default class Attributes {
     while (this._currentXp >= this._xpToNextLevel) {
       this._currentXp -= this._xpToNextLevel;
       this._level++;
+      this._availablePoints++;
       this._xpToNextLevel = xpTable.fixedBase * Math.pow(xpTable.levelScale, this._level - 1);
     }
+  }
+
+  public spendPoint(attribute: keyof baseAttributes): boolean {
+    if (this._availablePoints > 0) {
+      this._availablePoints--;
+      if (attribute === 'strength') this._strength++;
+      else if (attribute === 'constitution') this._constitution++;
+      else if (attribute === 'dexterity') this._dexterity++;
+      else if (attribute === 'inteligence') this._inteligence++;
+      else if (attribute === 'wisdown') this._wisdown++;
+      else if (attribute === 'charisma') this._charisma++;
+      return true;
+    }
+    return false;
   }
   
   //? ----------- Helpers -----------
@@ -94,6 +112,7 @@ export default class Attributes {
   
   /** Current Health Points. */
   public get hp(): number { return this._hp; }
+  public get maxHp(): number { return this._maxHp; }
   
   /** Current Mana Points. */
   public get mana() :number { return this._mana; }
@@ -109,6 +128,8 @@ export default class Attributes {
   public get currentXp(): number { return this._currentXp; }
   /** The experience points needed to reach the next level. */
   public get xpToNextLevel(): number { return this._xpToNextLevel; }
+  /** Available points to spend in attributes. */
+  public get availablePoints(): number { return this._availablePoints; }
 
 
   /** Entity's movement speed modifier. Based on Dexterity. */
