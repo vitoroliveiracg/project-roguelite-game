@@ -14,13 +14,25 @@ export type GameAction =
   | 'shift' 
   | 'mouse_left'
   | 'mouse_middle'
-  | 'mouse_right';
+  | 'mouse_right'
+  | 'spell_0'
+  | 'spell_1'
+  | 'spell_2'
+  | 'spell_3'
+  | 'spell_4'
+  | 'spell_5'
+  | 'spell_6'
+  | 'spell_7'
+  | 'spell_8'
+  | 'spell_9';
 
 /**  @class InputManager Gerencia todos os inputs do usuário, mapeando eventos brutos de teclado para ações de jogo específicas. Esta classe centraliza a lógica de input, permitindo bindings complexos, combos e remapeamento de teclas. */
 export class InputManager {
   private pressedKeys: Set<string> = new Set();
+  private justPressedKeys: Set<string> = new Set();
   private keyMap: Map<string, GameAction> = new Map();
   private actionMap: Map<GameAction, string> = new Map();
+  private preventUnload: boolean = true;
   public mouseLastCoordinates:{x:number,y:number} = {x:0,y:0} 
   public clickActions: Set<action> = new Set(["leftClick", "scrollClick", "rightClick"])
 
@@ -35,6 +47,16 @@ export class InputManager {
   public isActionActive(action: GameAction): boolean {
     const key = this.actionMap.get(action);
     return key ? this.pressedKeys.has(key) : false;
+  }
+
+  /** Verifica se uma ação de jogo acabou de ser ativada e a consome (útil para capturar uma única tecla por clique, como magias). @param action A ação a ser consumida. @returns `true` se a ação estava ativa e foi consumida, `false` caso contrário. */
+  public consumeAction(action: GameAction): boolean {
+    const key = this.actionMap.get(action);
+    if (key && this.justPressedKeys.has(key)) {
+      this.justPressedKeys.delete(key);
+      return true;
+    }
+    return false;
   }
 
   /** Remapeia uma ação de jogo para uma nova tecla, atualizando os mapas internos. @param action A ação a ser remapeada. @param newKey A nova tecla a ser associada à ação. */
@@ -65,6 +87,37 @@ export class InputManager {
     window.addEventListener('mouseup', this.handleMouseUp.bind(this));
     window.addEventListener('mousemove', this.handleClick.bind(this))
     window.addEventListener('contextmenu', this.handleRightClick.bind(this))
+    window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
+    window.addEventListener('blur', this.handleBlur.bind(this));
+    window.addEventListener('mouseout', this.handleMouseOut.bind(this));
+  }
+
+  /** Permite ativar ou desativar o popup de confirmação de saída programaticamente. */
+  public setPreventUnload(prevent: boolean): void {
+    this.preventUnload = prevent;
+  }
+
+  private handleBlur(): void {
+    // Quando a janela perde o foco (alt+tab ou clique fora), limpamos as teclas
+    // para evitar que o personagem continue andando sozinho ("sticky keys").
+    logger.log('input', 'Window lost focus. Clearing pressed keys.');
+    this.pressedKeys.clear();
+    this.justPressedKeys.clear();
+  }
+
+  private handleMouseOut(e: MouseEvent): void {
+    if (!e.relatedTarget) {
+      logger.log('input', 'Mouse left the window. Clearing pressed keys.');
+      this.pressedKeys.clear();
+      this.justPressedKeys.clear();
+    }
+  }
+
+  private handleBeforeUnload(e: BeforeUnloadEvent): void {
+    if (this.preventUnload) {
+      e.preventDefault();
+      e.returnValue = ''; // Exigido pelo Chrome para exibir o pop-up de confirmação.
+    }
   }
 
   private handleClick(e: MouseEvent) {
@@ -73,6 +126,12 @@ export class InputManager {
   }
 
   private handleMouseDown(e: MouseEvent) {
+    
+    // Previne comportamentos padrão (seleção de texto no canvas, auto-scroll do middle click)
+    if (e.target instanceof HTMLCanvasElement || e.button === 1 || e.button === 2) {
+      e.preventDefault();
+    }
+
     let key = ''
     if (e.button === 0) {
       key = 'mouse_left'
@@ -87,6 +146,7 @@ export class InputManager {
     if (!this.pressedKeys.has(key) && this.keyMap.has(key)) {
       logger.log('input', `Mouse Down: ${key}`);
       this.pressedKeys.add(key);
+      this.justPressedKeys.add(key);
     }
   }
 
@@ -104,19 +164,36 @@ export class InputManager {
 
     logger.log('input', `Mouse Up: ${key}`);
     this.pressedKeys.delete(key);
+    this.justPressedKeys.delete(key);
   }
 
   // private handleLeftClick(e: PointerEvent ) {}
 
-  private handleRightClick(e: PointerEvent ) {
+  private handleRightClick(e: MouseEvent ) {
     e.preventDefault()
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
     const key = e.key.toLowerCase();
+
+    const isBrowserShortcut = 
+      ((e.ctrlKey || e.metaKey) && ['s', 'p', 'f', 'g', 'r', 'j', 'u', 'd', 'h', 'w', 't', 'n'].includes(key)) || // Atalhos com Ctrl
+      ['f3', 'f5', 'f6', 'f7'].includes(key) || // Teclas de função
+      (e.altKey && ['arrowleft', 'arrowright'].includes(key)); // Alt + Setas (Voltar/Avançar página)
+      
+    if (isBrowserShortcut) {
+      e.preventDefault();
+      logger.log('input', `Blocked browser shortcut: ${e.key}`);
+    }
+
+    if (this.keyMap.has(key) && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+      e.preventDefault();
+    }
+
     if (!this.pressedKeys.has(key) && this.keyMap.has(key)) {
       logger.log('input', `Key Down: ${key}`);
       this.pressedKeys.add(key);
+      this.justPressedKeys.add(key);
     }
   }
 
@@ -124,6 +201,7 @@ export class InputManager {
     const key = e.key.toLowerCase();
     logger.log('input', `Key Up: ${key}`);
     this.pressedKeys.delete(key);
+    this.justPressedKeys.delete(key);
   }
 
   /** Define a tecla para uma ação específica, mantendo os mapas sincronizados.  @param action A ação de jogo.  @param key A tecla a ser associada.  @private */

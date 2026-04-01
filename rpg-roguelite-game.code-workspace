@@ -21,11 +21,12 @@
 			"tinaciousdesign.theme-tinaciousdesign",
 			
 			// Workspace Essentials:
-			"ms-vsliveshare.vsliveshare",
 			"vunguyentuan.vscode-css-variables",
 			"dbaeumer.vscode-eslint",
 			"xabikos.JavaScriptSnippets",
 			"ritwickdey.LiveServer",
+			"moppitz.vscode-extension-auto-import",
+			"DSKWRK.vscode-generate-getter-setter"
 		]
 	},
 
