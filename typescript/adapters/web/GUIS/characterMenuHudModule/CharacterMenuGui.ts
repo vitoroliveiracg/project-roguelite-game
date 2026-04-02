@@ -2,7 +2,9 @@ import { logger } from "../../shared/Logger";
 import html from './characterMenu.html?raw';
 import css from './characterMenu.css?raw';
 import type { EntityRenderableState } from "../../../../domain/ports/domain-contracts";
+import staffDesignUrl from '../../assets/itens/staff-design-1.png';
 import gunDesignUrl from '../../assets/itens/gun-design-1.png';
+import scytheDesignUrl from '../../assets/itens/scythe-design-1.png';
 
 /** @class CharacterMenuGui Controla a interface principal do personagem com abas (Inv, Status, Skill). */
 export default class CharacterMenuGui {
@@ -14,7 +16,6 @@ export default class CharacterMenuGui {
     private wisEl!: HTMLElement; private chaEl!: HTMLElement;
 
     private tabs: { [key: string]: { btn: HTMLElement, content: HTMLElement } } = {};
-    private currentTab: string = 'status';
 
     private togglePauseCallback: () => void;
     private bpSlots!: NodeListOf<HTMLElement>;
@@ -94,7 +95,6 @@ export default class CharacterMenuGui {
                 tab.content.style.display = 'none';
             }
         }
-        this.currentTab = tabKey;
     }
 
     public get isOpen(): boolean { return this.isVisible; }
@@ -111,8 +111,8 @@ export default class CharacterMenuGui {
         if (!this.isVisible || !data.attributes) return;
         const attrs = data.attributes;
         this.strEl.textContent = attrs.strength.toString(); this.dexEl.textContent = attrs.dexterity.toString();
-        this.intEl.textContent = attrs.inteligence.toString(); this.conEl.textContent = attrs.constitution.toString();
-        this.wisEl.textContent = attrs.wisdown.toString(); this.chaEl.textContent = attrs.charisma.toString();
+        this.intEl.textContent = attrs.intelligence.toString(); this.conEl.textContent = attrs.constitution.toString();
+        this.wisEl.textContent = attrs.wisdom.toString(); this.chaEl.textContent = attrs.charisma.toString();
         this.pointsEl.textContent = attrs.availablePoints.toString();
 
         this.addBtns.forEach(btn => {
@@ -123,8 +123,9 @@ export default class CharacterMenuGui {
             this.bpSlots.forEach((slot, index) => {
                 const item = data.backpack![index];
                 if (item) {
-                    if (item.iconId === 1) slot.textContent = '🪄';
+                    if (item.iconId === 1) slot.innerHTML = `<img src="${staffDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
                     else if (item.iconId === 2) slot.innerHTML = `<img src="${gunDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
+                    else if (item.iconId === 3) slot.innerHTML = `<img src="${scytheDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
                     else slot.textContent = '📦';
                     
                     slot.title = item.name;
@@ -134,8 +135,9 @@ export default class CharacterMenuGui {
         }
         if (data.equipment) {
             if (data.equipment.mainHand) {
-                if (data.equipment.mainHand.iconId === 1) this.eqMain.textContent = '🪄';
+                if (data.equipment.mainHand.iconId === 1) this.eqMain.innerHTML = `<img src="${staffDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
                 else if (data.equipment.mainHand.iconId === 2) this.eqMain.innerHTML = `<img src="${gunDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
+                else if (data.equipment.mainHand.iconId === 3) this.eqMain.innerHTML = `<img src="${scytheDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
                 else this.eqMain.textContent = '⚔️';
                 this.eqMain.title = data.equipment.mainHand.name;
                 this.eqMain.style.borderColor = '#FFD700';

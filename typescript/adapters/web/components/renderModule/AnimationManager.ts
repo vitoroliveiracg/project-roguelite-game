@@ -1,4 +1,4 @@
-import type { SpriteConfig } from "./WebGPURenderer";
+import type { SpriteConfig } from "../gameObjectModule/GameObjectElement";
 
 /**
  * Gerencia o estado da animação de um único objeto renderizável.
@@ -32,8 +32,8 @@ export class AnimationManager {
      */
     public setConfig(newConfig: SpriteConfig): void {
         // Troca a animação se o offset no atlas ou o número de frames for diferente.
-        if (this.config.atlasOffset.x !== newConfig.atlasOffset.x ||
-            this.config.atlasOffset.y !== newConfig.atlasOffset.y ||
+        if (this.config.atlasOffset?.x !== newConfig.atlasOffset?.x ||
+            this.config.atlasOffset?.y !== newConfig.atlasOffset?.y ||
             this.config.frameCount !== newConfig.frameCount) {
             this.config = newConfig;
             this.currentFrame = 0;

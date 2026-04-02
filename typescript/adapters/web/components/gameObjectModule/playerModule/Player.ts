@@ -1,6 +1,19 @@
 /** @file Contém a classe `Player`, a representação visual do jogador. */
 import type { EntityRenderableState } from "../../../../../domain/ports/domain-contracts"; 
 import GameObjectElement, { type GameObjectConstructorParams, type SpriteConfig } from "../GameObjectElement";
+import { RegisterSprite } from "../../../shared/RenderRegistry";
+
+const playerIdleConfig: SpriteConfig = {
+    imageSrc: new URL('../../../assets/entities/player/player-idle.png', import.meta.url).href,
+    frameCount: 2, animationSpeed: 20, frameWidth: 32, frameHeight: 32,
+    atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 }
+};
+
+const playerWalkingConfig: SpriteConfig = {
+    imageSrc: new URL('../../../assets/entities/player/player-idle.png', import.meta.url).href,
+    frameCount: 2, animationSpeed: 10, frameWidth: 32, frameHeight: 32,
+    atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 }
+};
 
 /**
  * @class Player
@@ -8,6 +21,9 @@ import GameObjectElement, { type GameObjectConstructorParams, type SpriteConfig 
  * estados de animação (ex: 'idle', 'walking'), trocando a configuração do sprite
  * conforme o estado do domínio muda.
  */
+@RegisterSprite('player', 'idle', playerIdleConfig)
+@RegisterSprite('player', 'walking', playerWalkingConfig)
+@RegisterSprite('player', 'dead', playerIdleConfig) // Previne crashes caso o renderizador solicite um estado sem arte
 export default class Player extends GameObjectElement {
   // Mapeia estados do domínio para configurações de sprite
   private readonly allConfigs: Map<string, SpriteConfig>;

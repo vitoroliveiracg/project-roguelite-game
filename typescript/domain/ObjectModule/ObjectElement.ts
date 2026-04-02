@@ -12,7 +12,7 @@ export default class ObjectElement {
     public id: number ,
     private _objectId: objectTypeId,
     protected eventManager: IEventManager,
-    public state :any = "",
+    public state :string = "",
     public hitboxes :HitBox[] | null = null,
   ){}
   

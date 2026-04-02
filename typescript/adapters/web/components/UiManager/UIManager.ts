@@ -3,6 +3,7 @@ import type { EntityRenderableState } from "../../../../domain/ports/domain-cont
 import PlayerStatusGui from "../../GUIS/playerStatusHudModule/PlayerStatusGui";
 import CharacterMenuGui from "../../GUIS/characterMenuHudModule/CharacterMenuGui";
 import SkillTreeGui from "../../GUIS/skillTreeHudModule/SkillTreeGUI";
+import GameOverGui from "../../GUIS/gameoverHudModule/GameOverGui";
 
 /** @class UIManager Gerencia todas as interfaces de usuário baseadas em DOM do jogo. */
 export default class UIManager {
@@ -10,16 +11,23 @@ export default class UIManager {
   private xpBarGui = new XpBarGui();
   private characterMenuGui: CharacterMenuGui;
   private skillTreeGui: SkillTreeGui;
+  private gameOverGui: GameOverGui;
 
   constructor(
     togglePauseCallback: () => void, 
     equipItemCallback: (index: number) => void,
     unequipItemCallback: (slot: string) => void,
     skillActionCallback: (action: 'unlock' | 'changeClass', payload: any) => void,
-    allocateAttributeCallback: (attribute: string) => void
+    allocateAttributeCallback: (attribute: string) => void,
+    restartCallback: () => void
   ) {
     this.characterMenuGui = new CharacterMenuGui(togglePauseCallback, equipItemCallback, unequipItemCallback, allocateAttributeCallback);
     this.skillTreeGui = new SkillTreeGui(togglePauseCallback, skillActionCallback);
+    this.gameOverGui = new GameOverGui(restartCallback);
+  }
+
+  public showGameOver(): void {
+    this.gameOverGui.show();
   }
 
   public toggleCharacterMenu(): void {

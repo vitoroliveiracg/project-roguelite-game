@@ -3,9 +3,9 @@
 
 * [x] HUD Modular: Desenvolver as GUIs de HP, Mana e Status
 * [ ] Compositor Visual (O "Lego"): Sistema modular na fábrica visual para juntar formas simples/sprites para as magias dinâmicas, itens, armaduras, armas.
-* [ ] Sistema de Drops e Inventário: Entidades droparem itens de verdade, lógica de coleta por proximidade e armazenamento.
-* [ ] Lógica de Classes e Desbloqueio
-* [ ] Mago (Spell Parser): Analisador no Domínio que traduz a sequência do buffer em ataques concretos (Lógica de Receitas).
+* [x] Sistema de Drops e Inventário: Entidades droparem itens de verdade, lógica de coleta por proximidade e armazenamento.
+* [x] Lógica de Classes e Desbloqueio
+* [x] Mago (Spell Parser): Analisador no Domínio que traduz a sequência do buffer em ataques concretos (Lógica de Receitas).
 * [ ] Seleção de mapas: criação de classes extendidas de mundo que são mapas que são mandadas do domínio para poder selecionar um mapa, que contém toda a estrutura para colocar tudo de um mapa em determinado mapa
 * [ ] Objetos do mapa: Tem que ter um jeito do adaptador web montar o mundo, o que tem no mundo é definido pelo domínio.
 
@@ -101,6 +101,7 @@ Tarefa: Implementar Aba "Status"
 
 Tarefa: [~] Criar UI da "Árvore de Habilidades" (Skill Tree)
 
+    [~] Sub-tarefa: Focar esta interface para ser a Árvore IN-GAME (reseta ao morrer, ligada à classe atual).
     [~] Sub-tarefa: Implementar o layout visual da árvore com nós (círculos, retângulos) e linhas de conexão (conforme image_62009f.jpg).
 
     [~] Sub-tarefa: Criar lógica de pré-requisitos visual (nó bloqueado e desbloqueado).
@@ -140,7 +141,7 @@ Tarefa: Criar UI e Lógica do Mapa-Múndi
 
     Sub-tarefa: Adicionar as diferentes zonas/ilhas (ex: "Vilgen", "Aun").
 
-    Sub-tarefa: Implementar a funcionalidade de "Teletrans..." (Fast Travel) para zonas já visitadas.
+    Sub-tarefa: Implementar a funcionalidade de "Teletransporte" (Fast Travel) para zonas já visitadas.
 
     Sub-tarefa: Mostrar visualmente os caminhos/conexões entre as zonas.
 
@@ -162,17 +163,17 @@ Tarefa: Criar UI e Lógica do Mapa de Progressão (Run)
 
 ### Épico 6: Sistema de Conjuração do Mago Programador (Axiomante)
 
-Tarefa: [Domínio] Buffer de Entrada (ActionManager)
+Tarefa: [x] [Domínio] Buffer de Entrada (ActionManager)
 
-    Sub-tarefa: Implementar um buffer FIFO temporal no `ActionManager` para capturar e reter sequências curtas de teclas.
+    [x] Sub-tarefa: Implementar um buffer FIFO temporal no `ActionManager` para capturar e reter sequências curtas de teclas.
 
-    Sub-tarefa: Lógica de expiração (se o jogador não completar a string a tempo, limpa o buffer).
+    [x] Sub-tarefa: Lógica de expiração (se o jogador não completar a string a tempo, limpa o buffer).
 
-Tarefa: [Domínio] Analisador Sintático (Spell Parser)
+Tarefa: [x] [Domínio] Analisador Sintático (Spell Parser)
 
-    Sub-tarefa: Criar módulo de domínio `SpellParser` que escuta o buffer e compara com padrões de "Receitas" de magias.
+    [x] Sub-tarefa: Criar módulo de domínio `SpellParser` que escuta o buffer e compara com padrões de "Receitas" de magias.
 
-    Sub-tarefa: Instanciar ataques/projéteis com base nos modificadores lidos (Projectile + Fire + Damage = Fireball).
+    [x] Sub-tarefa: Instanciar ataques/projéteis com base nos modificadores lidos (Projectile + Fire + Damage = Fireball).
 
 ### Épico 7: Compositor Visual Dinâmico (Reutilizável)
 
@@ -188,22 +189,33 @@ Tarefa: Visual Procedural de Magias
 
     Sub-tarefa: Usar o Compositor de Camadas para empilhar partículas simples (ex: base redonda vermelha + aura laranja) em magias não refinadas.
 
+
+### Épico 8: Meta-Progressão (O Coração do Roguelite)
+*O sistema global de progressão que persiste entre as mortes, separando a árvore de classe (in-game) da árvore de conta (global).*
+
+Tarefa: Árvore de Habilidades Global (Hub/Menu)
+    Sub-tarefa: Criar interface para a Árvore Global, acessível fora das runs (Hub ou Main Menu).
+    Sub-tarefa: Criar `MetaProgressionManager` no Domínio (persiste além do ciclo de vida do `Player`).
+    Sub-tarefa: Implementar a injeção de bônus globais: Quando um novo `Player` nasce, o `MetaProgressionManager` injeta atributos bônus nas propriedades de `_bonus` da classe `Attributes`.
+    Sub-tarefa: Implementar uma moeda global de persistência (ex: "Essência" ou "Almas") que sobrevive à morte para ser gasta na Árvore Global.
+
+
 ### Épico 4: Sistema de Itens, Crafting e Drops
 
 
-Tarefa: [Domínio] Lógica de Drop de Itens
+Tarefa: [~] [Domínio] Lógica de Drop de Itens
 
     Implementar taxa de drop (ex: 3%).
 
-    Itens devem instanciar no chão ("caem no chão").
+    [x] Itens devem instanciar no chão ("caem no chão").
 
-    Implementar coleta por proximidade ("Pega ao passar perto").
+    [x] Implementar coleta por proximidade ("Pega ao passar perto").
 
     Implementar a regra: "Item fica no chão se inventário cheio".
 
     Implementar sistema de atributos com ranges variáveis.
 
-    Implementar chance de itens terem "efeitos" especiais.
+    [x] Implementar chance de itens terem "efeitos" especiais.
 
 Tarefa: Sistema de Crafting (Criação de Itens)
 

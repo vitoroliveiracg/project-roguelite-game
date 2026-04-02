@@ -1,3 +1,5 @@
+export type ProgressionReward = 'attribute_point' | 'class_skill';
+
 /**
  * Define a estrutura para uma tabela de experiência,
  * permitindo diferentes curvas de progressão.
@@ -7,4 +9,5 @@
 export default interface IXPTable {
   fixedBase: number;
   levelScale: number;
+  getRewardsForLevel(level: number): ProgressionReward[];
 }

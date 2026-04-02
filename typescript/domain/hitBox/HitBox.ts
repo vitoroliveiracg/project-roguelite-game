@@ -28,7 +28,8 @@ export abstract class HitBox {
     }
     /** * Atualiza a posição da HitBox. * @param coordinates Novo conjunto de coordenadas x e y da posição da HitBox. */
     public updatePosition(coodinates: {x:number, y:number}): void {
-        this.coordinates = coodinates
+        this.coordinates.x = coodinates.x;
+        this.coordinates.y = coodinates.y;
     }
     /** Atualiza a rotação. * @param rotation Novo ângulo em radianos da HitBox. */
     public updateRotation(rotation: number): void {

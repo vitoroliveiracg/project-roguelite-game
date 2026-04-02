@@ -27,8 +27,8 @@ export default abstract class Entity extends ObjectElement {
     objectId: objectTypeId,
     public attributes :Attributes,
     eventManager: IEventManager,
-    state :any = "",
-    protected accelator:Vector2D = new Vector2D(0,0),
+    state :string = "",
+    protected accelerator:Vector2D = new Vector2D(0,0),
     protected hurtLaunchFactor:number = 10
   ){ 
     super(size, coordinates, id, objectId, eventManager, state) 
@@ -36,8 +36,8 @@ export default abstract class Entity extends ObjectElement {
 
   //? ----------- Methods -----------
 
-  /** Avança o estado interno da entidade. Pode ser sobrescrito por subclasses. * @param deltaTime O tempo em segundos decorrido desde o último frame. */
-  public abstract update(deltaTime: number): void;
+  /** Avança o estado interno da entidade. Pode ser sobrescrito por subclasses. * @param deltaTime O tempo em segundos decorrido desde o último frame. * @param player Instância do jogador, se necessária para cálculo de IA. */
+  public abstract update(deltaTime: number, player?: any): void;
   
   protected updatePosition() {
     this.coordinates.x += this.velocity.x;
@@ -55,7 +55,7 @@ export default abstract class Entity extends ObjectElement {
     }
 
     // Aplica o dano ao HP
-    this.attributes.hp = finalDamage;
+    this.attributes.hp = this.attributes.hp - finalDamage;
     
     if (this.attributes.hp <= 0) {
       this.state = 'dead';
@@ -63,24 +63,24 @@ export default abstract class Entity extends ObjectElement {
       return finalDamage;
     }
     // Calcula a força do knockback com base no fator de lançamento, não mais na vida do alvo.
-    const accelatorVectorInfluency = damageInfo.direction.multiply(this.hurtLaunchFactor);
-    this.accelator.add(accelatorVectorInfluency)
+    const acceleratorVectorInfluency = damageInfo.direction.clone().multiplyMut(this.hurtLaunchFactor);
+    this.accelerator.addMut(acceleratorVectorInfluency)
 
     setTimeout(() => {
-      this.accelator.reset()
+      this.accelerator.resetMut()
     }, 100);
 
     return finalDamage;
   }
 
   public resetAccelerator(): void {
-    this.accelator.reset();
+    this.accelerator.resetMut();
   }
 
 
   public move(deltaTime: number):void {
     //? Calcula o deslocamento para este frame (velocidade * tempo) e o aplica.
-    this.velocity.multiply(deltaTime)
+    this.velocity.multiplyMut(deltaTime)
     
     this.updatePosition()
   }
@@ -89,8 +89,8 @@ export default abstract class Entity extends ObjectElement {
     const dX = this.coordinates.x - otherElement.coordinates.x
     const dY = this.coordinates.y - otherElement.coordinates.y
 
-    const disperseVector = new Vector2D(dX,dY).normalize()
-    this.velocity = disperseVector.add(this.accelator);
+    const disperseVector = new Vector2D(dX,dY).normalizeMut()
+    this.velocity = disperseVector.clone().addMut(this.accelerator);
 
     this.updatePosition();
   }

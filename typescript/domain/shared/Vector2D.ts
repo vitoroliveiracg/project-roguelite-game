@@ -35,7 +35,7 @@ export default class Vector2D {
      * mantendo sua direção original.
      * * @returns {Vector2D} O próprio vetor, agora normalizado.
      */
-    public normalize(): Vector2D {
+    public normalizeMut(): Vector2D {
         const magnitude = this.magnitude(); // Usa o novo método
         if (magnitude === 0) {
             this.x = 0;
@@ -52,7 +52,7 @@ export default class Vector2D {
      * @param {number} scalar O valor pelo qual multiplicar.
      * @returns {Vector2D} O vetor escalado.
      */
-    public multiply(scalar:number): Vector2D {
+    public multiplyMut(scalar:number): Vector2D {
         this.x *= scalar;
         this.y *= scalar;
         return this;
@@ -63,7 +63,7 @@ export default class Vector2D {
      * @param {Vector2D} other O outro vetor a ser somado.
      * @returns {Vector2D} O vetor resultante da soma.
      */
-    public add(other:Vector2D): Vector2D {
+    public addMut(other:Vector2D): Vector2D {
         this.x += other.x;
         this.y += other.y;
         return this;
@@ -74,7 +74,7 @@ export default class Vector2D {
      * @param {Vector2D} other O vetor a ser subtraído.
      * @returns {Vector2D} Um novo vetor resultante da subtração.
      */
-    public subtract(other: Vector2D): Vector2D {
+    public subtractMut(other: Vector2D): Vector2D {
         this.x -= other.x;
         this.y -= other.y;
         return this;
@@ -84,7 +84,7 @@ export default class Vector2D {
      * Zera os valores do vetor.
      * @returns {Vector2D} O vetor zerado.
      */
-    public reset(): Vector2D {
+    public resetMut(): Vector2D {
         this.x = 0
         this.y = 0
         return this
@@ -94,7 +94,7 @@ export default class Vector2D {
      * Inverte os valores de X e Y do vetor.
      * @returns {Vector2D} O vetor invertido.
      */
-    public invert(): Vector2D {
+    public invertMut(): Vector2D {
         this.x = -this.x
         this.y = -this.y
         return this
@@ -105,7 +105,7 @@ export default class Vector2D {
      * @param {number} degrees O ângulo em graus para rotacionar.
      * @returns {Vector2D} O próprio vetor, agora rotacionado.
      */
-    public rotate(degrees: number): Vector2D {
+    public rotateMut(degrees: number): Vector2D {
         const radians = degrees * (Math.PI / 180);
         const cos = Math.cos(radians);
         const sin = Math.sin(radians);
@@ -180,7 +180,7 @@ export default class Vector2D {
     /**
      * Divide o vetor por um escalar.
      */
-    public divide(scalar: number): Vector2D {
+    public divideMut(scalar: number): Vector2D {
         if (scalar !== 0) {
             this.x /= scalar;
             this.y /= scalar;

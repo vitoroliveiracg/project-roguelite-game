@@ -9,6 +9,10 @@ export interface SpriteConfig {
   animationSpeed: number;
   frameWidth: number;
   frameHeight: number;
+  
+  // Específicos do WebGPU Texture Atlas (Opcionais para o fallback 2D)
+  atlasOffset?: { x: number, y: number };
+  spriteSize?: { width: number, height: number };
 }
 
 export interface GameObjectConstructorParams {

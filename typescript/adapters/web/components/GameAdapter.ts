@@ -48,7 +48,11 @@ export default class GameAdapter {
       (index: number) => this.domain.manageInventory('equip', { index }),
       (slot: string) => this.domain.manageInventory('unequip', { slot }),
       (action: 'unlock' | 'changeClass', payload: any) => this.domain.manageSkillTree(action, payload),
-      (attribute: string) => this.domain.allocateAttribute(attribute)
+      (attribute: string) => this.domain.allocateAttribute(attribute),
+      () => {
+        logger.log('domain', 'Restarting game via UI command...');
+        window.location.href = window.location.pathname; // Força recarregamento limpo escapando do Vite
+      }
     );
     this.inputGateway = new InputGateway(this.domain);
     this.setupEventListeners();
@@ -147,11 +151,19 @@ export default class GameAdapter {
   private isReloading :boolean = false;
   private setupEventListeners(): void {
     this.eventManager.on('playerDied', () => {
-      logger.log('domain', 'Player has died. Reloading page...');
+      logger.log('domain', 'Player has died. Showing Game Over screen...');
       if(!this.isReloading){ 
+        this.isPaused = true; // Congela as entidades no fundo
         this.inputGateway.inputManager.setPreventUnload(false); // Desativa o aviso antes de recarregar
-        location.reload(); 
-        this.isReloading = true;
+        this.uiManager.showGameOver();
+
+        // Fallback garantido: Pressione qualquer tecla ou clique para reiniciar
+        // Atraso de 1.5 segundos para o jogador não pular a tela sem querer se estiver atacando alucinadamente
+        setTimeout(() => {
+          const forceRestart = () => { window.location.href = window.location.pathname; };
+          window.addEventListener('keydown', forceRestart, { once: true });
+          window.addEventListener('mousedown', forceRestart, { once: true });
+        }, 1500);
       }
     });
   }

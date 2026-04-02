@@ -44,7 +44,7 @@ export interface EntityRenderableState extends BaseRenderableState {
   /** Identifica o tipo da entidade (ex: 'player') para que a apresentação possa carregar o asset visual correto. */
   entityTypeId: objectTypeId; // Ex: 'player', 'goblin', 'chest'
   /** Descreve o estado comportamental da entidade (ex: 'idle') para que a apresentação possa selecionar a animação correta. */
-  state? : string; // Ex: 'idle', 'walking', 'attacking', 'open'
+  state? : string;
   /** Uma lista opcional de formas de hitbox para depuração visual. */
   hitboxes?: readonly HitboxDebugShape[];
 
@@ -61,8 +61,8 @@ export interface EntityRenderableState extends BaseRenderableState {
     strength: number;
     constitution: number;
     dexterity: number;
-    inteligence: number;
-    wisdown: number;
+    intelligence: number;
+    wisdom: number;
     charisma: number;
     availablePoints: number;
   };
@@ -87,9 +87,9 @@ export interface IGameDomain {
   /** Traduz uma intenção do usuário (capturada pela apresentação) em um comando que o domínio entende. @param command O comando de movimento. */
   handlePlayerInteractions(command: { actions: Array<action> }, mouseLastCoordinates: {x:number,y:number}): void; // eslint-disable-line
   /** Executa um comando de inventário, como equipar ou desequipar um item. */
-  manageInventory(action: 'equip' | 'unequip', payload: any): void;
+  manageInventory(action: 'equip' | 'unequip', payload: { index?: number; slot?: string }): void;
   /** Executa um comando relacionado à árvore de habilidades, como trocar de classe selecionada ou comprar um nó. */
-  manageSkillTree(action: 'unlock' | 'changeClass', payload: any): void;
+  manageSkillTree(action: 'unlock' | 'changeClass', payload: { className?: string; skillId?: string }): void;
   /** Solicita o gasto de um ponto de habilidade em um atributo primário. */
   allocateAttribute(attribute: string): void;
   /** Solicita ao domínio uma "fotografia" do estado atual de todos os objetos visíveis, formatada como DTOs puros para a renderização. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */

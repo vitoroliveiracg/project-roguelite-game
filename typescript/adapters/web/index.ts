@@ -3,6 +3,10 @@ import DomainFacade from "../../domain/DomainFacade";
 import GameAdapter from "./components/GameAdapter";
 import { EventHandler } from "../../domain/eventDispacher/eventDispacher";
 import { logger } from "./shared/Logger";
+import { CollisionAdapter } from "../../domain/ports/CollisionAdapter";
+
+// Auto-carrega todos os arquivos de representação visual para disparar os Decorators de Registro
+import.meta.glob('./components/gameObjectModule/**/*.ts', { eager: true });
 
 /** Configuração inicial do jogo, contendo dados que o domínio precisa para criar seu estado inicial. A posição inicial do jogador foi movida para o centro para evitar problemas de câmera na borda do mapa. */
 const gameConfig = {
@@ -13,7 +17,8 @@ const gameConfig = {
 /** Função principal (`main`) que orquestra a inicialização. O uso de `async` é necessário para aguardar o carregamento de assets (ex: imagens) antes que o jogo efetivamente comece a rodar. */
 async function main() {
   const eventManager = new EventHandler();
-  const domain = new DomainFacade(gameConfig, logger, eventManager);
+  const collisionAdapter = new CollisionAdapter();
+  const domain = new DomainFacade(gameConfig, logger, eventManager, collisionAdapter);
   const gameAdapter: GameAdapter = new GameAdapter(domain, eventManager);
 
   try {

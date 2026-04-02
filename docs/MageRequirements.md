@@ -45,11 +45,11 @@ Usa IA para fazer as combinações. Caos puro controlado.
 *Transformar o teclado em um console de criação de realidade.*
 
 *   **Tarefa: Implementar o Buffer de Entrada (Sintaxe de Teclas)**
-    *   Criar no `ActionManager` uma fila que escuta as teclas.
-    *   Implementar um "tempo de expiração" do buffer (se o jogador não terminar a sequência, o código "limpa").
+    *   [x] Criar no `ActionManager` uma fila que escuta as teclas.
+    *   [x] Implementar um "tempo de expiração" do buffer (se o jogador não terminar a sequência, o código "limpa").
 *   **Tarefa: Criar o Analisador de Magias (Parser de magias diferentes)**
-    *   **Lógica de Receitas:** Identificar sequências fixas (ex: `Projectile` + `Fire` + `Projectile` = "Bola de Fogo") e rodar códigos específicos para essas seletas seequências.
-    *   **Lógica de Atributos:** Magias conhecidas herdam efeitos visuais e multiplicadores de dano específicos.
+    *   [x] **Lógica de Receitas:** Identificar sequências fixas (ex: `Projectile` + `Fire` + `Projectile` = "Bola de Fogo") e rodar códigos específicos para essas seletas seequências.
+    *   [x] **Lógica de Atributos:** Magias conhecidas herdam efeitos visuais e multiplicadores de dano específicos.
 
 ## Épico 7: Renderização Dinâmica (O "Lego" Visual) de magias não listadas
 *Unir modelos 2D para dar vida às magias brutas e refinadas não listadas=.*

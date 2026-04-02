@@ -38,8 +38,12 @@ export default class ActionManager {
     if (action.startsWith('spell_')) {
       this.spellBuffer.push(action);
       this.lastSpellInputTime = Date.now();
-      this.eventManager.dispatch('log', { channel: 'input', message: "(ActionManager) Spell key added to buffer.", params: [action, this.spellBuffer] });
-      return; // Magias são retidas no buffer temporal, não acionam o Player imediatamente
+      this.eventManager.dispatch('log', { channel: 'input', message: `Current Spell Buffer: [${this.spellBuffer.map(s => s.split('_')[1]).join(', ')}]`, params: [] });
+      
+      if (this.player.castSpell(this.spellBuffer)) {
+        this.spellBuffer = []; // Auto-conjuração: Limpa o buffer se a sequência formou uma magia válida
+      }
+      return; 
     }
 
     switch (action) {
@@ -59,7 +63,10 @@ export default class ActionManager {
         this.player.onShiftAction()
         break;
       case'leftClick':
-        this.player.onLeftClickAction(this.mouseLastCoordinates)
+        this.player.onLeftClickAction(this.mouseLastCoordinates);
+        break;
+      case 'castSpell':
+        this.spellBuffer = []; // Botão de pânico: Limpa o buffer imediatamente se você digitou errado
         break;
       case'rightClick':
         this.player.onRightClickAction(this.mouseLastCoordinates)

@@ -48,6 +48,10 @@ export default class InputGateway {
       }
     });
 
+    if (this.inputManager.consumeAction('cast_spell')) {
+      actions.push('castSpell');
+    }
+
     if (actions.length <= 0) return;
 
     let mouseWorldCoordinates: { x: number, y: number } = { x: 0, y: 0 };

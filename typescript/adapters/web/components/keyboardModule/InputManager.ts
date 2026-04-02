@@ -25,6 +25,7 @@ export type GameAction =
   | 'spell_7'
   | 'spell_8'
   | 'spell_9'
+  | 'cast_spell'
   | 'toggle_attributes'
   | 'toggle_skill_tree';
 

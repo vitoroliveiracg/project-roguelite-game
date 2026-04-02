@@ -18,7 +18,7 @@ export default abstract class Enemy extends Entity {
     objectId: objectTypeId,
     attributes: Attributes,
     eventManager: IEventManager,
-    state: any = ""
+    state: string = "idle"
   ){
     const size = { width: 16, height: 16 };
     super(id, coordinates, size, objectId, attributes, eventManager, state);
@@ -35,9 +35,9 @@ export default abstract class Enemy extends Entity {
     this.lastAttackTimestamp = now;
 
     const selfKnockbackAction = () => {
-      const knockbackDirection = this.direction.clone().multiply(-1);
+      const knockbackDirection = this.direction.clone().multiplyMut(-1);
        //? Define distância da força da empurrada
-      this.accelator.add(knockbackDirection.multiply(8));
+      this.accelerator.addMut(knockbackDirection.clone().multiplyMut(8));
     };
 
     const totalContactDamage = this.baseContactDamage * (this.level + 2);

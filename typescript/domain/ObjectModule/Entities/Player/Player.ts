@@ -2,32 +2,126 @@
 import Vector2D from "../../../shared/Vector2D";
 import Entity from "../Entity";
 import Attributes from "../Attributes";
-import type IXPTable from "../IXPTable";
 import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
-import { SimpleBullet } from "../bullets/SimpleBullet";
 import type ObjectElement from "../../ObjectElement";
-import Enemy from "../Enemies/Enemy";
 import Attack from "../../Items/Attack";
 import type Item from "../../Items/Item";
 import type Weapon from "../../Items/Weapons/Weapon";
 import { type DamageInfo } from "../Entity";
 import Class from "./Classes/Class";
 import type { baseAttributes } from "../Attributes";
+import DefaultXPTable from "../DefaultXPTable";
+import Warrior from "./Classes/Warrior";
+import Mage from "./Classes/Mage";
+import Gunslinger from "./Classes/Gunslinger";
+import Necromancer from "./Classes/Necromancer";
 
-export type playerStates = 'idle' | 'walking'
+export type playerStates = 'idle' | 'walking' | 'dead'
 
-/** Tabela de XP padrão para o jogador, usada antes da implementação do sistema de classes. */
-const defaultXpTable: IXPTable = {
-  fixedBase: 100,
-  levelScale: 1.2,
-};
+const defaultXpTable = new DefaultXPTable();
+
+export class PlayerInventory {
+  public backpack: Item[] = [];
+  public equipment: { mainHand?: Weapon | undefined } = {};
+
+  constructor(private player: Player, private eventManager: IEventManager) {}
+
+  public equipItem(backpackIndex: number) {
+    const item = this.backpack[backpackIndex];
+    if (!item) return;
+
+    if (item.category === 'weapon') {
+      const weapon = item as Weapon;
+      if (this.equipment.mainHand) {
+        this.backpack.push(this.equipment.mainHand);
+      }
+      this.equipment.mainHand = weapon;
+      this.backpack.splice(backpackIndex, 1);
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Equipped ${weapon.name}`, params: [] });
+
+      if (weapon.unlocksClass) {
+        this.player.unlockClass(weapon.unlocksClass);
+        this.player.setActiveClass(weapon.unlocksClass);
+      }
+    }
+  }
+
+  public unequipItem(slot: string) {
+    if (slot === 'mainHand' && this.equipment.mainHand) {
+      this.backpack.push(this.equipment.mainHand);
+      this.equipment.mainHand = undefined;
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped mainHand`, params: [] });
+    }
+  }
+}
+
+export class PlayerCombat {
+  private shooted: boolean = false;
+
+  constructor(private player: Player, private eventManager: IEventManager) {}
+
+  public shootBullet(direction: Vector2D) {
+    if (this.player.state === 'dead' || this.player.attributes.hp <= 0) return;
+    if (!this.shooted) {
+      if (!this.player.inventory.equipment.mainHand) {
+        this.eventManager.dispatch('log', { channel: 'domain', message: "Cannot shoot without a weapon", params: [] });
+        return;
+      }
+      this.shooted = true;
+      const weapon = this.player.inventory.equipment.mainHand;
+      const baseDamage = weapon.baseDamage + Math.floor(this.player.attributes.strength / 2);
+      const playerAttack = new Attack(this.player, baseDamage, 'physical', weapon.onHitActions);
+      const projType = weapon.projectileType || 'simpleBullet';
+      this.eventManager.dispatch('spawn', {
+        type: projType,
+        coordinates: { ...this.player.coordinates },
+        direction: direction.clone().normalizeMut(),
+        attack: playerAttack
+      });
+      setTimeout(() => { this.shooted = false }, 100);
+    }
+  }
+
+  public castSpell(spellBuffer: string[], direction: Vector2D): boolean {
+    if (this.player.state === 'dead' || this.player.attributes.hp <= 0) return false;
+    
+    const sequence = spellBuffer.join(',');
+    
+    // Projectile (0) + Fire (4) + Projectile (0) = Fireball
+    if (sequence === 'spell_0,spell_4,spell_0') {
+      const baseDamage = 30 + Math.floor(this.player.attributes.intelligence * 2);
+      const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
+      this.eventManager.dispatch('spawn', {
+        type: 'fireball',
+        coordinates: { ...this.player.coordinates },
+        direction: direction.clone().normalizeMut(),
+        attack: playerAttack
+      });
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Fireball!`, params: [] });
+      return true;
+    } else if (sequence === 'spell_0,spell_5') {
+      // Water Missile
+      const baseDamage = 15 + Math.floor(this.player.attributes.intelligence);
+      const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
+      this.eventManager.dispatch('spawn', {
+        type: 'magicMissile',
+        coordinates: { ...this.player.coordinates },
+        direction: direction.clone().normalizeMut(),
+        attack: playerAttack
+      });
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Water Missile!`, params: [] });
+      return true;
+    } else {
+      return false; // Sequência ainda não completou uma magia válida
+    }
+  }
+}
 
 export default class Player extends Entity {
 
   private movementSinceLastUpdate: boolean = false;
   private isDashing: boolean = false;
-  private shooted:boolean = false;
 
   // --- Sistema de Classes e Skills ---
   private _unlockedClasses: Set<string> = new Set();
@@ -36,8 +130,9 @@ export default class Player extends Entity {
   private _unlockedSkills: Set<string> = new Set();
   // -----------------------------------
 
-  public backpack: Item[] = [];
-  public equipment: { mainHand?: Weapon | undefined } = {};
+  public inventory: PlayerInventory;
+  public combat: PlayerCombat;
+  public facingDirection: Vector2D = new Vector2D(1, 0); // Direção para onde o mago atira
 
   constructor (
     id: number,
@@ -49,15 +144,15 @@ export default class Player extends Entity {
     const size = { width: 16, height: 16 }; //? jogador (16x16)
     super(id, coordinates, size, 'player', attributes, eventManager, state);
 
+    this.inventory = new PlayerInventory(this, eventManager);
+    this.combat = new PlayerCombat(this, eventManager);
+
     // Instancia as classes diretamente no domínio, servindo como o banco de dados das "regras"
     this._classes = [
-      new Class('Guerreiro', defaultXpTable, []),
-      new Class('Mago', defaultXpTable, [
-          { id: 'm_t1_fireball', name: 'Axioma Inicial', type: 'active', tier: 1 },
-          { id: 'm_t2_burn', name: 'Sobrecarga de Mana', type: 'passive', tier: 2, requiredSkillId: 'm_t1_fireball' },
-          { id: 'm_t2_rare', name: 'Conhecimento Profundo', type: 'rare', tier: 2, requiredSkillId: 'm_t1_fireball' },
-      ]),
-      new Class('Gunslinger', defaultXpTable, []),
+      new Warrior(defaultXpTable),
+      new Mage(defaultXpTable),
+      new Gunslinger(defaultXpTable),
+      new Necromancer(defaultXpTable),
     ];
 
     this.hitboxes = [ ...this.setHitboxes() ];
@@ -70,47 +165,24 @@ export default class Player extends Entity {
       0,
       7,
       (otherElement: ObjectElement) => {
-        if (otherElement instanceof Enemy){
-          const enemyAttack = otherElement.onStrike();
+        // Verificação estrita: garante que é uma função antes de chamar
+        if (typeof (otherElement as any).onStrike === 'function'){
+          const enemyAttack = (otherElement as any).onStrike();
           
           if (enemyAttack) {
-            const directionToPlayer = new Vector2D(this.coordinates.x - otherElement.coordinates.x, this.coordinates.y - otherElement.coordinates.y).normalize();
+            let directionToPlayer = new Vector2D(this.coordinates.x - otherElement.coordinates.x, this.coordinates.y - otherElement.coordinates.y);
+            
+            // Proteção Anti-NaN: Se estiverem exatamente no mesmo pixel, força uma direção arbitrária
+            if (directionToPlayer.x === 0 && directionToPlayer.y === 0) {
+              directionToPlayer.x = 1;
+            }
+            
+            directionToPlayer.normalizeMut();
             enemyAttack.execute(this, directionToPlayer);
           }
         }
       }
     )]
-  }
-
-  public equipItem(backpackIndex: number) {
-    const item = this.backpack[backpackIndex];
-    if (!item) return;
-
-    if (item.category === 'weapon') {
-      const weapon = item as Weapon;
-      
-      if (this.equipment.mainHand) {
-        this.backpack.push(this.equipment.mainHand); // Guarda a antiga
-      }
-      
-      this.equipment.mainHand = weapon; // Equipa a nova
-      this.backpack.splice(backpackIndex, 1); // Tira da mochila
-
-      this.eventManager.dispatch('log', { channel: 'domain', message: `Equipped ${weapon.name}`, params: [] });
-
-      if (weapon.unlocksClass) {
-        this.unlockClass(weapon.unlocksClass);
-        this.setActiveClass(weapon.unlocksClass);
-      }
-    }
-  }
-
-  public unequipItem(slot: string) {
-    if (slot === 'mainHand' && this.equipment.mainHand) {
-      this.backpack.push(this.equipment.mainHand); // Guarda a arma antiga
-      this.equipment.mainHand = undefined;
-      this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped mainHand`, params: [] });
-    }
   }
 
   /** Avança o estado interno do jogador. Chamado a cada frame pelo DomainFacade. */
@@ -125,7 +197,7 @@ export default class Player extends Entity {
     
     this.movementSinceLastUpdate = false;
     
-    this.direction.reset()
+    this.direction.resetMut()
   }
 
   /**
@@ -150,7 +222,6 @@ export default class Player extends Entity {
       { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }, this.rotation
     ));
 
-    this.eventManager.dispatch("playerMoved", { x: this.coordinates.x, y: this.coordinates.y })
     this.eventManager.dispatch('log', { channel: 'domain', message: "(Entity) player moved", params: [] });
   }
 
@@ -161,47 +232,16 @@ export default class Player extends Entity {
   
     if (!this.isDashing){
 
-      this.accelator.add(direction.normalize()).multiply(3)
+      this.accelerator.addMut(direction.clone().normalizeMut()).multiplyMut(3)
       this.isDashing = true
       
       setTimeout(() => {
-          this.accelator.reset()
+          this.accelerator.resetMut()
       }, 150);
       
       setTimeout(() => {
           this.isDashing = false
       }, 1000);
-    }
-  }
-
-  private shootBullet( direction: Vector2D ) {
-    if (this.state === 'dead' || this.attributes.hp <= 0) return;
-
-    if(!this.shooted){
-      
-      if (!this.equipment.mainHand) {
-        this.eventManager.dispatch('log', { channel: 'domain', message: "Cannot shoot without a weapon", params: [] });
-        return;
-      }
-
-      this.shooted = true
-
-      const weapon = this.equipment.mainHand;
-      const baseDamage = weapon.baseDamage + Math.floor(this.attributes.strength / 2);
-
-      const playerAttack = new Attack(
-        this,
-        baseDamage,
-        'physical'
-      );
-
-      this.eventManager.dispatch('spawn', {
-        factory: (id) => new SimpleBullet(id, {...this.coordinates}, direction.normalize(), playerAttack, this.eventManager)
-      });
-
-      setTimeout(() => {
-        this.shooted = false
-      }, 100);
     }
   }
 
@@ -211,11 +251,16 @@ export default class Player extends Entity {
     this.state = 'walking';
     this.movementSinceLastUpdate = true;
     const displacement = this.attributes.speed * deltaTime
+    
+    // Guarda a última direção virada para usar na magia
+    if (this.direction.x !== 0 || this.direction.y !== 0) {
+      this.facingDirection = this.direction.clone().normalizeMut();
+    }
 
-    this.velocity = this.direction
-      .normalize()
-      .multiply(displacement)
-      .add(this.accelator);
+    this.velocity = this.direction.clone()
+      .normalizeMut()
+      .multiplyMut(displacement)
+      .addMut(this.accelerator);
     
     this.updatePosition();
   }
@@ -239,12 +284,21 @@ export default class Player extends Entity {
     this.dashToDirection(this.direction)
   }
 
+  public castSpell(spellBuffer: string[]): boolean {
+    if (this.activeClass !== 'Mago') {
+        return false;
+    }
+    return this.combat.castSpell(spellBuffer, this.facingDirection.clone());
+  }
+
   public onLeftClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
+    if (this.activeClass === 'Mago') return; // Mago não atira com o mouse!
+
     const direction = new Vector2D(
         mouseLastCoordinates.x - this.coordinates.x,
         mouseLastCoordinates.y - this.coordinates.y
       )
-    this.shootBullet(direction)
+    this.combat.shootBullet(direction)
   }
 
   public onRightClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
@@ -263,11 +317,48 @@ export default class Player extends Entity {
    * @param xpAmount A quantidade de experiência a ser adicionada.
    */
   public gainXp(xpAmount: number): void {
-    this.attributes.addXp(xpAmount, defaultXpTable);
+    const oldLevel = this.attributes.level;
+    const activeClass = this._classes.find(c => c.name === this._activeClass);
+    const xpTable = activeClass ? activeClass.xpTable : defaultXpTable;
+    
+    this.attributes.addXp(xpAmount, xpTable);
+    const newLevel = this.attributes.level;
+
+    for (let lvl = oldLevel + 1; lvl <= newLevel; lvl++) {
+        this.processLevelUp(lvl);
+    }
+  }
+
+  private processLevelUp(level: number): void {
+      this.eventManager.dispatch('levelUp', { newLevel: level });
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Player leveled up to ${level}!`, params: [] });
+      
+      const activeClass = this._classes.find(c => c.name === this._activeClass);
+      const xpTable = activeClass ? activeClass.xpTable : defaultXpTable;
+      const rewards = xpTable.getRewardsForLevel(level);
+
+      for (const reward of rewards) {
+          switch (reward) {
+              case 'attribute_point':
+                  this.attributes.grantAvailablePoint();
+                  this.eventManager.dispatch('log', { channel: 'domain', message: `Gained an attribute point!`, params: [] });
+                  break;
+              case 'class_skill':
+                  if (activeClass) {
+                      const newSkill = activeClass.getSkillForLevel(level);
+                      if (newSkill) {
+                          // Sistema instancia a classe e, de acordo com o nível, destrava a skill automaticamente
+                          this.unlockSkill(newSkill.id);
+                          this.eventManager.dispatch('log', { channel: 'domain', message: `Gained class skill: ${newSkill.name}!`, params: [] });
+                      }
+                  }
+                  break;
+          }
+      }
   }
   /** Retorna o estado atual do jogador. */
-  public getState(): 'idle' | 'walking' {
-    return this.state;
+  public getState(): 'idle' | 'walking' | 'dead' {
+    return this.state as playerStates;
   }
 
   public allocateAttribute(attribute: keyof baseAttributes) {

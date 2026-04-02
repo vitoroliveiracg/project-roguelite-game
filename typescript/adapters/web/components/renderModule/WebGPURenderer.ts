@@ -3,17 +3,8 @@ import type { EntityRenderableState } from "../../../../domain/ports/domain-cont
 import type { objectTypeId } from "../../../../domain/ObjectModule/objectType.type";
 import type Canvas from "../canvasModule/Canvas";
 import type IRenderer from "./IRenderer";
-
-/**
- * Configuração para um spritesheet.
- */
-export interface SpriteConfig {
-  // Coordenadas do sprite dentro do Texture Atlas (em pixels)
-  atlasOffset: { x: number, y: number };
-  spriteSize: { width: number, height: number };
-  frameCount: number;
-  animationSpeed: number; // frames do jogo a esperar antes de avançar a animação
-}
+import type { SpriteConfig } from "../gameObjectModule/GameObjectElement";
+import { RenderRegistry } from "../../shared/RenderRegistry";
 
 /**
  * Orquestra o processo de desenho usando a API WebGPU.
@@ -44,8 +35,8 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
   private atlasSize = { width: 0, height: 0 };
 
 
-  // Mapeia um tipo de entidade e estado para uma configuração de sprite
-  private spriteConfigs: Map<string, SpriteConfig> = new Map();
+  // Obtém as configurações dinâmicas geradas pelos Decorators
+  private spriteConfigs: Map<string, SpriteConfig> = RenderRegistry.spriteConfigs;
 
   constructor(canvas: Canvas) {
     this.canvas = canvas;
@@ -156,14 +147,7 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
   }
 
     private loadSpriteConfigs(): void {
-    // Posições e tamanhos dos sprites no atlas imaginário 'atlas.png'
-    // As coordenadas (atlasOffset) são o canto superior esquerdo de cada spritesheet dentro do atlas.
-    this.spriteConfigs.set('player-idle', { atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 }, frameCount: 2, animationSpeed: 20 });
-    this.spriteConfigs.set('player-walking', { atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 }, frameCount: 2, animationSpeed: 10 });
-    this.spriteConfigs.set('slime-walking', { atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 }, frameCount: 8, animationSpeed: 10 });
-    this.spriteConfigs.set('slime-waiting', { atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 }, frameCount: 8, animationSpeed: 10 });
-    this.spriteConfigs.set('simpleBullet-travelling', { atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 }, frameCount: 1, animationSpeed: 10 });
-    this.spriteConfigs.set('droppedItem-idle', { atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 }, frameCount: 1, animationSpeed: 10 });
+      // No-op: O RenderRegistry já executa o bind dinamicamente via Vite.
   }
 
   public getSpriteConfig(type: objectTypeId, state?: string): SpriteConfig | undefined {
@@ -184,10 +168,10 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
       const config = this.getSpriteConfig(state.entityTypeId, state.state);
       this.instanceData[offset++] = state.currentFrame;                               // frameIndex
       this.instanceData[offset++] = config?.frameCount ?? 1;                          // totalFrames
-      this.instanceData[offset++] = config?.atlasOffset.x ?? 0;                       // atlasOffsetX
-      this.instanceData[offset++] = config?.atlasOffset.y ?? 0;                       // atlasOffsetY
-      this.instanceData[offset++] = config?.spriteSize.width ?? state.size.width;     // spriteWidth
-      this.instanceData[offset++] = config?.spriteSize.height ?? state.size.height;   // spriteHeight
+      this.instanceData[offset++] = config?.atlasOffset?.x ?? 0;                      // atlasOffsetX
+      this.instanceData[offset++] = config?.atlasOffset?.y ?? 0;                      // atlasOffsetY
+      this.instanceData[offset++] = config?.spriteSize?.width ?? state.size.width;    // spriteWidth
+      this.instanceData[offset++] = config?.spriteSize?.height ?? state.size.height;  // spriteHeight
 
     }
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData.buffer, 0, offset * 4); // Usamos .buffer e o tamanho em bytes

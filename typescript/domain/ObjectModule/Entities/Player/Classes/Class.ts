@@ -1,19 +1,13 @@
 import type IXPTable from "../../IXPTable";
+import type Skill from "../../Skills/Skill";
 
-export interface ISkill {
-  id: string;
-  name: string;
-  type: 'active' | 'passive' | 'rare';
-  tier: number;
-  requiredSkillId?: string; // Nó anterior necessário
-}
-
-export default class Class {
+export default abstract class Class {
   
   constructor(
     public readonly name: string,
-    public xpTable : IXPTable,
-    public readonly skills: ISkill[] = []
+    public xpTable : IXPTable
   ) {}
 
+  public abstract getSkillForLevel(level: number): Skill | null;
+  public abstract get allSkills(): Skill[];
 }

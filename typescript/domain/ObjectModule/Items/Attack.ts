@@ -1,7 +1,5 @@
 import type Entity from "../Entities/Entity";
 import type Vector2D from "../../shared/Vector2D";
-import Player from "../Entities/Player/Player";
-import Enemy from "../Entities/Enemies/Enemy";
 import type { DamageType, IAtack, OnHitAction } from "./IAtack";
 
 /**
@@ -40,7 +38,7 @@ export default class Attack implements IAtack {
     if (this.damageType === 'physical') {
       totalDamage += this._attacker.attributes.strength;
     } else if (this.damageType === 'magical') {
-      totalDamage += this._attacker.attributes.inteligence;
+      totalDamage += this._attacker.attributes.intelligence;
     }
 
     if (isCritical) {
@@ -56,9 +54,9 @@ export default class Attack implements IAtack {
     });
 
     // Se o alvo foi derrotado e o atacante é o jogador, concede o XP.
-    if (target.attributes.hp <= 0 && this._attacker instanceof Player) {
-      if (target instanceof Enemy) {
-        this._attacker.gainXp(target.xpGiven);
+    if (target.attributes.hp <= 0 && this._attacker.objectId === 'player') {
+      if ('xpGiven' in target) {
+        (this._attacker as any).gainXp((target as any).xpGiven);
       }
     }
 

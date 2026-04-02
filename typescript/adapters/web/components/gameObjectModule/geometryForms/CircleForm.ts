@@ -1,11 +1,15 @@
 import GameObjectElement, { type GameObjectConstructorParams, type SpriteConfig } from "../GameObjectElement";
+import { RegisterSprite } from "../../../shared/RenderRegistry";
 
 //? Esse type é muito importante
 export type BulletConstructorParams = GameObjectConstructorParams;
 
+const dummyConfig: SpriteConfig = { imageSrc: '', frameCount: 1, animationSpeed: 1, frameWidth: 1, frameHeight: 1 };
+
+@RegisterSprite('circle', 'normal', dummyConfig)
 export default class CircleForm extends GameObjectElement {
 
-    constructor({ initialState, configs, imageCache }: BulletConstructorParams) {
+    constructor({ initialState }: BulletConstructorParams) {
         super(initialState, undefined, document.createElement('img'));
     }
 

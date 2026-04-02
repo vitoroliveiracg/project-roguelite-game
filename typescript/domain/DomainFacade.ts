@@ -9,6 +9,7 @@ import Attributes from "./ObjectModule/Entities/Attributes";
 import type { action } from "./eventDispacher/actions.type";
 import ActionManager from "./eventDispacher/ActionManager";
 import type { IEventManager } from "./eventDispacher/IGameEvents";
+import type { ICollisionService } from "./ports/ICollisionService";
 
 /** Define a estrutura de dados para a configuração inicial do domínio. */
 interface DomainConfig {
@@ -25,13 +26,19 @@ export default class DomainFacade implements IGameDomain {
   private logger: ILogger; /** @private A instância do logger, injetada via construtor. */
 
   private actionManager!: ActionManager;
+  private cachedRenderState = {
+    world: { width: 0, height: 0 },
+    renderables: [] as any[]
+  };
+  private cachedPlayerState: any = null;
+
   /** @constructor @param config O objeto de configuração com os dados iniciais para a criação das entidades do jogo. @param logger Uma instância de um logger que implementa a interface `ILogger`. */
-  constructor(config: DomainConfig, logger: ILogger, private eventManager: IEventManager) {
+  constructor(config: DomainConfig, logger: ILogger, private eventManager: IEventManager, private collisionService: ICollisionService) {
     this.config = config;
     this.logger = logger;
     this.logger.log('init', 'DomainFacade instantiated.');
 
-    this.objectManager = new ObjectElementManager(this.eventManager);
+    this.objectManager = new ObjectElementManager(this.eventManager, this.collisionService);
 
   }
 
@@ -74,19 +81,19 @@ export default class DomainFacade implements IGameDomain {
     this.actionManager.checkEvent(command.actions, mouseLastCoordinates)
   }
 
-  public manageInventory(action: 'equip' | 'unequip', payload: any): void {
-    if (action === 'equip') {
-      this.player.equipItem(payload.index);
+  public manageInventory(action: 'equip' | 'unequip', payload: { index?: number; slot?: string }): void {
+    if (action === 'equip' && payload.index !== undefined) {
+      this.player.inventory.equipItem(payload.index);
     }
-    if (action === 'unequip') {
-      this.player.unequipItem(payload.slot);
+    if (action === 'unequip' && payload.slot !== undefined) {
+      this.player.inventory.unequipItem(payload.slot);
     }
   }
 
-  public manageSkillTree(action: 'unlock' | 'changeClass', payload: any): void {
-    if (action === 'changeClass') {
+  public manageSkillTree(action: 'unlock' | 'changeClass', payload: { className?: string; skillId?: string }): void {
+    if (action === 'changeClass' && payload.className) {
        this.player.setActiveClass(payload.className);
-    } else if (action === 'unlock') {
+    } else if (action === 'unlock' && payload.skillId) {
        this.player.unlockSkill(payload.skillId);
     }
   }
@@ -100,61 +107,69 @@ export default class DomainFacade implements IGameDomain {
     this.logger.log('sync', 'DomainFacade getting render state...');
     if (!this.world) throw new Error("O mundo do domínio não foi inicializado. Chame setWorld() antes de getRenderState().");
 
-    const playerHitboxes = this.player.hitboxes?.map(hb => hb.getDebugShape()) ?? [];
+    this.cachedRenderState.world.width = this.world.width;
+    this.cachedRenderState.world.height = this.world.height;
 
-    // Agora, o estado do jogador inclui dados para a UI, como XP e nível.
-    const playerState = {
-      id: this.player.id,
-      entityTypeId: this.player.objectId,
-      coordinates: this.player.coordinates,
-      size: this.player.size,
-      state: this.player.state,
-      rotation: this.player.rotation,
-      hitboxes: playerHitboxes,
-      level: this.player.attributes.level,
-      currentXp: this.player.attributes.currentXp,
-      xpToNextLevel: this.player.attributes.xpToNextLevel,
-      hp: this.player.attributes.hp,
-      maxHp: this.player.attributes.maxHp,
-      mana: this.player.attributes.mana,
-      maxMana: this.player.attributes.maxMana,
-      attributes: {
-        strength: this.player.attributes.strength,
-        constitution: this.player.attributes.constitution,
-        dexterity: this.player.attributes.dexterity,
-        inteligence: this.player.attributes.inteligence,
-        wisdown: this.player.attributes.wisdown,
-        charisma: this.player.attributes.charisma,
-        availablePoints: this.player.attributes.availablePoints,
-      },
-      backpack: this.player.backpack.map(item => ({ name: item.name, iconId: item.iconId })),
-      equipment: {
-        mainHand: this.player.equipment.mainHand ? { name: this.player.equipment.mainHand.name, iconId: this.player.equipment.mainHand.iconId } : undefined
-      },
-      activeClass: this.player.activeClass,
-      unlockedClasses: this.player.unlockedClasses,
-      classes: this.player.classes.map(c => ({
+    if (!this.cachedPlayerState) {
+      this.cachedPlayerState = {
+        id: this.player.id,
+        entityTypeId: this.player.objectId,
+        coordinates: { x: 0, y: 0 },
+        size: { width: 0, height: 0 },
+        attributes: {},
+        equipment: {}
+      };
+    }
+
+    const ps = this.cachedPlayerState;
+    ps.coordinates.x = this.player.coordinates.x;
+    ps.coordinates.y = this.player.coordinates.y;
+    ps.size.width = this.player.size.width;
+    ps.size.height = this.player.size.height;
+    ps.state = this.player.state;
+    ps.rotation = this.player.rotation;
+    ps.hitboxes = this.player.hitboxes?.map(hb => hb.getDebugShape()) ?? [];
+    
+    ps.level = this.player.attributes.level;
+    ps.currentXp = this.player.attributes.currentXp;
+    ps.xpToNextLevel = this.player.attributes.xpToNextLevel;
+    ps.hp = this.player.attributes.hp;
+    ps.maxHp = this.player.attributes.maxHp;
+    ps.mana = this.player.attributes.mana;
+    ps.maxMana = this.player.attributes.maxMana;
+    
+    ps.attributes.strength = this.player.attributes.strength;
+    ps.attributes.constitution = this.player.attributes.constitution;
+    ps.attributes.dexterity = this.player.attributes.dexterity;
+    ps.attributes.intelligence = this.player.attributes.intelligence;
+    ps.attributes.wisdom = this.player.attributes.wisdom;
+    ps.attributes.charisma = this.player.attributes.charisma;
+    ps.attributes.availablePoints = this.player.attributes.availablePoints;
+
+    ps.backpack = this.player.inventory.backpack.map(item => ({ name: item.name, iconId: item.iconId }));
+    ps.equipment.mainHand = this.player.inventory.equipment.mainHand ? { name: this.player.inventory.equipment.mainHand.name, iconId: this.player.inventory.equipment.mainHand.iconId } : undefined;
+
+    ps.activeClass = this.player.activeClass;
+    ps.unlockedClasses = this.player.unlockedClasses;
+    ps.classes = this.player.classes.map(c => ({
         name: c.name,
         isUnlocked: this.player.unlockedClasses.includes(c.name),
         isActive: this.player.activeClass === c.name
-      })),
-      skillTree: (this.player.activeClass ? this.player.classes.find(c => c.name === this.player.activeClass)?.skills.map(s => ({
+    }));
+    
+    ps.skillTree = (this.player.activeClass ? this.player.classes.find(c => c.name === this.player.activeClass)?.allSkills.map(s => ({
         id: s.id,
         name: s.name,
         type: s.type,
         tier: s.tier,
         unlocked: this.player.unlockedSkills.has(s.id),
-        // Só pode desbloquear se não houver skill requerida, ou se a requerida já estiver desbloqueada.
         canUnlock: !s.requiredSkillId || this.player.unlockedSkills.has(s.requiredSkillId)
-      })) : []) ?? []
-    };
+    })) : []) ?? [];
 
     const otherStates = this.objectManager.getAllRenderableStates();
     
-    return { 
-      world: { width: this.world.width, height: this.world.height }, 
-      renderables: [playerState, ...otherStates]
-    };
+    this.cachedRenderState.renderables = [ps, ...otherStates];
+    return this.cachedRenderState;
   }
 
 }

@@ -52,7 +52,7 @@ export default class SkillTreeGui {
                 const btn = document.createElement('button');
                 btn.className = `class-icon ${cls.isActive ? 'active' : (cls.isUnlocked ? 'unlocked' : 'locked')}`;
                 btn.title = cls.name;
-                btn.textContent = cls.name === 'Mago' ? '🪄' : (cls.name === 'Guerreiro' ? '⚔️' : '🔫');
+                btn.textContent = cls.name === 'Mago' ? '🪄' : (cls.name === 'Guerreiro' ? '⚔️' : (cls.name === 'Necromante' ? '💀' : '🔫'));
                 btn.onclick = () => this.skillActionCallback('changeClass', { className: cls.name });
                 classSelector.appendChild(btn);
             });

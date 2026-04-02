@@ -38,8 +38,8 @@ export default abstract class RangedWeapon extends Weapon {
    * @param attack - Contém informações sobre o ataque (quem atirou, direção, etc.).
    * @param ammoFactory - Uma função que sabe como criar a instância da munição a ser disparada.
    */
-  public attack(attack: IAtack, eventManager: IEventManager, ammoFactory: (id: number) => Bullet): void {
-    eventManager.dispatch('spawn', { factory: ammoFactory });
+  public attack(attack: IAtack, eventManager: IEventManager): void {
+    // Agora as subclasses vão enviar eventos baseados em seus tipos de munição
   }
 
   //? ----------- Getters and Setters -----------

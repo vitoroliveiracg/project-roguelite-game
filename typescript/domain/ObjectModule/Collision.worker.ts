@@ -4,90 +4,59 @@
 */
 
 import Quadtree from "../shared/QuadTree";
-import type { HitboxDebugShape } from "../hitBox/HitBox";
 
-/**
- * Verifica se dois círculos se intersectam.
- * @param c1 O primeiro círculo, com propriedades x, y, e radius.
- * @param c2 O segundo círculo.
- * @returns `true` se eles se intersectam, `false` caso contrário.
- */
-function circleIntersectsCircle(c1: { x: number, y: number, radius: number }, c2: { x: number, y: number, radius: number }): boolean {
-  const dx = c1.x - c2.x;
-  const dy = c1.y - c2.y;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  return distance < c1.radius + c2.radius;
+type BoundedElement = {
+    id: number;
+    x: number; y: number;
+    width: number; height: number;
+    radius: number;
 }
 
-type PlainObjectElement = {
-  id: number;
-  x: number; y: number;
-  width: number; height: number;
-  hitboxes: HitboxDebugShape[] | null;
-}
+self.addEventListener('message', (event: MessageEvent<{hitboxData: Float32Array, hitboxCount: number, worldBounds: any}>) => {
+  const { hitboxData, hitboxCount, worldBounds } = event.data;
 
-interface CollisionWorkerData {
-  elements: PlainObjectElement[];
-  worldBounds: { x: number, y: number, width: number, height: number };
-}
+  const collisionTree = new Quadtree<BoundedElement>(worldBounds);
+  const elements: BoundedElement[] = [];
 
-/**
- * Ouve mensagens da thread principal para iniciar a detecção de colisão.
- */
-self.addEventListener('message', (event: MessageEvent<CollisionWorkerData>) => {
-  const { elements, worldBounds } = event.data;
+  for (let i = 0; i < hitboxCount; i++) {
+      const id = hitboxData[i * 4] ?? 0;
+      const cx = hitboxData[i * 4 + 1] ?? 0;
+      const cy = hitboxData[i * 4 + 2] ?? 0;
+      const radius = hitboxData[i * 4 + 3] ?? 0;
 
-  // 1. Constrói a Quadtree com os elementos recebidos.
-  const collisionTree = new Quadtree<PlainObjectElement>(worldBounds);
-  for (const element of elements) {
-    collisionTree.insert(element);
+      const element = { id, x: cx - radius, y: cy - radius, width: radius * 2, height: radius * 2, radius };
+      elements.push(element);
+      collisionTree.insert(element);
   }
 
-  const collidingPairs: [number, number][] = [];
+  const collidingPairs: number[] = [];
   const processedPairs = new Set<string>();
 
-  // 2. Itera sobre cada elemento para encontrar colisões.
-  for (const elementA of elements) {
-    if (!elementA.hitboxes || elementA.hitboxes.length === 0) continue;
+  for (let i = 0; i < elements.length; i++) {
+    const elA = elements[i];
+    if (!elA) continue;
 
-    const elementBounds = {
-      x: elementA.x,
-      y: elementA.y,
-      width: elementA.width,
-      height: elementA.height,
-    };
+    const potentialColliders = collisionTree.retrieve(elA);
 
-    const potentialColliders = collisionTree.retrieve(elementBounds);
+    for (let j = 0; j < potentialColliders.length; j++) {
+      const elB = potentialColliders[j];
+      if (!elB) continue;
+      if (elA.id === elB.id) continue;
 
-    for (const elementB of potentialColliders) {
-      if (elementA.id === elementB.id || !elementB.hitboxes || elementB.hitboxes.length === 0) continue;
-
-      const pairKey = elementA.id < elementB.id ? `${elementA.id}-${elementB.id}` : `${elementB.id}-${elementA.id}`;
+      const pairKey = elA.id < elB.id ? `${elA.id}-${elB.id}` : `${elB.id}-${elA.id}`;
       if (processedPairs.has(pairKey)) continue;
 
-      for (const hitboxA of elementA.hitboxes) {
-        let hasCollided = false;
-        for (const hitboxB of elementB.hitboxes) {
-          // A lógica de interseção é recriada aqui, pois os métodos são perdidos na clonagem.
-          // Atualmente, só suporta colisão círculo-círculo.
-          if (hitboxA.type === 'circle' && hitboxB.type === 'circle') {
-            // Usamos asserção de tipo para informar ao TS a estrutura do objeto após a verificação.
-            const circleA = hitboxA as unknown as { x: number, y: number, radius: number };
-            const circleB = hitboxB as unknown as { x: number, y: number, radius: number };
-            if (circleIntersectsCircle(circleA, circleB)) {
-            // 3. Adiciona o par de IDs à lista de resultados.
-            collidingPairs.push([elementA.id, elementB.id]);
-            processedPairs.add(pairKey);
-            hasCollided = true;
-            break;
-          }
-        }
-        }
-        if (hasCollided) break;
+      const dx = (elA.x + elA.radius) - (elB.x + elB.radius);
+      const dy = (elA.y + elA.radius) - (elB.y + elB.radius);
+      const distSq = dx * dx + dy * dy;
+      const radSum = elA.radius + elB.radius;
+
+      if (distSq <= radSum * radSum) {
+          collidingPairs.push(elA.id, elB.id);
+          processedPairs.add(pairKey);
       }
     }
   }
 
-  // 4. Envia a lista de pares que colidiram de volta para a thread principal.
-  self.postMessage(collidingPairs);
+  self.postMessage(new Int32Array(collidingPairs));
 });

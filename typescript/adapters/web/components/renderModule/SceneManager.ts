@@ -11,6 +11,8 @@ export default class SceneManager {
   public renderables: Map<number, IRenderableObject> = new Map();
   public debugRenderables: Map<string, IRenderableObject> = new Map();
   public animationManagers: Map<number, AnimationManager> = new Map();
+  private activeIds = new Set<number>();
+  private activeDebugIds = new Set<string>();
   private renderableFactory: RenderableFactory;
 
   constructor(private renderer: IRenderer<any>, private isDebugMode: boolean) {
@@ -29,11 +31,11 @@ export default class SceneManager {
 
   /** Compara o estado do domínio com os objetos visuais, criando/atualizando-os. */
   public syncRenderables(domainStates: readonly EntityRenderableState[]): void {
-    const activeIds = new Set<number>();
-    const activeDebugIds = new Set<string>();
+    this.activeIds.clear();
+    this.activeDebugIds.clear();
 
     for (const state of domainStates) {
-      activeIds.add(state.id);
+      this.activeIds.add(state.id);
 
       if (this.renderer instanceof WebGPURenderer) {
         if (this.animationManagers.has(state.id)) {
@@ -61,7 +63,7 @@ export default class SceneManager {
       if (this.isDebugMode) {
         state.hitboxes?.forEach((hitboxState, index) => {
           const debugId = `${state.id}-hitbox-${index}`;
-          activeDebugIds.add(debugId);
+          this.activeDebugIds.add(debugId);
 
           if (this.debugRenderables.has(debugId)) {
             this.debugRenderables.get(debugId)!.updateState(hitboxState);
@@ -76,16 +78,16 @@ export default class SceneManager {
 
     if (this.renderer instanceof WebGPURenderer) {
       for (const id of this.animationManagers.keys()) {
-        if (!activeIds.has(id)) this.animationManagers.delete(id);
+        if (!this.activeIds.has(id)) this.animationManagers.delete(id);
       }
     } else {
       for (const id of this.renderables.keys()) {
-        if (!activeIds.has(id)) this.renderables.delete(id);
+        if (!this.activeIds.has(id)) this.renderables.delete(id);
       }
     }
     if (this.isDebugMode) {
       for (const id of this.debugRenderables.keys()) {
-        if (!activeDebugIds.has(id)) this.debugRenderables.delete(id);
+        if (!this.activeDebugIds.has(id)) this.debugRenderables.delete(id);
       }
     }
   }

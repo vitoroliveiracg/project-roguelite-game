@@ -28,24 +28,25 @@ export default class Slime extends Enemy {
     this.hitboxes = [this.setHitbox()];
     this.attributes.hp = (Dice.rollDice(8) * level ) + this.attributes.constitution
       
-    this.setEvents();
   }
 
   //? ----------- Methods -----------
 
-  public update(deltaTime: number): void {
+  public update(deltaTime: number, player?: any): void {
+    if (player) {
+      this.lastPlayerPos.x = player.coordinates.x;
+      this.lastPlayerPos.y = player.coordinates.y;
+    }
+
+    this.hitboxes?.forEach(hb => hb.update(
+      { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }, this.rotation
+    ));
     
     this.eventManager.dispatch('requestNeighbors', {
       requester: this,
       radius: this.size.width,
       callback: (neighbors) => this.moveSlime(deltaTime, neighbors)
     });
-
-
-  }
-
-  private setEvents() {
-    this.eventManager.on("playerMoved", this.onLastPlayerPos.bind(this) )
   }
 
   /** * Cria e configura a HitBox do Slime. * A sua principal responsabilidade na colisão é se afastar de outros inimigos * para evitar que fiquem empilhados, usando o método `disperseFrom`. * @returns Uma instância de `HitBoxCircle`. */
@@ -57,7 +58,7 @@ export default class Slime extends Enemy {
       8,
       (otherElement: ObjectElement) => {
 
-        if (otherElement instanceof Enemy && otherElement.id !== this.id) {
+        if ('onStrike' in otherElement && otherElement.id !== this.id) {
           super.disperseFrom(otherElement)
         }
 
@@ -74,12 +75,12 @@ export default class Slime extends Enemy {
     const primaryDirection = new Vector2D(
       this.lastPlayerPos.x - this.coordinates.x,
       this.lastPlayerPos.y - this.coordinates.y
-    ).normalize();
+    ).normalizeMut();
   
     //* 2. Verifica se vai colidir
     const willCollideInDirection = (direction: Vector2D): boolean => {
 
-      const displacement = direction.multiply(this.attributes.speed * this.speedModifier * deltaTime);
+      const displacement = direction.clone().multiplyMut(this.attributes.speed * this.speedModifier * deltaTime);
       const nextPosition = { x: this.coordinates.x + displacement.x, y: this.coordinates.y + displacement.y };
       const futureHitbox = new HitBoxCircle({ x: nextPosition.x + this.size.width / 2, y: nextPosition.y + this.size.height / 2 }, 0, 8, () => {});
   
@@ -103,8 +104,8 @@ export default class Slime extends Enemy {
     else { //* 4. Se a rota principal está bloqueada, tenta desviar.
       
       //? 45 graus para a esquerda e 45 para a direita.
-      const leftDirection = primaryDirection.clone().rotate(-45);
-      const rightDirection = primaryDirection.clone().rotate(45);
+      const leftDirection = primaryDirection.clone().rotateMut(-45);
+      const rightDirection = primaryDirection.clone().rotateMut(45);
   
       //* Tenta a rota da esquerda
       if (!willCollideInDirection(leftDirection)) finalDirection = leftDirection; 
@@ -116,10 +117,10 @@ export default class Slime extends Enemy {
   
     //* 5. Aplica o movimento se uma direção válida foi encontrada.
     if (finalDirection) {
-      this.velocity = finalDirection.multiply(this.attributes.speed * this.speedModifier * deltaTime);
+      this.velocity = finalDirection.clone().multiplyMut(this.attributes.speed * this.speedModifier * deltaTime);
       super.updatePosition();
     } 
-    else this.velocity.reset();
+    else this.velocity.resetMut();
     
   }
 

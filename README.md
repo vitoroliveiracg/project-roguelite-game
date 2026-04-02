@@ -22,10 +22,14 @@ Um projeto de jogo 2D com estilo RPG, roguelite e bullet hell, construído com T
   - Uso de **Quadtree** no worker para otimizar a busca por colisões em um mundo com muitos objetos.
 - **Sistema de Progressão:**
   - Sistema de Atributos (força, destreza, etc.) que influenciam status secundários (velocidade, dano crítico).
-  - Ganho de Experiência (XP) ao derrotar inimigos e sistema de Level Up funcional.
+  - Ganho de Experiência (XP) ao derrotar inimigos, sistema de Level Up funcional e alocação de pontos de status.
+  - Sistema de Classes (Guerreiro, Mago, Gunslinger) com Árvore de Habilidades exclusiva.
+  - Destravamento de classes atrelado a encontrar e equipar armas específicas no mundo.
 - **Interface e Depuração:**
   - HUD modular com barra de XP e nível do jogador.
   - Modo de depuração para visualização de hitboxes em tempo real.
+  - Menu de Personagem (Inventário, Equipamentos e Status) e Menu de Árvore de Habilidades funcionais.
+  - Renderização dinâmica de itens caídos no chão (`DroppedItemVisual`).
 
 Flag debug: //! --debug
 

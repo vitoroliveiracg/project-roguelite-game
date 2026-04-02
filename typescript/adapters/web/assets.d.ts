@@ -24,3 +24,10 @@ declare module '*?raw' {
   const content: string;
   export default content;
 }
+
+/**
+ * Declaração para o motor Vite no TypeScript.
+ */
+interface ImportMeta {
+  glob(pattern: string, options?: any): Record<string, any>;
+}
