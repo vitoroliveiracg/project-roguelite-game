@@ -25,7 +25,7 @@ export default class CircleForm extends ObjectElement {
         //! --debug "colisão do personagem"
 
         //? Calcula o deslocamento para este frame (velocidade * tempo) e o aplica.
-        this.velocity.multiply(deltaTime)
+        this.velocity.multiplyMut(deltaTime)
 
         this.eventManager.dispatch('log', { channel: 'domain', message: `(CircleForm) ${this.id}-${this.objectId} moved`, params: [] });
 

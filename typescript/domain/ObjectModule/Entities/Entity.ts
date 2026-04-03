@@ -63,7 +63,8 @@ export default abstract class Entity extends ObjectElement {
       return finalDamage;
     }
     // Calcula a força do knockback com base no fator de lançamento, não mais na vida do alvo.
-    const acceleratorVectorInfluency = damageInfo.direction.clone().multiplyMut(this.hurtLaunchFactor);
+    const safeDirection = damageInfo.direction instanceof Vector2D ? damageInfo.direction : new Vector2D((damageInfo.direction as any).x || 0, (damageInfo.direction as any).y || 0);
+    const acceleratorVectorInfluency = safeDirection.clone().multiplyMut(this.hurtLaunchFactor);
     this.accelerator.addMut(acceleratorVectorInfluency)
 
     setTimeout(() => {

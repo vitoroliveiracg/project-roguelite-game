@@ -5,7 +5,6 @@ import Attributes from "../Attributes";
 import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import type ObjectElement from "../../ObjectElement";
-import Attack from "../../Items/Attack";
 import type Item from "../../Items/Item";
 import type Weapon from "../../Items/Weapons/Weapon";
 import { type DamageInfo } from "../Entity";
@@ -16,112 +15,20 @@ import Warrior from "./Classes/Warrior";
 import Mage from "./Classes/Mage";
 import Gunslinger from "./Classes/Gunslinger";
 import Necromancer from "./Classes/Necromancer";
+import { BindAction } from "../../../eventDispacher/ActionBindings";
 
 export type playerStates = 'idle' | 'walking' | 'dead'
 
 const defaultXpTable = new DefaultXPTable();
 
-export class PlayerInventory {
-  public backpack: Item[] = [];
-  public equipment: { mainHand?: Weapon | undefined } = {};
-
-  constructor(private player: Player, private eventManager: IEventManager) {}
-
-  public equipItem(backpackIndex: number) {
-    const item = this.backpack[backpackIndex];
-    if (!item) return;
-
-    if (item.category === 'weapon') {
-      const weapon = item as Weapon;
-      if (this.equipment.mainHand) {
-        this.backpack.push(this.equipment.mainHand);
-      }
-      this.equipment.mainHand = weapon;
-      this.backpack.splice(backpackIndex, 1);
-      this.eventManager.dispatch('log', { channel: 'domain', message: `Equipped ${weapon.name}`, params: [] });
-
-      if (weapon.unlocksClass) {
-        this.player.unlockClass(weapon.unlocksClass);
-        this.player.setActiveClass(weapon.unlocksClass);
-      }
-    }
-  }
-
-  public unequipItem(slot: string) {
-    if (slot === 'mainHand' && this.equipment.mainHand) {
-      this.backpack.push(this.equipment.mainHand);
-      this.equipment.mainHand = undefined;
-      this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped mainHand`, params: [] });
-    }
-  }
-}
-
-export class PlayerCombat {
-  private shooted: boolean = false;
-
-  constructor(private player: Player, private eventManager: IEventManager) {}
-
-  public shootBullet(direction: Vector2D) {
-    if (this.player.state === 'dead' || this.player.attributes.hp <= 0) return;
-    if (!this.shooted) {
-      if (!this.player.inventory.equipment.mainHand) {
-        this.eventManager.dispatch('log', { channel: 'domain', message: "Cannot shoot without a weapon", params: [] });
-        return;
-      }
-      this.shooted = true;
-      const weapon = this.player.inventory.equipment.mainHand;
-      const baseDamage = weapon.baseDamage + Math.floor(this.player.attributes.strength / 2);
-      const playerAttack = new Attack(this.player, baseDamage, 'physical', weapon.onHitActions);
-      const projType = weapon.projectileType || 'simpleBullet';
-      this.eventManager.dispatch('spawn', {
-        type: projType,
-        coordinates: { ...this.player.coordinates },
-        direction: direction.clone().normalizeMut(),
-        attack: playerAttack
-      });
-      setTimeout(() => { this.shooted = false }, 100);
-    }
-  }
-
-  public castSpell(spellBuffer: string[], direction: Vector2D): boolean {
-    if (this.player.state === 'dead' || this.player.attributes.hp <= 0) return false;
-    
-    const sequence = spellBuffer.join(',');
-    
-    // Projectile (0) + Fire (4) + Projectile (0) = Fireball
-    if (sequence === 'spell_0,spell_4,spell_0') {
-      const baseDamage = 30 + Math.floor(this.player.attributes.intelligence * 2);
-      const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
-      this.eventManager.dispatch('spawn', {
-        type: 'fireball',
-        coordinates: { ...this.player.coordinates },
-        direction: direction.clone().normalizeMut(),
-        attack: playerAttack
-      });
-      this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Fireball!`, params: [] });
-      return true;
-    } else if (sequence === 'spell_0,spell_5') {
-      // Water Missile
-      const baseDamage = 15 + Math.floor(this.player.attributes.intelligence);
-      const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
-      this.eventManager.dispatch('spawn', {
-        type: 'magicMissile',
-        coordinates: { ...this.player.coordinates },
-        direction: direction.clone().normalizeMut(),
-        attack: playerAttack
-      });
-      this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Water Missile!`, params: [] });
-      return true;
-    } else {
-      return false; // Sequência ainda não completou uma magia válida
-    }
-  }
-}
-
 export default class Player extends Entity {
 
   private movementSinceLastUpdate: boolean = false;
   private isDashing: boolean = false;
+
+  public backpack: Item[] = [];
+  public equipment: { mainHand?: Weapon | undefined } = {};
+  private shooted: boolean = false;
 
   // --- Sistema de Classes e Skills ---
   private _unlockedClasses: Set<string> = new Set();
@@ -130,8 +37,6 @@ export default class Player extends Entity {
   private _unlockedSkills: Set<string> = new Set();
   // -----------------------------------
 
-  public inventory: PlayerInventory;
-  public combat: PlayerCombat;
   public facingDirection: Vector2D = new Vector2D(1, 0); // Direção para onde o mago atira
 
   constructor (
@@ -144,15 +49,12 @@ export default class Player extends Entity {
     const size = { width: 16, height: 16 }; //? jogador (16x16)
     super(id, coordinates, size, 'player', attributes, eventManager, state);
 
-    this.inventory = new PlayerInventory(this, eventManager);
-    this.combat = new PlayerCombat(this, eventManager);
-
     // Instancia as classes diretamente no domínio, servindo como o banco de dados das "regras"
     this._classes = [
-      new Warrior(defaultXpTable),
-      new Mage(defaultXpTable),
-      new Gunslinger(defaultXpTable),
-      new Necromancer(defaultXpTable),
+      new Warrior(defaultXpTable, this, eventManager),
+      new Mage(defaultXpTable, this, eventManager),
+      new Gunslinger(defaultXpTable, this, eventManager),
+      new Necromancer(defaultXpTable, this, eventManager),
     ];
 
     this.hitboxes = [ ...this.setHitboxes() ];
@@ -267,40 +169,48 @@ export default class Player extends Entity {
 
   //? ----------- On Input Handlers -----------
 
+  @BindAction('up')
   public onUpAction (): void {
     this.direction.y -= 1
   }
+  @BindAction('down')
   public onDownAction (): void {
     this.direction.y += 1
   }
+  @BindAction('left')
   public onLeftAction (): void {
     this.direction.x -= 1
   }
+  @BindAction('right')
   public onRightAction (): void {
     this.direction.x += 1
   }
   
+  @BindAction('shift')
   public onShiftAction (): void {
     this.dashToDirection(this.direction)
   }
 
-  public castSpell(spellBuffer: string[]): boolean {
-    if (this.activeClass !== 'Mago') {
-        return false;
-    }
-    return this.combat.castSpell(spellBuffer, this.facingDirection.clone());
-  }
-
+  @BindAction('leftClick')
   public onLeftClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
     if (this.activeClass === 'Mago') return; // Mago não atira com o mouse!
 
-    const direction = new Vector2D(
-        mouseLastCoordinates.x - this.coordinates.x,
-        mouseLastCoordinates.y - this.coordinates.y
-      )
-    this.combat.shootBullet(direction)
+    if (!this.shooted && this.equipment.mainHand) {
+      const direction = new Vector2D(
+          mouseLastCoordinates.x - this.coordinates.x,
+          mouseLastCoordinates.y - this.coordinates.y
+      );
+      
+      this.shooted = true;
+      this.equipment.mainHand.attack(this, direction, this.eventManager); // A arma atira
+      
+      setTimeout(() => { this.shooted = false }, 100);
+    } else if (!this.equipment.mainHand) {
+      this.eventManager.dispatch('log', { channel: 'domain', message: "Cannot shoot without a weapon", params: [] });
+    }
   }
 
+  @BindAction('rightClick')
   public onRightClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
     const direction = new Vector2D(
       mouseLastCoordinates.x - this.coordinates.x,
@@ -367,6 +277,36 @@ export default class Player extends Entity {
     }
   }
 
+  //? ----------- Inventory Management -----------
+
+  public equipItem(backpackIndex: number) {
+    const item = this.backpack[backpackIndex];
+    if (!item) return;
+
+    if (item.category === 'weapon') {
+      const weapon = item as Weapon;
+      if (this.equipment.mainHand) {
+        this.backpack.push(this.equipment.mainHand);
+      }
+      this.equipment.mainHand = weapon;
+      this.backpack.splice(backpackIndex, 1);
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Equipped ${weapon.name}`, params: [] });
+
+      if (weapon.unlocksClass) {
+        this.unlockClass(weapon.unlocksClass);
+        this.setActiveClass(weapon.unlocksClass);
+      }
+    }
+  }
+
+  public unequipItem(slot: string) {
+    if (slot === 'mainHand' && this.equipment.mainHand) {
+      this.backpack.push(this.equipment.mainHand);
+      this.equipment.mainHand = undefined;
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped mainHand`, params: [] });
+    }
+  }
+
   //? ----------- Class & Skill Management -----------
 
   /** Desbloqueia permanentemente uma nova classe. Pode ser chamado quando pegar uma arma pela primeira vez. */
@@ -378,7 +318,10 @@ export default class Player extends Entity {
   /** Define a classe ativa atual. */
   public setActiveClass(className: string): void {
     if (this._unlockedClasses.has(className)) {
+      const oldClassInstance = this._classes.find(c => c.name === this._activeClass);
       this._activeClass = className;
+      const newClassInstance = this._classes.find(c => c.name === className);
+      this.eventManager.dispatch('classChanged', { oldClassInstance, newClassInstance });
       this.eventManager.dispatch('log', { channel: 'domain', message: `Class changed to: ${className}`, params: [] });
     }
   }
@@ -390,6 +333,15 @@ export default class Player extends Entity {
     // Opcional: A regra de negócio se o jogador tem pontos de skill suficientes entra aqui!
     this._unlockedSkills.add(skillId);
     this.eventManager.dispatch('log', { channel: 'domain', message: `Skill unlocked: ${skillId}`, params: [] });
+
+    // Aplica o efeito imediatamente se for uma skill passiva
+    const activeClassInstance = this._classes.find(c => c.name === this._activeClass);
+    if (activeClassInstance) {
+      const skill = activeClassInstance.allSkills.find(s => s.id === skillId);
+      if (skill && skill.type === 'passive' && skill.effect) {
+        skill.effect.apply(this);
+      }
+    }
   }
 
   public get activeClass(): string | null { return this._activeClass; }

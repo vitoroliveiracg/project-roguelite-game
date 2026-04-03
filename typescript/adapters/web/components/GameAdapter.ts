@@ -15,6 +15,7 @@ import GameMap from "./mapModule/Map";
 import SceneManager from "./renderModule/SceneManager";
 import UIManager from "./UiManager/UIManager";
 import InputGateway from "./keyboardModule/InputGateway";
+import type IRenderable from "./renderModule/IRenderable";
 
 /** @class GameAdapter O "Adaptador" principal que conecta a lógica de domínio (`IGameDomain`) com as tecnologias da web (Canvas, Input, DOM), traduzindo eventos e dados entre as camadas e gerenciando o ciclo de vida dos componentes de apresentação. */
 export default class GameAdapter {
@@ -31,6 +32,7 @@ export default class GameAdapter {
   constructor(private domain: IGameDomain, private eventManager: IEventManager) {
     logger.log('init', 'GameAdapter instantiated.');
   }
+
 
   private isPaused: boolean = false;
   public togglePauseGame = (): void => {
@@ -129,6 +131,16 @@ export default class GameAdapter {
         const animationData = animManager ? { currentFrame: animManager.currentFrame } : { currentFrame: 0 };
         return { ...r, ...animationData };
       });
+
+      // Adiciona os efeitos transientes para WebGPU
+      for (const visual of this.sceneManager.transientVisuals.values()) {
+        const animManager = visual.animationManager;
+        renderablesWithAnimation.push({
+          ...visual.state,
+          currentFrame: animManager ? animManager.currentFrame : 0
+        });
+      }
+
       const webGpuDomainState = { world: domainState.world, renderables: renderablesWithAnimation };
       await this.renderer.drawFrame(webGpuDomainState, cameraTarget);
     } else {
@@ -137,7 +149,12 @@ export default class GameAdapter {
       if (cameraTargetRenderable) this.camera.setTarget(cameraTargetRenderable);
 
       this.renderer.clear();
-      const allRenderables = [...this.sceneManager.renderables.values()];
+      // Envia também os visuais transientes para a tela!
+      const transientRenderables = Array.from(this.sceneManager.transientVisuals.values())
+        .map(v => v.renderable)
+        .filter((r): r is IRenderable => r !== undefined);
+
+      const allRenderables = [...this.sceneManager.renderables.values(), ...transientRenderables];
       if (this.isDebugMode) allRenderables.push(...this.sceneManager.debugRenderables.values());
 
       // Passa a lista de objetos visuais (IRenderableObject) para o renderer antigo.
@@ -165,6 +182,10 @@ export default class GameAdapter {
           window.addEventListener('mousedown', forceRestart, { once: true });
         }, 1500);
       }
+    });
+
+    this.eventManager.on('spawnVisual', (payload) => {
+      this.sceneManager.addVisualEffect(payload);
     });
   }
 

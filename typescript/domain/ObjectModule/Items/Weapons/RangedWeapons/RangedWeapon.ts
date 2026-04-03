@@ -1,9 +1,12 @@
 import type { IEventManager } from "../../../../eventDispacher/IGameEvents";
 import type { baseAttributes } from "../../../Entities/Attributes";
-import type Bullet from "../../../Entities/bullets/Bullet";
+import type Bullet from "../../../Entities/projectiles/Bullet";
 import type { IAtack } from "../../IAtack";
 import Item, { type ItemRarity } from "../../Item";
 import Weapon from "../Weapon";
+import Attack from "../../Attack";
+import type Vector2D from "../../../../shared/Vector2D";
+import type Entity from "../../../Entities/Entity";
 
 export default abstract class RangedWeapon extends Weapon {
   
@@ -38,8 +41,17 @@ export default abstract class RangedWeapon extends Weapon {
    * @param attack - Contém informações sobre o ataque (quem atirou, direção, etc.).
    * @param ammoFactory - Uma função que sabe como criar a instância da munição a ser disparada.
    */
-  public attack(attack: IAtack, eventManager: IEventManager): void {
-    // Agora as subclasses vão enviar eventos baseados em seus tipos de munição
+  public attack(attacker: Entity, direction: Vector2D, eventManager: IEventManager): void {
+    const baseDamage = this.baseDamage + Math.floor(attacker.attributes.strength / 2);
+    const weaponAttack = new Attack(attacker, baseDamage, 'physical', this.onHitActions);
+    const projType = this.projectileType || 'simpleBullet';
+    
+    eventManager.dispatch('spawn', {
+      type: projType,
+      coordinates: { ...attacker.coordinates },
+      direction: direction.clone().normalizeMut(),
+      attack: weaponAttack
+    });
   }
 
   //? ----------- Getters and Setters -----------

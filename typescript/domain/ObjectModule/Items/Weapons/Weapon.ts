@@ -1,11 +1,13 @@
 import type { baseAttributes } from "../../Entities/Attributes";
 import type Effect from "../Effects/Effect";
-import type Bullet from "../../Entities/bullets/Bullet";
+import type Bullet from "../../Entities/projectiles/Bullet";
 import type { IAtack } from "../IAtack";
 import Item, { type ItemRarity } from "../Item";
 import type { OnHitAction } from "../IAtack";
 import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import type { objectTypeId } from "../../objectType.type";
+import type Vector2D from "../../../shared/Vector2D";
+import type Entity from "../../Entities/Entity";
 
 export default abstract class Weapon extends Item {
   public unlocksClass?: string | undefined;
@@ -34,7 +36,7 @@ export default abstract class Weapon extends Item {
     this.unlocksClass = unlocksClass;
   }
 
-  /** * Define o contrato de ataque para todas as armas. * @param attack Contém informações sobre o ataque (quem ataca, direção, etc.). * @param ammoFactory (Opcional) Uma função para criar um projétil, usada por armas de longo alcance. * As classes filhas devem implementar este método. */
-  public abstract attack(attack: IAtack, eventManager: IEventManager): void;
+  /** * Define o contrato de ataque para todas as armas. O atacante a utiliza passando a sua própria referência e direção. */
+  public abstract attack(attacker: Entity, direction: Vector2D, eventManager: IEventManager): void;
 
 }

@@ -34,4 +34,4 @@ Um projeto de jogo 2D com estilo RPG, roguelite e bullet hell, construído com T
 Flag debug: //! --debug
 
 [dontpad](https://dontpad.com/project-roguelite-game)
-[wireframe arquitetura](https://excalidraw.com/#json=uoWk2Ucdi7I9x9wuhYLxw,rPDiN6lqLhYRIG_CKTUXhQ)
+[wireframe arquitetura](https://excalidraw.com/#json=M3X7-T5vQh1TGketI9VTW,j3QlQcKjiojxGwGO6_DDVg)

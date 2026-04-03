@@ -83,10 +83,10 @@ export default class DomainFacade implements IGameDomain {
 
   public manageInventory(action: 'equip' | 'unequip', payload: { index?: number; slot?: string }): void {
     if (action === 'equip' && payload.index !== undefined) {
-      this.player.inventory.equipItem(payload.index);
+      this.player.equipItem(payload.index);
     }
     if (action === 'unequip' && payload.slot !== undefined) {
-      this.player.inventory.unequipItem(payload.slot);
+      this.player.unequipItem(payload.slot);
     }
   }
 
@@ -146,8 +146,8 @@ export default class DomainFacade implements IGameDomain {
     ps.attributes.charisma = this.player.attributes.charisma;
     ps.attributes.availablePoints = this.player.attributes.availablePoints;
 
-    ps.backpack = this.player.inventory.backpack.map(item => ({ name: item.name, iconId: item.iconId }));
-    ps.equipment.mainHand = this.player.inventory.equipment.mainHand ? { name: this.player.inventory.equipment.mainHand.name, iconId: this.player.inventory.equipment.mainHand.iconId } : undefined;
+    ps.backpack = this.player.backpack.map(item => ({ name: item.name, iconId: item.iconId }));
+    ps.equipment.mainHand = this.player.equipment.mainHand ? { name: this.player.equipment.mainHand.name, iconId: this.player.equipment.mainHand.iconId } : undefined;
 
     ps.activeClass = this.player.activeClass;
     ps.unlockedClasses = this.player.unlockedClasses;
@@ -157,14 +157,9 @@ export default class DomainFacade implements IGameDomain {
         isActive: this.player.activeClass === c.name
     }));
     
-    ps.skillTree = (this.player.activeClass ? this.player.classes.find(c => c.name === this.player.activeClass)?.allSkills.map(s => ({
-        id: s.id,
-        name: s.name,
-        type: s.type,
-        tier: s.tier,
-        unlocked: this.player.unlockedSkills.has(s.id),
-        canUnlock: !s.requiredSkillId || this.player.unlockedSkills.has(s.requiredSkillId)
-    })) : []) ?? [];
+    // Skills de Classe (In-Game) NÃO vão para a árvore da Meta-Progressão
+    // O SkillTreeGui ficará vazio até implementarmos os Nodos Globais da conta
+    ps.skillTree = [];
 
     const otherStates = this.objectManager.getAllRenderableStates();
     

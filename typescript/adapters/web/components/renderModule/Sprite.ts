@@ -80,8 +80,10 @@ export default class Sprite implements IRenderable {
 
     ctx.imageSmoothingEnabled = false;
 
-    const sourceX = this.currentFrame * this.config.frameWidth;
-    const sourceY = 0; // Assumindo que o spritesheet é uma única linha horizontal
+    // Calcula a posição XY em um grid (suporta tanto linha única quanto múltiplas linhas/colunas)
+    const columns = Math.max(1, Math.floor(this.image.width / this.config.frameWidth));
+    const sourceX = (this.currentFrame % columns) * this.config.frameWidth;
+    const sourceY = Math.floor(this.currentFrame / columns) * this.config.frameHeight;
 
     ctx.drawImage(
       this.image,

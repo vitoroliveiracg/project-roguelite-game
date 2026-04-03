@@ -10,6 +10,8 @@ export interface GameEventMap {
   levelUp: { newLevel: number };
   requestNeighbors :{ requester: ObjectElement, radius: number, callback: (neighbors :ObjectElement[]) => void };
   log: { channel: string, message: string, params: any[] };
+  spawnVisual: { type: string, coordinates: { x: number, y: number }, duration: number, size: { width: number, height: number } };
+  classChanged: { oldClassInstance: any, newClassInstance: any };
 }
 export type EventKey = keyof GameEventMap;
 

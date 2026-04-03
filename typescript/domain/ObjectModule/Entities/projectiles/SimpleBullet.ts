@@ -5,7 +5,11 @@ import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import Bullet, { type bulletStates } from "./Bullet";
 import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import type { objectTypeId } from "../../objectType.type";
+import { RegisterSpawner, type SpawnPayload } from "../../SpawnRegistry";
 
+@RegisterSpawner('simpleBullet')
+@RegisterSpawner('magicMissile')
+@RegisterSpawner('scytheProjectile')
 export class SimpleBullet extends Bullet {
     public accelerator: Vector2D = new Vector2D(0, 0);
     private speed:number = 150
@@ -100,5 +104,12 @@ export class SimpleBullet extends Bullet {
         const noiseOffset = perpendicularDirection.clone().multiplyMut(randomFactor * lateral_noise_factor);
         
         this.direction = normalizedDirection.clone().addMut(noiseOffset).normalizeMut(); 
+    }
+
+    public static createSpawn(id: number, payload: SpawnPayload, eventManager: IEventManager): SimpleBullet {
+        let size = { width: 8, height: 8 };
+        if (payload.type === 'scytheProjectile') size = { width: 24, height: 24 };
+        if (payload.type === 'magicMissile') size = { width: 12, height: 12 };
+        return new SimpleBullet(id, payload.coordinates, payload.direction!, payload.attack!, eventManager, 'travelling', payload.type, size);
     }
 }

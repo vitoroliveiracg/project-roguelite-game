@@ -34,7 +34,7 @@ export class InputManager {
   private pressedKeys: Set<string> = new Set();
   private justPressedKeys: Set<string> = new Set();
   private keyMap: Map<string, GameAction> = new Map();
-  private actionMap: Map<GameAction, string> = new Map();
+  private actionMap: Map<GameAction, string[]> = new Map();
   private preventUnload: boolean = true;
   public mouseLastCoordinates:{x:number,y:number} = {x:0,y:0} 
   public clickActions: Set<action> = new Set(["leftClick", "scrollClick", "rightClick"])
@@ -48,16 +48,20 @@ export class InputManager {
 
   /** Verifica se uma ação de jogo específica está ativa (ou seja, se sua tecla correspondente está pressionada). @param action A ação de jogo a ser verificada. @returns `true` se a ação estiver ativa, `false` caso contrário. */
   public isActionActive(action: GameAction): boolean {
-    const key = this.actionMap.get(action);
-    return key ? this.pressedKeys.has(key) : false;
+    const keys = this.actionMap.get(action);
+    return keys ? keys.some(k => this.pressedKeys.has(k)) : false;
   }
 
   /** Verifica se uma ação de jogo acabou de ser ativada e a consome (útil para capturar uma única tecla por clique, como magias). @param action A ação a ser consumida. @returns `true` se a ação estava ativa e foi consumida, `false` caso contrário. */
   public consumeAction(action: GameAction): boolean {
-    const key = this.actionMap.get(action);
-    if (key && this.justPressedKeys.has(key)) {
-      this.justPressedKeys.delete(key);
-      return true;
+    const keys = this.actionMap.get(action);
+    if (keys) {
+      for (const key of keys) {
+        if (this.justPressedKeys.has(key)) {
+          this.justPressedKeys.delete(key);
+          return true;
+        }
+      }
     }
     return false;
   }
@@ -66,19 +70,24 @@ export class InputManager {
   public remapAction(action: GameAction, newKey: string): void {
     const normalizedNewKey = newKey.toLowerCase();
 
-    const oldKey = this.actionMap.get(action);
-    if (oldKey) {
-      this.keyMap.delete(oldKey);
+    const oldKeys = this.actionMap.get(action);
+    if (oldKeys) {
+      oldKeys.forEach(k => this.keyMap.delete(k));
     }
 
+    this.actionMap.set(action, []); // Limpa o array antigo para o novo remapeamento
     this.setKeyForAction(action, normalizedNewKey);
     logger.log('init', `Action '${action}' remapped to key '${normalizedNewKey}'.`);
   }
 
   /** Carrega o mapa de teclas a partir do arquivo `keymap.json` importado. @private */
   private loadKeyMap(): void {
-    Object.entries(keymapConfig).forEach(([action, key]) => {
-      this.setKeyForAction(action as GameAction, key as string);
+    Object.entries(keymapConfig).forEach(([action, keyOrKeys]) => {
+      if (Array.isArray(keyOrKeys)) {
+        keyOrKeys.forEach(key => this.setKeyForAction(action as GameAction, key.toLowerCase()));
+      } else {
+        this.setKeyForAction(action as GameAction, (keyOrKeys as string).toLowerCase());
+      }
     });
   }
 
@@ -177,7 +186,12 @@ export class InputManager {
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
-    const key = e.key.toLowerCase();
+    let key = e.key.toLowerCase();
+    
+    // Diferencia os números do teclado físico superior dos números do Numpad
+    if (e.location === KeyboardEvent.DOM_KEY_LOCATION_NUMPAD) {
+      key = `numpad_${key}`;
+    }
 
     const isBrowserShortcut = 
       ((e.ctrlKey || e.metaKey) && ['s', 'p', 'f', 'g', 'r', 'j', 'u', 'd', 'h', 'w', 't', 'n'].includes(key)) || // Atalhos com Ctrl
@@ -201,7 +215,12 @@ export class InputManager {
   }
 
   private handleKeyUp(e: KeyboardEvent): void {
-    const key = e.key.toLowerCase();
+    let key = e.key.toLowerCase();
+
+    if (e.location === KeyboardEvent.DOM_KEY_LOCATION_NUMPAD) {
+      key = `numpad_${key}`;
+    }
+
     logger.log('input', `Key Up: ${key}`);
     this.pressedKeys.delete(key);
     this.justPressedKeys.delete(key);
@@ -210,6 +229,9 @@ export class InputManager {
   /** Define a tecla para uma ação específica, mantendo os mapas sincronizados.  @param action A ação de jogo.  @param key A tecla a ser associada.  @private */
   private setKeyForAction(action: GameAction, key: string): void {
     this.keyMap.set(key, action);
-    this.actionMap.set(action, key);
+    if (!this.actionMap.has(action)) {
+      this.actionMap.set(action, []);
+    }
+    this.actionMap.get(action)!.push(key);
   }
 }

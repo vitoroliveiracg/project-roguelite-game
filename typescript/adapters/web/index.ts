@@ -18,6 +18,7 @@ const gameConfig = {
 async function main() {
   const eventManager = new EventHandler();
   const collisionAdapter = new CollisionAdapter();
+  
   const domain = new DomainFacade(gameConfig, logger, eventManager, collisionAdapter);
   const gameAdapter: GameAdapter = new GameAdapter(domain, eventManager);
 

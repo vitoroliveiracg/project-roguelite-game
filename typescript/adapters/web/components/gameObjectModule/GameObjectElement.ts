@@ -4,20 +4,30 @@ import { logger } from "../../shared/Logger";
 import type IRenderable from "../renderModule/IRenderable";
 
 export interface SpriteConfig {
+  /** O caminho ou URL (import estático) da imagem do spritesheet. */
   imageSrc: string;
+  /** O número total de frames que compõem a animação completa. */
   frameCount: number;
+  /** A velocidade da animação (número de atualizações/ticks do motor antes de avançar para o próximo frame). */
   animationSpeed: number;
+  /** A largura real de um único frame recortado dentro da imagem original. */
   frameWidth: number;
+  /** A altura real de um único frame recortado dentro da imagem original. */
   frameHeight: number;
   
   // Específicos do WebGPU Texture Atlas (Opcionais para o fallback 2D)
+  /** O deslocamento (coordenadas {x, y}) desta imagem dentro da grande imagem do Atlas de Textura Global (usado pelo WebGPURenderer). */
   atlasOffset?: { x: number, y: number };
+  /** O tamanho final {width, height} na qual o sprite será de fato escalado e renderizado na tela. */
   spriteSize?: { width: number, height: number };
 }
 
 export interface GameObjectConstructorParams {
+  /** O DTO de estado inicial contendo as coordenadas, identificador, rotação e status base (recebidos do Domínio). */
   initialState: EntityRenderableState;
+  /** Um dicionário contendo todas as configurações de sprite disponíveis pelo sistema de Auto-Registro, mapeadas por tipo e estado (ex: 'player-idle'). */
   configs: Map<string, SpriteConfig>;
+  /** Um cache global contendo as instâncias de `HTMLImageElement` já pré-carregadas na memória para garantir uma troca de sprites instantânea. */
   imageCache: Map<string, HTMLImageElement>;
 }
 
@@ -111,8 +121,11 @@ export default class GameObjectElement implements IRenderable {
     
     this.updateAnimation();
     ctx.imageSmoothingEnabled = false;
-    const sourceX = this.currentFrame * this.config.frameWidth;
-    const sourceY = 0;
+    
+    // Calcula dinamicamente quantas colunas a imagem possui e encontra a linha/coluna atual
+    const columns = Math.max(1, Math.floor(this.image.width / this.config.frameWidth));
+    const sourceX = (this.currentFrame % columns) * this.config.frameWidth;
+    const sourceY = Math.floor(this.currentFrame / columns) * this.config.frameHeight;
     
     ctx.drawImage(this.image, sourceX, sourceY, this.config.frameWidth, this.config.frameHeight, this.coordinates.x, this.coordinates.y, this.size.width, this.size.height);
     ctx.restore()

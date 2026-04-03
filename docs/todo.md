@@ -101,36 +101,36 @@ Tarefa: Implementar Aba "Status"
 
 Tarefa: [~] Criar UI da "Árvore de Habilidades" (Skill Tree)
 
-    [~] Sub-tarefa: Focar esta interface para ser a Árvore IN-GAME (reseta ao morrer, ligada à classe atual).
-    [~] Sub-tarefa: Implementar o layout visual da árvore com nós (círculos, retângulos) e linhas de conexão (conforme image_62009f.jpg).
+    [x] Sub-tarefa: Focar esta interface para ser a Árvore GLOBAL (Meta-Progressão). O In-Game foi movido para o CharacterMenuGui.
+    [x] Sub-tarefa: Implementar o layout visual da árvore com nós (círculos, retângulos) e linhas de conexão (conforme image_62009f.jpg).
 
-    [~] Sub-tarefa: Criar lógica de pré-requisitos visual (nó bloqueado e desbloqueado).
+    [x] Sub-tarefa: Criar lógica de pré-requisitos visual (nó bloqueado e desbloqueado).
 
-    [~] Sub-tarefa: Diferenciar visualmente tipos de nós: "Passiva", "Hab. ativa" (Habilidade Ativa) e "RARO".
+    [x] Sub-tarefa: Diferenciar visualmente tipos de nós: "Passiva", "Hab. ativa" (Habilidade Ativa) e "RARO".
 
-    [~] Sub-tarefa: Implementar o sistema de "Tiers" ou seções.
+    [x] Sub-tarefa: Implementar o sistema de "Tiers" ou seções.
 
-    [~] Sub-tarefa: Associar visualmente cada árvore a uma Classe no topo.
+    [x] Sub-tarefa: Associar visualmente cada árvore a uma Classe no topo.
 
-Tarefa: [~] Criar UI de Gerenciamento de Skills Ativas/Passivas
+Tarefa: [x] Criar UI de Gerenciamento de Skills Ativas/Passivas
 
-    [~] Sub-tarefa: Criar a UI para equipar skills (conforme image_625255.jpg).
+    [x] Sub-tarefa: Criar a UI para equipar skills in-game no CharacterMenuGui (conforme image_625255.jpg).
 
-    [~] Sub-tarefa: Implementar slots de skills "Ativo" (círculos) e "Passivo" (losangos).
+    [x] Sub-tarefa: Implementar slots de skills "Ativo" (círculos) e "Passivo" (losangos).
 
-    [~] Sub-tarefa: Implementar sistema visual de "Nível" para skills.
+    [x] Sub-tarefa: Implementar sistema visual de "Nível" para skills.
 
-    [~] Sub-tarefa: Implementar sistema visual de slots trancados.
+    [x] Sub-tarefa: Implementar sistema visual de slots trancados.
 
-Tarefa: [Domínio] Lógica das Classes
+Tarefa: [x] [Domínio] Lógica das Classes
 
-    [~] Implementar a estrutura: "classes não são ligadas as armas" (desbloqueio no Player é permanente).
+    [x] Implementar a estrutura: "classes não são ligadas as armas" (desbloqueio no Player é permanente).
 
-    [~] Implementar o gatilho: "Armas liberam classes" (depende do inventário).
+    [x] Implementar o gatilho: "Armas liberam classes" (depende do inventário).
 
-    Implementar a lógica: "classes não são ligadas as armas" (desbloqueio é permanente).
+    [x] Implementar a separação: Árvore In-Game (reseta, tem binds dinâmicos) vs Árvore Meta-Progression (Global Account).
 
-    Implementar a lógica: "Habilidades passivas das classes funcionam somente com as classes ativas".
+    [x] Implementar a lógica: "Habilidades passivas das classes rodam `apply` instantaneamente ao serem desbloqueadas".
 
 ### Épico 3: Sistema de Mapas e Progressão
 

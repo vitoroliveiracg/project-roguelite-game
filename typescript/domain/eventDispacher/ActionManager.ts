@@ -2,82 +2,66 @@ import type { IEventManager } from "./IGameEvents";
 import type Player from "../ObjectModule/Entities/Player/Player";
 import type { action } from "./actions.type";
 import type { ILogger } from "../ports/ILogger";
+import { ClassActionBindings } from "./ActionBindings";
 
 export default class ActionManager {
 
   public mouseLastCoordinates:{x:number,y:number} = {x:0,y:0} 
-
-  private spellBuffer: action[] = [];
-  private lastSpellInputTime: number = 0;
-  private readonly SPELL_TIMEOUT = 1500; // 1.5 segundos de tolerância para o mago digitar a próxima tecla
+  private activeHandlers: Map<action, Function> = new Map();
 
   constructor(private player: Player, private logger: ILogger, private eventManager: IEventManager){
     this.eventManager.on('log', ({ channel, message, params }) => {
       this.logger.log(channel as any, message, ...params);
     });
+
+    // Registra os comandos básicos do Player (movimentação, tiro normal)
+    this.registerInstance(this.player);
+
+    const activeClassInstance = this.player.classes.find(c => c.name === this.player.activeClass);
+    if (activeClassInstance) this.registerInstance(activeClassInstance);
+
+    // Escuta a troca de classes para desplugar a classe antiga e plugar os inputs da nova
+    this.eventManager.on('classChanged', (payload) => {
+        if (payload.oldClassInstance) this.unregisterInstance(payload.oldClassInstance);
+        if (payload.newClassInstance) this.registerInstance(payload.newClassInstance);
+    });
   }
 
   //? ----------- Methods -----------
 
-  public checkEvent(actions :action[], mouseLastCoordinates: {x:number,y:number}){
-    
-    this.mouseLastCoordinates = mouseLastCoordinates
-
-    // Limpa o buffer de magia se passar do tempo limite sem a magia ser finalizada/repassada
-    if (this.spellBuffer.length > 0 && Date.now() - this.lastSpellInputTime > this.SPELL_TIMEOUT) {
-      this.eventManager.dispatch('log', { channel: 'input', message: "(ActionManager) Spell buffer expired and cleared.", params: [this.spellBuffer] });
-      this.spellBuffer = [];
-    }
-
-    actions.forEach(action => this.handleAction(action))
-
+  public registerInstance(instance: any): void {
+      const bindings = ClassActionBindings.get(instance.constructor);
+      if (bindings) {
+          bindings.forEach((methodName, actionName) => {
+              if (this.activeHandlers.has(actionName)) {
+                  throw new Error(`[ActionManager] CONFLITO CRÍTICO: A ação '${actionName}' não pode ser registrada por ${instance.constructor.name} pois já está em uso!`);
+              }
+              this.activeHandlers.set(actionName, instance[methodName].bind(instance));
+              this.logger.log('input', `Bound action '${actionName}' to ${instance.constructor.name}.${methodName}`);
+          });
+      }
   }
 
-  private handleAction(action :action){
-    
-    if (action.startsWith('spell_')) {
-      this.spellBuffer.push(action);
-      this.lastSpellInputTime = Date.now();
-      this.eventManager.dispatch('log', { channel: 'input', message: `Current Spell Buffer: [${this.spellBuffer.map(s => s.split('_')[1]).join(', ')}]`, params: [] });
-      
-      if (this.player.castSpell(this.spellBuffer)) {
-        this.spellBuffer = []; // Auto-conjuração: Limpa o buffer se a sequência formou uma magia válida
+  public unregisterInstance(instance: any): void {
+      const bindings = ClassActionBindings.get(instance.constructor);
+      if (bindings) {
+          bindings.forEach((methodName, actionName) => {
+              this.activeHandlers.delete(actionName);
+              this.logger.log('input', `Unbound action '${actionName}' from ${instance.constructor.name}`);
+          });
       }
-      return; 
-    }
+  }
 
-    switch (action) {
-      case 'up':
-        this.player.onUpAction()
-        break;
-      case'down':
-        this.player.onDownAction()
-        break;
-      case'left':
-        this.player.onLeftAction()
-        break;
-      case'right':
-        this.player.onRightAction()
-        break;
-      case'shift':
-        this.player.onShiftAction()
-        break;
-      case'leftClick':
-        this.player.onLeftClickAction(this.mouseLastCoordinates);
-        break;
-      case 'castSpell':
-        this.spellBuffer = []; // Botão de pânico: Limpa o buffer imediatamente se você digitou errado
-        break;
-      case'rightClick':
-        this.player.onRightClickAction(this.mouseLastCoordinates)
-        break;
-      case 'scrollClick':
-        break;
-        
-      default: this.eventManager.dispatch('log', { channel: 'input', message: "(EventManager) event not managed", params: [action] });
-      }
-      this.eventManager.dispatch('log', { channel: 'input', message: "(EventManager) event managed", params: [action] });
-
+  public checkEvent(actions :action[], mouseLastCoordinates: {x:number,y:number}){
+    this.mouseLastCoordinates = mouseLastCoordinates
+    actions.forEach(action => {
+        const handler = this.activeHandlers.get(action);
+        if (handler) {
+            handler(this.mouseLastCoordinates, action);
+        } else {
+            this.eventManager.dispatch('log', { channel: 'input', message: `(ActionManager) event not managed: ${action}`, params: [] });
+        }
+    });
   }
 
 }

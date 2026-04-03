@@ -35,6 +35,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
     - **`ObjectElement.ts`**: A classe base para qualquer objeto que existe no mundo (jogador, inimigo, item). Define propriedades essenciais como ID, coordenadas, tamanho e hitboxes.
     - **`ObjectElementManager.ts`**: Um dos pilares da arquitetura do domínio. Este gerenciador é o coração pulsante do mundo do jogo, responsável pelo ciclo de vida completo de **todas** as entidades dinâmicas, com exceção do `Player` (que é gerenciado diretamente pela `DomainFacade`). Suas responsabilidades incluem:
       - **Criação e Remoção (`spawn`/`despawn`):** Ouve eventos de domínio para criar e destruir dinamicamente inimigos, projéteis, itens, etc., usando um sistema de `factory`.
+      - **Criação e Remoção (`spawn`/`despawn`):** Ouve eventos de domínio para criar e destruir dinamicamente entidades. Utiliza o `SpawnRegistry` (via Decorators `@RegisterSpawner`) para instanciar objetos sem possuir lógica acoplada (if/else) sobre o que está nascendo.
       - **Atualização de Estado:** Itera sobre todos os elementos a cada frame, chamando seus respectivos métodos `update`.
       - **Detecção de Colisão Otimizada e Zero-GC:** Delega a colisão para a Porta Secundária `ICollisionService` utilizando buffers contíguos de memória (`Float32Array`), abolindo a alocação de objetos descartáveis. A resolução ocorre em um modelo de **Física Atrasada (Delayed Resolution)**: envia-se os dados em um frame e as reações são aplicadas no início do frame seguinte, impedindo gargalos assíncronos no Game Loop.
       Ele efetivamente desacopla a `DomainFacade` da complexidade de gerenciar uma coleção massiva e mutável de objetos.
@@ -44,24 +45,26 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       - **`Attributes.ts`**: Uma classe complexa e central que encapsula **toda** a lógica de atributos de uma entidade. Ela gerencia os 6 atributos primários (força, destreza, etc.) e calcula uma vasta gama de atributos secundários derivados (dano crítico, velocidade, regeneração de HP/Mana, etc.). Também contém a lógica para ganho de experiência (`addXp`) e progressão de nível. É um componente puramente de dados e regras, sem conhecimento de sua posição no mundo.
       - **`IXPTable.ts`**: Uma interface simples que define o contrato para uma "curva de experiência". Ao desacoplar a lógica de `addXp` da `Attributes` dos valores concretos, ela permite que diferentes tipos de entidades (ou o jogo em diferentes dificuldades) progridam em ritmos distintos, simplesmente fornecendo uma implementação diferente desta interface.
       - **`Player/`**: Contém a lógica específica da entidade do jogador.
-        - **`Player.ts`**: A implementação concreta da entidade controlada pelo usuário. Sua responsabilidade é traduzir as intenções do jogador (recebidas do `ActionManager` via métodos como `onUpAction` e `onLeftClickAction`) em ações de jogo concretas. Ela gerencia o estado de movimento, dispara eventos para criar projéteis (`shootBullet`) e emite o evento `playerMoved` para que outras entidades (como a IA dos inimigos) possam reagir à sua posição.
-        - **`Classes/Class.ts`**: Uma classe abstrata que define o conceito de uma "Classe de Personagem" (ex: Guerreiro, Mago, Gunslinger). Sua principal responsabilidade é associar um nome a uma `IXPTable`, fornecendo instâncias de habilidades exclusivas (`Skill`) para níveis específicos através de regras desacopladas.
-        - **`Classes/DefaultXPTable.ts`**: Implementa a interface `IXPTable`, gerenciando recompensas em determinados níveis (como ganho de atributos e espaços de habilidade) e repassando para a classe do jogador aplicar a identidade da recompensa.
+        - **`Player.ts`**: A implementação concreta do jogador. Graças às refatorações recentes, deixou de ser uma "God Class": agora delega o disparo de tiros diretamente para a `Weapon` equipada e a conjuração de magias para a `Class` ativa (ex: `Mage`). Gerencia sua própria mochila (`backpack`) e se auto-inscreve nos eventos de input via Decorators.
+        - **`Classes/Class.ts`**: Classe abstrata de Profissão/Classe. Gerencia habilidades (`Skill`) in-game (temporárias da run, aplicando Passivas instantaneamente ao liberar) e intercepta inputs (como atalhos de magias) graças ao sistema de rotas dinâmicas da sua filha.
+        - **`Classes/DefaultXPTable.ts`**: Implementa a interface `IXPTable`, gerenciando recompensas em determinados níveis (como ganho de atributos e espaços de habilidade).
       - **`Enemies/`**: Contém a hierarquia de classes para inimigos.
-        - **`Enemy.ts`**: Classe abstrata que herda de `Entity`. Define o contrato base para todos os inimigos, estabelecendo que eles têm um `level`, concedem `xpGiven` ao serem derrotados, e possuem um ataque de contato (`onStrike`) com cooldown, que retorna um objeto `Attack` configurado para causar dano e aplicar recuo no próprio atacante.
-        - **`Slime.ts`**: Uma implementação concreta de `Enemy`. Sua principal responsabilidade é implementar uma IA de movimento avançada (`moveSlime`), que utiliza "steering behaviors" para perseguir o jogador e desviar de outros inimigos, evitando bloqueios e permitindo que um grupo de Slimes cerque o alvo de forma mais inteligente.
-      - **`bullets/`**: Contém a hierarquia de classes para projéteis.
-        - **`Bullet.ts`**: Classe abstrata que herda de `ObjectElement`. Define o contrato de um projétil: um objeto que se move pelo mundo. Não possui lógica de dano.
-        - **`SimpleBullet.ts`**: Uma implementação concreta de `Bullet`. Sua responsabilidade é "carregar" um objeto `Attack` que lhe é fornecido no construtor. Ao colidir com um inimigo, ela invoca o método `execute` do `Attack` que carrega. Também gerencia sua própria velocidade, tempo de vida e uma variação sutil na trajetória para um movimento mais orgânico.
+        - **`Enemy.ts`**: Classe abstrata que herda de `Entity`. Define o contrato base para todos os inimigos, concedendo `xpGiven` e possuindo um ataque de contato (`onStrike`) com cooldown.
+        - **`Slime.ts`**: Implementa IA de movimento com "steering behaviors" baseada na visão da vizinhança real.
+      - **`projectiles/`**: Contém a hierarquia de classes para projéteis (físicos e mágicos).
+        - **`Projectile.ts`**: Classe abstrata genérica para objetos voadores e magias soltas pelo cenário.
+        - **`SimpleBullet.ts`**: Projétil balístico que aplica um `Attack` customizado ao colidir (podendo perfurar alvos).
+        - **`Fireball.ts`**: Projétil mágico ("Axioma") que, ao colidir, invoca de forma desacoplada Efeitos de Área e Efeitos Visuais transientes (VFX) sobre os inimigos.
       - **`geometryForms/`**: Contém classes para formas geométricas simples que podem existir no mundo.
         - **`circleForm.ts`**: Uma implementação concreta de `ObjectElement` que representa um círculo. É uma entidade simples com capacidade de movimento, servindo como um bom exemplo de um objeto de jogo básico, útil para testes de colisão, efeitos visuais ou como base para elementos de cenário mais complexos.
     - **`Items/`**: Contém a hierarquia de classes para todos os itens.
       - **`IAtack.ts`**: Uma interface que define o contrato para um objeto de ataque (`execute`) e seus tipos de dados relacionados, como `OnHitAction` e `AttackContext`.
       - **`Attack.ts`**: A implementação concreta e central do sistema de combate. Esta classe encapsula toda a lógica de um ataque: recebe um dano base, adiciona bônus de atributos do atacante, calcula acertos críticos, aplica o dano ao alvo (via `takeDamage`) e executa uma lista de efeitos `OnHitAction` (como recuo ou roubo de vida).
       - **`Item.ts`**: Classe base abstrata para todos os itens, definindo um contrato rico de propriedades (raridade, valor, etc.).
-      - **`Weapons/Weapon.ts`**: Classe abstrata para armas, adicionando `baseDamage` e `attackSpeed`.
-      - **`Weapons/RangedWeapons/RangedWeapon.ts`**: Especialização para armas de longo alcance, que disparam projéteis via eventos.
+      - **`Weapons/Weapon.ts`**: Classe abstrata para armas. Agora recebe a própria entidade do atacante (`Entity`) por injeção ao atacar, não limitando o uso de armas apenas ao `Player`.
+      - **`Weapons/RangedWeapons/RangedWeapon.ts`**: Armas de longo alcance. Absorveram a responsabilidade de calcular, disparar e instanciar os próprios projéteis via eventos (retirando esse engessamento do Player).
       - **`Attributes.ts`**: Uma **interface** simples que define a estrutura para requisitos de atributos de itens.
+      - **`Effects/`**: Contém lógicas puras de domínios desencadeadas no impacto de armas e magias (ex: `AreaDamageEffect`, `VisualEffect`).
 
   - **`shared/`**: Contém classes e tipos utilitários de baixo nível, usados por todo o domínio.
     - **`Vector2D.ts`**: Classe para matemática vetorial 2D (direção, velocidade).
@@ -74,8 +77,9 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
     - **`HitBoxCircle.ts`**: Uma implementação concreta de `HitBox` para formas circulares. Sua única responsabilidade é implementar a lógica matemática para verificar a intersecção com outras `HitBox`es (atualmente, outras `HitBoxCircle`), encapsulando completamente a geometria de colisão de um círculo.
 
   - **`eventDispacher/`**: Implementa um sistema de eventos (Observer Pattern) para comunicação desacoplada dentro do Domínio.
-    - **`eventDispacher.ts`**: O coração do sistema de eventos. Exporta um singleton (`gameEvents`) de uma classe `EventHandler` genérica e com tipagem forte. Sua única responsabilidade é registrar ouvintes (`on`) e notificar todos eles quando um evento é disparado (`dispatch`). É o principal mecanismo que permite a comunicação intra-domínio com baixo acoplamento.
-    - **`ActionManager.ts`**: Atua como um tradutor de intenções e **Buffer Temporal de Magias**. Além de traduzir ações de movimento contínuo (ex: `'up'`), ele captura sequências de teclas numéricas em um buffer FIFO (para o Mago Programador), validando magias em tempo real e auto-conjurando ataques quando o padrão é atingido.
+    - **`eventDispacher.ts`**: O coração do sistema de eventos global (Pub/Sub).
+    - **`ActionBindings.ts` (Decorators)**: Sistema de roteamento em tempo de compilação. Fornece o decorator `@BindAction('tecla')` para que as classes (Player, Mage, etc.) declarem proativamente quais inputs desejam ouvir. Dispara alertas de colisão em tempo de execução (Fail Fast) se duas classes quiserem a mesma tecla.
+    - **`ActionManager.ts`**: Um roteador de eventos de input puramente dinâmico. Foi expurgado do "Switch Case" gigante; agora ele apenas repassa os inputs brutos do Adaptador para os métodos mapeados via Decorators.
     - **`IGameEvents.ts`**: Um arquivo de contrato de tipos. Define a `GameEventMap`, uma interface que mapeia cada nome de evento ao seu respectivo payload. Isso garante a segurança de tipo (type-safety) em todo o sistema de eventos, prevenindo erros em tempo de compilação.
     - **`actions.type.ts`**: Outro arquivo de contrato de tipos, define a união de strings literais `action`. Ele serve como a "linguagem" compartilhada entre o `GameAdapter` e o `ActionManager` para descrever as ações do jogador.
 
@@ -107,11 +111,11 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
   - **`Game.ts`:** Um utilitário simples que abstrai a API `requestAnimationFrame` do navegador para criar um game loop clássico.
     - **Coesão:** **Altíssima (Coesão Funcional)**. Sua única e exclusiva responsabilidade é executar um loop contínuo, calcular o `deltaTime` entre os frames e invocar os callbacks de `update` e `draw` que lhe foram fornecidos. Ele é completamente agnóstico ao que essas funções fazem, tornando-o um componente genérico, reutilizável e extremamente focado.
 
-  - **`SceneManager.ts`:** Gerencia as instâncias visuais e a sincronização entre o estado do Domínio (através dos DTOs) e as entidades gráficas na tela. É quem lida com `RenderableFactory`, cria as animações do WebGPU ou os objetos instanciados do Canvas 2D, e remove o que não está mais vivo.
+  - **`SceneManager.ts`:** Gerencia a sincronização entre DTOs e entidades gráficas na tela. Agora suporta perfeitamente os **Efeitos Visuais Transientes (VFX)**: instâncias gráficas (como explosões) desenhadas sem existir na árvore física do Domínio, que desaparecem sozinhas após o tempo sem invocar o Garbage Collector da física.
 
   - **`UIManager.ts` e `GUIS/`:** Gerencia todas as interfaces DOM (HTML/CSS) sobrepostas ao canvas, como Barra de XP, Menu de Inventário, Menu de Status e Árvore de Habilidades, ouvindo o estado do jogador no domínio e respondendo com os botões e interações visuais.
 
-  - **`InputGateway.ts` e `InputManager.ts`:** Gerenciam a entrada de hardware, buffer de teclas temporais (para magias compostas) e a conversão de mouse screen-to-world, deixando o `GameAdapter` limpo de poluição de listeners.
+  - **`InputGateway.ts` e `InputManager.ts`:** Gerenciam a entrada de hardware. Diferencia atalhos de Numpad dos atalhos numéricos comuns de teclado, suporta array de binds e executa conversão de mouse screen-to-world perfeitamente, deixando o GameAdapter enxuto.
 
   #### canvasModule
     - **`Canvas.ts`:** Abstrai o elemento HTML `<canvas>`. Sua responsabilidade é encapsular a criação do elemento, a obtenção do seu contexto 2D e fornecer uma API simples (`clear()`). Ele expõe o elemento e o contexto brutos para que outros componentes, como o `Renderer` e a `Camera`, possam operar diretamente sobre eles.
@@ -294,7 +298,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   4.  **Criação da Entidade (Domain - `ObjectElementManager`):**
       -   O `ObjectElementManager`, que está ouvindo o evento `'spawn'`, recebe a `factory`.
-      -   Ele lê o payload e, baseando-se no `type`, invoca seu próprio `spawn` com a fábrica correta (ex: `new SimpleBullet(...)`), adicionando a bala no mapa interno.
+      -   Ele busca na memória das `strategies` estáticas do `SpawnRegistry` a respectiva classe para o tipo e chama a sua construção delegada, adicionando o item/magia no mapa.
 
   5.  **Sincronização Visual (Domain -> Adapter):**
       -   No mesmo ciclo de `update`, o `GameAdapter` chama `syncRenderables()`.
@@ -352,31 +356,31 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
 ### 3.7. Fluxo de Experiência e Level Up (`xp`)
 
-Este fluxo descreve como o jogador ganha experiência e sobe de nível após derrotar um inimigo. Ele é uma continuação direta do **Fluxo de Ataque e Dano (3.6)**.
+  Este fluxo descreve como o jogador ganha experiência e sobe de nível após derrotar um inimigo. Ele é uma continuação direta do **Fluxo de Ataque e Dano (3.6)**.
 
-1.  **Gatilho (Verificação Pós-Dano):** O fluxo começa dentro do método `Attack.execute`.
+  1.  **Gatilho (Verificação Pós-Dano):** O fluxo começa dentro do método `Attack.execute`.
 
-2.  **Concessão de XP (Domain - Attack):**
-    -   Após chamar `target.takeDamage()`, o método `Attack.execute` verifica se o alvo foi derrotado (`target.attributes.hp <= 0`).
-    -   Se o alvo morreu e o atacante (`_attacker`) é uma instância de `Player`, o método `gainXp` do jogador é chamado, passando o `xpGiven` do inimigo derrotado.
+  2.  **Concessão de XP (Domain - Attack):**
+      -   Após chamar `target.takeDamage()`, o método `Attack.execute` verifica se o alvo foi derrotado (`target.attributes.hp <= 0`).
+      -   Se o alvo morreu e o atacante (`_attacker`) é uma instância de `Player`, o método `gainXp` do jogador é chamado, passando o `xpGiven` do inimigo derrotado.
 
-3.  **Adição de Experiência (Domain - Player/Attributes):**
-    -   O método `player.gainXp()` delega a chamada para `player.attributes.addXp()`.
-    -   O método `addXp` na classe `Attributes` adiciona a experiência, aplica bônus de `insight` e entra em um loop `while` para verificar se o XP atual ultrapassa o necessário para o próximo nível.
+  3.  **Adição de Experiência (Domain - Player/Attributes):**
+      -   O método `player.gainXp()` delega a chamada para `player.attributes.addXp()`.
+      -   O método `addXp` na classe `Attributes` adiciona a experiência, aplica bônus de `insight` e entra em um loop `while` para verificar se o XP atual ultrapassa o necessário para o próximo nível.
 
-4.  **Level Up (Domain - Attributes):**
-    -   Se o jogador sobe de nível dentro do loop `while`, seu `_level` é incrementado, o XP atual é ajustado e o XP necessário para o próximo nível é recalculado com base na `IXPTable` da classe do jogador.
-    -   O `Player` identifica a subida de nível e imediatamente dispara o evento de domínio `gameEvents.dispatch('levelUp', { newLevel })`, garantindo que UIs e sistemas de partículas possam reagir instantaneamente.
+  4.  **Level Up (Domain - Attributes):**
+      -   Se o jogador sobe de nível dentro do loop `while`, seu `_level` é incrementado, o XP atual é ajustado e o XP necessário para o próximo nível é recalculado com base na `IXPTable` da classe do jogador.
+      -   O `Player` identifica a subida de nível e imediatamente dispara o evento de domínio `gameEvents.dispatch('levelUp', { newLevel })`, garantindo que UIs e sistemas de partículas possam reagir instantaneamente.
 
 ### 3.8. Fluxo de Drops e Coleta de Itens
 
-Este fluxo descreve a transição de um item do "chão" para o inventário do jogador.
+  Este fluxo descreve a transição de um item do "chão" para o inventário do jogador.
 
-1.  **Geração do Drop (Domain):** Ao inicializar o mundo (ou ao morrer um inimigo), o `ObjectElementManager` despacha um `DroppedItem` contendo a instância pura de um `Item` no mapa.
-2.  **Visualização do Drop (Adapter):** A `RenderableFactory` lê o `iconId` do item caído (como string base do state) e, usando o padrão Registry, localiza o Sprite equivalente para aquele ícone no chão.
-3.  **Aproximação e Coleta (Colisão):** O jogador anda e sua `HitBox` encosta na área flexível do `DroppedItem`.
-4.  **Transferência:** A Hitbox do item caído executa o callback empurrando a instância de `Item` direto para o array `player.inventory.backpack`. Em seguida, o Drop dispara um `despawn` para sumir do mapa.
-5.  **Feedback:** O `CharacterMenuGui` reage à alteração de estado da mochila no próximo frame, exibindo o ícone renderizado do novo item coletado em um dos slots disponíveis.
+  1.  **Geração do Drop (Domain):** Ao inicializar o mundo (ou ao morrer um inimigo), o `ObjectElementManager` despacha um `DroppedItem` contendo a instância pura de um `Item` no mapa.
+  2.  **Visualização do Drop (Adapter):** A `RenderableFactory` lê o `iconId` do item caído (como string base do state) e, usando o padrão Registry, localiza o Sprite equivalente para aquele ícone no chão.
+  3.  **Aproximação e Coleta (Colisão):** O jogador anda e sua `HitBox` encosta na área flexível do `DroppedItem`.
+  4.  **Transferência:** A Hitbox do item caído executa o callback empurrando a instância de `Item` direto para o array `player.inventory.backpack`. Em seguida, o Drop dispara um `despawn` para sumir do mapa.
+  5.  **Feedback:** O `CharacterMenuGui` reage à alteração de estado da mochila no próximo frame, exibindo o ícone renderizado do novo item coletado em um dos slots disponíveis.
 
 ## 4. Guia do Desenvolvedor (How-To)
 
@@ -417,22 +421,22 @@ Este fluxo descreve a transição de um item do "chão" para o inventário do jo
 
   A lógica nos métodos `syncRenderables` e `draw` já está configurada para respeitar essa flag, garantindo que os objetos de depuração só sejam processados e desenhados quando o modo de depuração estiver ativo.
 
-### 4.3. Como Criar um Novo Projétil (Ex: "Fireball")
+### 4.3. Como Criar uma Nova Magia/Projétil (Ex: "Fireball")
 
-  Com o **Registry Pattern**, projéteis são auto-registráveis da mesma forma do que os inimigos.
+  Com o uso duplo de **Registry Pattern** (Domínio e Visual), a criação é 100% plug-and-play.
 
-  1. **Domínio:** Crie `Fireball.ts` estendendo a lógica de `Bullet`. Ao chamar o `super`, passe `'fireball'` como seu ID.
-  2. **Visual:** Crie `Fireball.ts` estendendo o visual da bala e adicione o Decorator no topo:
+  1. **Domínio:** Crie `Fireball.ts` estendendo a lógica de `Projectile`. Use o decorator `@RegisterSpawner('fireball')` para ensinar o motor do Domínio a fabricá-la.
+  2. **Visual:** Crie `FireballVisual.ts` estendendo do visual genérico no adaptador Web e adicione o Decorator visual no topo:
 
      ```typescript
      import { RegisterSprite } from "../../../shared/RenderRegistry";
-     import Bullet from "./Bullet";
+     import ProjectileVisual from "./ProjectileVisual";
      
-     @RegisterSprite('fireball', 'travelling', { /* confs completas do visual dele */ })
-     export default class Fireball extends Bullet {}
+     @RegisterSprite('fireball', 'travelling', { /* Configurações completas */ })
+     export default class FireballVisual extends ProjectileVisual {}
      ```
 
-  3. **Dispare o Projétil:** Dispare um evento genérico `spawn` no domínio declarando o `type: 'fireball'`. Todo o motor cuidará do resto da apresentação visual.
+  3. **Dispare a Magia:** Dispare um evento genérico `spawn` no domínio declarando o `type: 'fireball'`. Zero modificações e zero IFs no coração do Motor!
 
 ### 4.5. Como Criar um Ataque com Efeito Especial (Ex: Roubo de Vida)
 

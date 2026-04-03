@@ -26,7 +26,7 @@ export default class DroppedItem extends ObjectElement {
                 12, // Radius um pouco maior (12px) para facilitar a coleta ao passar perto
                 (otherElement: ObjectElement) => {
                     if (otherElement instanceof Player) {
-                            otherElement.inventory.backpack.push(this.item);
+                            otherElement.backpack.push(this.item);
                         this.eventManager.dispatch('log', { channel: 'domain', message: `Collected item: ${this.item.name}`, params: [] });
                         super.destroy(); // Despawna a cápsula do mapa
                     }

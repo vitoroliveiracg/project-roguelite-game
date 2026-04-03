@@ -14,6 +14,9 @@ export default class SceneManager {
   private activeIds = new Set<number>();
   private activeDebugIds = new Set<string>();
   private renderableFactory: RenderableFactory;
+  
+  public transientVisuals: Map<string, { state: EntityRenderableState, renderable?: IRenderableObject, animationManager?: AnimationManager, timeRemaining: number }> = new Map();
+  private nextTransientId: number = -1;
 
   constructor(private renderer: IRenderer<any>, private isDebugMode: boolean) {
     this.renderableFactory = new RenderableFactory();
@@ -27,6 +30,42 @@ export default class SceneManager {
     for (const animManager of this.animationManagers.values()) {
       animManager.update(deltaTime);
     }
+
+    for (const [id, visual] of this.transientVisuals.entries()) {
+      visual.timeRemaining -= deltaTime;
+      if (visual.timeRemaining <= 0) {
+        this.transientVisuals.delete(id);
+      } else if (visual.animationManager) {
+        visual.animationManager.update(deltaTime);
+      }
+    }
+  }
+
+  public addVisualEffect(payload: { type: string, coordinates: {x:number, y:number}, duration: number, size: {width:number, height:number} }): void {
+    const state: EntityRenderableState = {
+      id: this.nextTransientId--, // Mock ID negativo para não colidir com entidades reais
+      entityTypeId: payload.type,
+      coordinates: payload.coordinates,
+      size: payload.size,
+      rotation: 0,
+      state: 'active'
+    };
+
+    const transientData: any = { state, timeRemaining: payload.duration };
+
+    if (this.renderer instanceof WebGPURenderer) {
+      const config = this.renderer.getSpriteConfig(state.entityTypeId, state.state);
+      if (config) {
+        transientData.animationManager = new AnimationManager(config);
+      }
+    } else {
+      const renderable = this.renderableFactory.create(state);
+      if (renderable) {
+        transientData.renderable = renderable;
+      }
+    }
+
+    this.transientVisuals.set(`vfx_${state.id}`, transientData);
   }
 
   /** Compara o estado do domínio com os objetos visuais, criando/atualizando-os. */

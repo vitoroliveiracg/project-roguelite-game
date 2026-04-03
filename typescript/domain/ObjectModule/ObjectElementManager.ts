@@ -1,7 +1,8 @@
 /** @file Contém a classe ObjectElementManager, responsável por gerenciar o ciclo de vida (criação, atualização, remoção) de uma coleção de entidades de domínio. */
 import type { EntityRenderableState } from "../ports/domain-contracts";
-import Bullet from "./Entities/bullets/Bullet";
+import Bullet from "./Entities/projectiles/Bullet";
 import Slime from "./Entities/Enemies/Slime";
+import Projectile from "./Entities/projectiles/Projectile";
 import type Player from "./Entities/Player/Player";
 import Entity from "./Entities/Entity";
 import CircleForm from "./Entities/geometryForms/circleForm";
@@ -11,9 +12,14 @@ import type { IEventManager } from "../eventDispacher/IGameEvents";
 import DroppedItem from "./Items/DroppedItem";
 import Gun from "./Items/Weapons/RangedWeapons/Gun";
 import type { ICollisionService } from "../ports/ICollisionService";
-import { SimpleBullet } from "./Entities/bullets/SimpleBullet";
+import { SimpleBullet } from "./Entities/projectiles/SimpleBullet";
 import Scythe from "./Items/Weapons/RangedWeapons/Scythe";
 import MagicWand from "./Items/Weapons/RangedWeapons/MagicWand";
+import { SpawnRegistry } from "./SpawnRegistry";
+
+// Auto-carrega todas as entidades e itens do domínio para engatilhar os decorators @RegisterSpawner
+import.meta.glob('./Entities/**/*.ts', { eager: true });
+import.meta.glob('./Items/**/*.ts', { eager: true });
 
 /** * @class ObjectElementManager * Gerencia uma coleção de `ObjectElement`s (como inimigos, itens, projéteis). * Esta classe encapsula a lógica de adicionar, remover, atualizar e acessar * grupos de entidades, permitindo que a `DomainFacade` delegue essa * responsabilidade e permaneça focada na orquestração de alto nível. */
 export default class ObjectElementManager {
@@ -44,14 +50,11 @@ export default class ObjectElementManager {
   private setupEventListeners(): void {
 
     this.eventManager.on('spawn', (payload) => {
-      // O Manager agora toma a responsabilidade de ler o tipo e instanciar
-      if (['simpleBullet', 'magicMissile', 'scytheProjectile', 'fireball'].includes(payload.type) && payload.direction && payload.attack) {
-        let size = { width: 8, height: 8 };
-        if (payload.type === 'fireball') size = { width: 24, height: 24 };
-        if (payload.type === 'scytheProjectile') size = { width: 24, height: 24 };
-        if (payload.type === 'magicMissile') size = { width: 12, height: 12 };
-
-        this.spawn(id => new SimpleBullet(id, payload.coordinates, payload.direction!, payload.attack!, this.eventManager, 'travelling', payload.type, size));
+      const factory = SpawnRegistry.strategies.get(payload.type);
+      if (factory) {
+        this.spawn(id => factory(id, payload, this.eventManager));
+      } else {
+        this.eventManager.dispatch('log', { channel: 'error', message: `(Manager) Nenhuma fábrica registrada para o tipo: ${payload.type}`, params: [] });
       }
     });
     
@@ -60,9 +63,27 @@ export default class ObjectElementManager {
     });
 
     this.eventManager.on('requestNeighbors', (payload) => {
-      // Esta funcionalidade precisaria ser reimplementada com o worker ou de outra forma.
-      // Por enquanto, retornamos uma lista vazia para evitar quebras.
-      payload.callback([]);
+      const neighbors: ObjectElement[] = [];
+      
+      // Centro de quem solicitou a busca
+      const reqX = payload.requester.coordinates.x + (payload.requester.size.width / 2);
+      const reqY = payload.requester.coordinates.y + (payload.requester.size.height / 2);
+
+      for (const element of this.elements.values()) {
+        if (element.id !== payload.requester.id) {
+          // Centro do alvo avaliado
+          const elX = element.coordinates.x + (element.size.width / 2);
+          const elY = element.coordinates.y + (element.size.height / 2);
+          
+          const distance = Math.sqrt(Math.pow(reqX - elX, 2) + Math.pow(reqY - elY, 2));
+          
+          if (distance <= payload.radius) {
+            neighbors.push(element);
+          }
+        }
+      }
+      
+      payload.callback(neighbors);
     });
   }
 
@@ -96,7 +117,7 @@ export default class ObjectElementManager {
     // Em seguida, atualizamos cada elemento. Durante seu update, ele pode pedir vizinhos.
     for (const element of this.elements.values()) {
       if (
-        element instanceof Entity || element instanceof CircleForm || element instanceof Bullet || element instanceof DroppedItem
+        element instanceof Entity || element instanceof CircleForm || element instanceof Projectile || element instanceof DroppedItem
       ) {
         element.update(deltaTime, player);
       }
