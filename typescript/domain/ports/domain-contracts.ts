@@ -69,6 +69,7 @@ export interface EntityRenderableState extends BaseRenderableState {
 
   backpack?: any[];
   equipment?: any;
+  hasBeard?: boolean;
   activeClass?: string | null;
   unlockedClasses?: string[];
   classes?: ClassDTO[];

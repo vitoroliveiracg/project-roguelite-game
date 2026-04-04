@@ -101,7 +101,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       - **`itens`:** assets dos itens do jogo
       - **`maps`:** assets dos mapas do jogo
     - **`GUIS`:** Arquitetura modular contendo as GUIS do jogo. Cada módulo possui um arquivo html, um ts e um css para definir as GUIS. Essas serão por cima do canvas do jogo
-    - **`shared`:** Contém utilitários vitais para a adaptação web, como o `Logger.ts` e o `RenderRegistry.ts` (O coração do sistema de Auto-Registro visual, que usa Decorators e `import.meta.glob` para descobrir classes visuais dinamicamente).
+    - **`shared`:** Contém utilitários vitais para a adaptação web, como o `Logger.ts`, e o **`VisualConfigMap.ts`** (O Banco de Dados Visual centralizado).
 
   Tudo listado a seguir está no diretório `typescript/adapters/web/components/` e são componentes do jogo:
 
@@ -117,65 +117,21 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   - **`InputGateway.ts` e `InputManager.ts`:** Gerenciam a entrada de hardware. Diferencia atalhos de Numpad dos atalhos numéricos comuns de teclado, suporta array de binds e executa conversão de mouse screen-to-world perfeitamente, deixando o GameAdapter enxuto.
 
-  #### canvasModule
-    - **`Canvas.ts`:** Abstrai o elemento HTML `<canvas>`. Sua responsabilidade é encapsular a criação do elemento, a obtenção do seu contexto 2D e fornecer uma API simples (`clear()`). Ele expõe o elemento e o contexto brutos para que outros componentes, como o `Renderer` e a `Camera`, possam operar diretamente sobre eles.
-    - **Coesão:** **Altíssima (Coesão Funcional).** A classe tem um único propósito: gerenciar o elemento canvas. Ela não sabe o que é desenhado nele, apenas como criá-lo e limpá-lo.
+  #### renderModule (A Nova Engine Visual Data-Driven)
 
-  #### cameraModule
-    - **`Camera.ts`:** Gerencia a viewport do jogo. Sua responsabilidade é calcular e aplicar as transformações de translação (para seguir um alvo) e escala (zoom) ao contexto do canvas, garantindo que a visão não ultrapasse os limites do mundo.  **Coesão:** A classe `Camera` tem um propósito único e matemático: calcular uma matriz de transformação. Ela não sabe *o que* está sendo desenhado, apenas *onde* a "janela" de visualização deve estar. Ela recebe um alvo e os limites do mundo e retorna uma transformação, nada mais. Também pode ser útil para determinar coordenadas do mapa já que ela sabe as coordenadas do mundo.
+    O módulo de renderização foi reestruturado para separar claramente a mecânica, a orquestração e a arte, abolindo a necessidade de criar classes repetitivas para cada entidade do jogo.
 
-  #### mapModule
-    - **`Map.ts`:** Responsável por carregar e desenhar a imagem de fundo do mundo do jogo. Encapsula a lógica de carregamento assíncrono da imagem e fornece um método `draw` para o `Renderer`. O método `waitUntilLoaded` é crucial para a fase de inicialização, garantindo que o jogo só comece após o mapa estar pronto.
-    - **Coesão:** **Altíssima (Coesão Funcional).** Sua única responsabilidade é gerenciar o asset visual do mapa. Ela não sabe sobre o jogador, câmera ou qualquer outra entidade, apenas como carregar e desenhar a si mesma.
+    - **`engine/`**: O maquinário de baixo nível que conversa com as APIs do navegador. Contém `IRenderer.ts`, `Renderer.ts` (Canvas 2D), `WebGPURenderer.ts` e `Canvas.ts`. Totalmente agnóstico à lógica do jogo.
+    - **`scene/`**: Os diretores e orquestradores do palco. Contém o `SceneManager.ts` (sincroniza os DTOs com a tela), a `RenderableFactory.ts` (fábrica inteligente), `Camera.ts` e `Map.ts`.
+    - **`visuals/`**: Os blocos construtores de arte e animação. Contém `GameObjectElement.ts` (renderizador procedural Data-Driven que lê do VisualConfigMap), `LayeredGameObjectElement.ts` (compositor de "Lego" visual para equipamentos), `VisualComposer.ts` (regras de Z-Index) e `AnimationManager.ts`.
+    - **`customRenderables/`**: Exceções que possuem lógica de pintura exclusiva e manual. Contém `Player.ts` (que aplica a ordem Z-Index de equipamentos) e `CircleForm.ts` (desenha linhas vetoriais ao invés de texturas de imagem).
 
-  #### renderModule
-
-    - **`renderModule/IRenderable.ts`**: A interface fundamental da camada de apresentação. Define o contrato para qualquer objeto que possa ser desenhado na tela (`draw`) e sincronizado com o domínio (`updateState`). É a chave para o polimorfismo, permitindo que o `Renderer` trate todos os objetos visuais (sprites, formas de debug, etc.) de maneira uniforme.
-      - **Coesão:** **Máxima (Coesão de Comunicação).** Como interface, sua única responsabilidade é definir um contrato, uma linguagem comum para a renderização.
-
-    - **`renderModule/Renderer.ts`**: A implementação do renderizador para **Canvas 2D**. Sua única responsabilidade é, a cada frame, limpar o canvas, aplicar a transformação da câmera e iterar sobre uma lista de objetos `IRenderable`, chamando o método `draw` de cada um. É um renderizador polimórfico e orientado a objetos.
-      - **Coesão:** **Altíssima (Coesão Funcional/Sequencial).** Ele não sabe *o que* está desenhando, apenas que precisa executar uma sequência de passos para renderizar um frame. É um especialista focado no pipeline de Canvas 2D.
-
-    - **`renderModule/WebGPURenderer.ts`**: A implementação do renderizador de alta performance para **WebGPU**. Diferente do `Renderer` de Canvas 2D, ele não trabalha com objetos `IRenderable`. Em vez disso, ele recebe uma lista de DTOs de estado puro (`EntityRenderableState`) e utiliza técnicas avançadas como **desenho por instância (instanced drawing)** e **texture atlasing** para desenhar centenas de objetos em uma única chamada de desenho (draw call). Ele possui seu próprio conjunto de `spriteConfigs` que mapeiam entidades para coordenadas dentro de um único "atlas" de texturas.
-      - **Coesão:** **Alta (Coesão Funcional).** É um especialista altamente otimizado para o pipeline da WebGPU. Gerencia buffers, shaders, pipelines e a comunicação de baixo nível com a GPU.
-
-    - **`renderModule/AnimationManager.ts`**: Um componente auxiliar usado exclusivamente pelo caminho de renderização WebGPU. Como o `WebGPURenderer` não lida com objetos de estado (como `GameObjectElement`), a lógica de animação (qual frame mostrar e quando avançar) é extraída para esta classe. O `GameAdapter` mantém um mapa de `AnimationManager`s, um para cada entidade, e os atualiza a cada frame, passando o `currentFrame` resultante para o `WebGPURenderer`.
-
-    - **`renderModule/RenderableFactory.ts`**: Uma implementação do padrão Factory que funciona em conjunto com o `RenderRegistry`. Sua responsabilidade é construir os objetos visuais concretos consumindo o mapa de estratégias dinâmicas injetadas pelos Decorators (`@RegisterSprite`). Também centraliza o pré-carregamento e cache de assets (imagens).
-      - **Coesão:** **Alta (Coesão Funcional).** Todo o seu propósito gira em torno da criação de `IRenderable`s. O gerenciamento de cache e o pré-carregamento são responsabilidades que suportam diretamente sua função principal.
-
-    - **`renderModule/DebugCircle.ts`**: Uma implementação concreta de `IRenderable` com um propósito muito específico: desenhar a representação visual de uma `HitBox` circular para fins de depuração. Ela recebe o estado da hitbox do domínio e desenha um círculo vermelho semitransparente na tela.
-      - **Coesão:** **Altíssima (Coesão Funcional).** Sua única função é desenhar um círculo de debug.
-
-    - **`renderModule/Sprite.ts`**: Uma classe que encapsula a lógica de um spritesheet animado. Embora não seja instanciada diretamente pela `RenderableFactory` (que usa as classes do `gameObjectModule`), sua lógica é a base para a renderização de sprites no `GameObjectElement`. Ela gerencia o carregamento da imagem, o avanço dos frames da animação e o desenho do frame correto no canvas.
-      - **Coesão:** **Alta (Coesão Funcional).** Focada exclusivamente na lógica de animação e desenho de um spritesheet.
+  - **`shared/VisualConfigMap.ts` (O Coração Data-Driven):** Um dicionário estático imutável que mapeia os identificadores do domínio (ex: `'slime'`, `'iron-helmet'`) para suas configurações visuais exatas (URLs de imagens, tamanho dos frames, velocidade da animação, offsets de renderização). É ele quem permite que novas entidades, itens e magias sejam criados **sem escrever nenhuma nova classe na camada web**.
 
   #### keyboardModule
 
     - **`InputManager.ts`:** O adaptador de entrada do jogo. Sua responsabilidade é capturar todos os eventos brutos de hardware (teclado e mouse) e traduzi-los em um conjunto de `GameAction`s lógicas e abstratas (ex: 'move_up', 'mouse_left'). Ele carrega um mapa de teclas de um arquivo de configuração (`keymap.json`), permitindo fácil customização e remapeamento em tempo de execução.
     - **Coesão:** **Altíssima (Coesão Funcional).** A classe é um tradutor puro. Ela não sabe o que é um "jogador" ou o que acontece quando a ação 'move_up' é ativada. Sua única função é gerenciar o estado das teclas pressionadas e fornecer uma API simples (`isActionActive`) para o `GameAdapter` consultar. Isso desacopla completamente o resto da camada de adaptação dos detalhes específicos de hardware.
-
-  #### gameObjectModule
-
-    Este módulo contém as classes que representam visualmente os objetos do jogo. Cada classe aqui é uma implementação da interface `IRenderable` e atua como a contraparte visual de uma entidade do domínio.
-
-    - **`gameObjectModule/GameObjectElement.ts`**: A classe base para todos os objetos visuais do jogo. Sua responsabilidade é implementar a lógica padrão de renderização de um objeto, que pode ser um spritesheet animado. Ela recebe um DTO (`EntityRenderableState`) do domínio e usa suas informações (`coordinates`, `size`, `rotation`) para se posicionar e se dimensionar corretamente. Se uma configuração de sprite (`SpriteConfig`) for fornecida, ela gerencia a animação frame a frame; caso contrário, ela desenha uma forma de fallback (um quadrado preto), garantindo que todo objeto de domínio tenha uma representação visual, mesmo que temporária.
-      - **Coesão:** **Alta (Coesão Funcional).** A classe tem um propósito bem definido: ser a representação visual padrão de uma entidade de domínio. Ela encapsula toda a lógica de animação de sprite e posicionamento, servindo como um bloco de construção reutilizável para classes mais específicas.
-
-    - **`gameObjectModule/playerModule/Player.ts`**: A implementação visual específica para o jogador. Ela herda de `GameObjectElement` e adiciona uma lógica crucial: a capacidade de trocar de animação com base no `state` recebido do domínio (ex: 'idle', 'walking'). Ela mantém uma referência a todas as configurações de sprite possíveis para o jogador e as troca dinamicamente no método `updateState`, garantindo que a aparência do jogador sempre reflita sua ação atual no jogo.
-      - **Coesão:** **Altíssima (Coesão Funcional).** Sua única responsabilidade é ser a "pele" visual do jogador. Ela não contém nenhuma lógica de jogo, apenas a lógica de apresentação para gerenciar os diferentes estados de animação do avatar do jogador.
-
-    - **`gameObjectModule/Enemies/Enemy.ts`**: A classe base para a representação visual de inimigos. Ela herda de `GameObjectElement` e fornece um método de fábrica estático (`createWithSprite`) que utiliza uma estratégia (`spritesStrategy`) para encontrar a configuração de sprite correta com base no `entityTypeId` e no `state` do inimigo.
-      - **Coesão:** **Alta (Coesão Funcional).** Sua responsabilidade é ser a representação visual genérica de um inimigo, encapsulando a lógica de seleção de sprite para essa categoria de objeto.
-
-    - **`gameObjectModule/Enemies/Slime.ts`**: Uma implementação concreta que herda de `Enemy`. Sua única responsabilidade é se registrar na `RenderableFactory` como o visual para a entidade de domínio `slime`. Ela reutiliza toda a lógica de criação e renderização de seu pai, `Enemy`.
-      - **Coesão:** **Altíssima (Coesão de Especialização).** A classe existe apenas para especializar `Enemy` para um tipo específico, sem adicionar nova lógica.
-
-    - **`gameObjectModule/bullets/Bullet.ts`**: A representação visual de um projétil. Assim como `Enemy`, ela herda de `GameObjectElement` e usa um método de fábrica para selecionar o sprite correto com base no estado do projétil (ex: 'travelling').
-      - **Coesão:** **Alta (Coesão Funcional).** Focada unicamente em ser a representação visual de um projétil.
-
-    - **`gameObjectModule/geometryForms/CircleForm.ts`**: Uma classe visual especial que herda de `GameObjectElement` mas sobrescreve o método `draw`. Em vez de renderizar um sprite, sua única responsabilidade é desenhar uma forma de círculo (um contorno vermelho) nas coordenadas fornecidas pelo domínio. É usada para fins de depuração ou para representar objetos que não têm um asset gráfico.
-      - **Coesão:** **Altíssima (Coesão Funcional).** Tem um propósito singular e bem definido: desenhar um círculo.
 
 ### O Logger (Porta e Adaptador Secundário)
 
@@ -388,23 +344,16 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
 ### 4.1. Como Criar um Novo Inimigo (Ex: "Goblin")
 
-  Com a implementação do **Registry Pattern** (Auto-Registro), o processo de adicionar uma nova entidade foi reduzido de vários arquivos de configuração manual para apenas 2 passos focados na própria classe da entidade.
+  Com a adoção da arquitetura **Data-Driven Centralizada**, criar a representação visual de qualquer entidade ou item no jogo se tornou um processo puramente de configuração de dados na camada Web. Você não precisa criar NENHUM arquivo visual!
 
-  1. **Domínio (Lógica)**
-     - Crie a classe lógica `Goblin.ts` em `domain/ObjectModule/Entities/Enemies/`.
-     - Implemente-a estendendo a base de `Enemy`. Passe `'goblin'` como seu ID no construtor.
+  1. **Domínio (Lógica):**
+     - Crie a classe lógica `Goblin.ts` em `domain/ObjectModule/Entities/Enemies/` estendendo `Enemy`. Passe `'goblin'` como seu ID no construtor.
 
-  2. **Adaptação (Visual)**
-     - Crie a representação visual `Goblin.ts` em `adapters/web/components/gameObjectModule/Enemies/`.
-     - Adicione o decorator de auto-registro `@RegisterSprite` com as configurações. Não há mais necessidade de modificar mapeamentos gigantes no sistema de renderização!
+  2. **Adaptação (Visual):**
+     - Abra o arquivo `VisualConfigMap.ts` na pasta `shared/` do adaptador web.
+     - Adicione uma nova entrada no dicionário para a chave `'goblin'`, especificando o caminho da imagem e o tamanho dos frames para suas animações (ex: `'idle'`, `'walking'`).
      
-     ```typescript
-     import Enemy from "./Enemy";
-     import { RegisterSprite } from "../../../shared/RenderRegistry";
-
-     @RegisterSprite('goblin', 'idle', { imageSrc: '...', frameCount: 4, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: {x:0, y:64}, spriteSize: {width: 32, height: 32} })
-     export default class Goblin extends Enemy {}
-     ```
+  A `RenderableFactory` fabricará as imagens e o WebGPU cuidará dos buffers de instância instantânea e magicamente!
 
 ### 4.2. Como Habilitar/Desabilitar a Visualização de Debug
 
@@ -423,22 +372,13 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
 ### 4.3. Como Criar uma Nova Magia/Projétil (Ex: "Fireball")
 
-  Com o uso duplo de **Registry Pattern** (Domínio e Visual), a criação é 100% plug-and-play.
+  1. **Domínio:** Crie `Fireball.ts` estendendo a lógica de `Projectile`. Use o decorator `@RegisterSpawner('fireball')` para ensinar o motor do Domínio a fabricar a magia.
+  
+  2. **Visual:** Adicione uma entrada `'fireball'` no arquivo `VisualConfigMap.ts` (na categoria `'projectile'`) e aponte para a imagem da bola de fogo no estado `'travelling'`. Zero código novo necessário!
 
-  1. **Domínio:** Crie `Fireball.ts` estendendo a lógica de `Projectile`. Use o decorator `@RegisterSpawner('fireball')` para ensinar o motor do Domínio a fabricá-la.
-  2. **Visual:** Crie `FireballVisual.ts` estendendo do visual genérico no adaptador Web e adicione o Decorator visual no topo:
+  3. **Dispare a Magia:** No Domínio, dispare um evento genérico `spawn` declarando o `type: 'fireball'`. A engine fará a conexão e jogará tudo na tela instantaneamente.
 
-     ```typescript
-     import { RegisterSprite } from "../../../shared/RenderRegistry";
-     import ProjectileVisual from "./ProjectileVisual";
-     
-     @RegisterSprite('fireball', 'travelling', { /* Configurações completas */ })
-     export default class FireballVisual extends ProjectileVisual {}
-     ```
-
-  3. **Dispare a Magia:** Dispare um evento genérico `spawn` no domínio declarando o `type: 'fireball'`. Zero modificações e zero IFs no coração do Motor!
-
-### 4.5. Como Criar um Ataque com Efeito Especial (Ex: Roubo de Vida)
+### 4.4. Como Criar um Ataque com Efeito Especial (Ex: Roubo de Vida)
 
   O sistema de combate é construído em torno da classe `Attack` e da interface `OnHitAction`, que permitem a criação de comportamentos complexos de forma modular.
 
@@ -468,23 +408,20 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       // Agora, sempre que 'vampiricAttack' for executado, ele aplicará o roubo de vida.
       ```
 
-### 4.4. Como Adicionar um Novo Estado de Animação ao Jogador (Ex: "attack")
+### 4.5. Como Adicionar um Novo Estado de Animação ao Jogador (Ex: "attack")
 
   1.  **Adicione o Asset:** Coloque o spritesheet `player-attack.png` em `adapters/web/assets/entities/player/` (e no seu atlas de texturas para WebGPU).
-  2.  **Configure o Sprite (WebGPU):** Em `WebGPURenderer.ts`, adicione a configuração `'player-attack'` ao mapa `spriteConfigs`.
-  3.  **Configure o Sprite (Canvas 2D):** Em `RenderableFactory.ts`, adicione a nova configuração de animação ao mapa `spriteConfigs`.
-      ```typescript
-      ['player-attack', { imageSrc: new URL('../../assets/entities/player/player-attack.png', import.meta.url).href, ... }],
-      ```
+  
+  2.  **Configure no Dicionário:** No arquivo `VisualConfigMap.ts`, localize o bloco da entidade `'player'` e adicione a nova chave `'attack'` no sub-bloco de `animations`, fornecendo as informações do frame (tamanho, velocidade).
+  
   4.  **Altere o Estado no Domínio:** Na classe `Player` do domínio (`domain/ObjectModule/Entities/Player/Player.ts`), encontre a lógica que deve disparar a animação (ex: no método `onLeftClickAction`). Nesse ponto, altere a propriedade `state` da entidade.
       ```typescript
       // Em algum método do Player.ts do domínio
       this.state = 'attack';
       // Opcional: Adicionar um timer para voltar ao estado 'idle' após a animação
       ```
-  5.  **Verifique a Sincronização:** A lógica em `GameAdapter.syncRenderables` já está preparada para lidar com a mudança de estado. No modo WebGPU, ela atualizará o `AnimationManager`. No modo Canvas 2D, ela chamará `updateState` no objeto `Player` visual, que por sua vez trocará a animação.
 
-### 4.8. Como Criar um Novo Item Consumível (Ex: Poção de Cura)
+### 4.6. Como Criar um Novo Item Consumível (Ex: Poção de Cura)
 
   > **Nota:** Esta seção descreve um fluxo de implementação para uma funcionalidade futura, já que o sistema de inventário ainda não foi construído.
 
@@ -503,7 +440,18 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
   3.  **Visualização (Item no Chão):**
       -   O processo para fazer o item aparecer no chão é idêntico ao de criar um inimigo: adicione o asset, configure o sprite na `RenderableFactory` e registre a estratégia de criação.
 
-### 4.6. Como Adicionar uma Nova Interface de Usuário (UI)
+### 4.7. Como Criar e Equipar uma Nova Armadura (O "Lego" Visual)
+
+  O sistema de renderização agora possui um Compositor de Camadas que empilha roupas dinamicamente no personagem usando a regra de OCP (Open-Closed Principle).
+
+  1. **Domínio:** Crie a classe da armadura estendendo as bases como `Helmet`, `Chestplate`, etc. Defina no seu construtor o `iconId` único (ex: `15`).
+  2. **Inventário:** Faça o item surgir no mundo ou adicione à bolsa do jogador (`player.backpack.push(new GoldenHelmet())`).
+  3. **Visual:** No `VisualConfigMap.ts`, adicione uma nova entrada para ele (ex: `'golden-helmet'`). Garanta que a `category` seja `'equipment'` e defina o `iconId: 15`. 
+  4. **Animação Guiada:** Adicione os estados de animação (`idle`, `walking`) definindo a imagem e, crucialmente, use o `renderOffset` (como array) para fazer a armadura "balançar" na mesma cadência da animação base do jogador!
+  
+  A UI mostrará o item na bolsa automaticamente. Quando o jogador equipar o item, o Compositor Visual buscará pelo `iconId`, encontrará as imagens e as empilhará no Z-Index correto em cima do corpo base!
+
+### 4.8. Como Adicionar uma Nova Interface de Usuário (UI)
 
   A arquitetura prevê que as UIs (Inventário, Skills, etc.) sejam módulos independentes que ficam "por cima" do canvas do jogo.
 

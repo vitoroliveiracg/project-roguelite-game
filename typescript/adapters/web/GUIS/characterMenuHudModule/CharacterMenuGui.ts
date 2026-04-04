@@ -2,9 +2,7 @@ import { logger } from "../../shared/Logger";
 import html from './characterMenu.html?raw';
 import css from './characterMenu.css?raw';
 import type { EntityRenderableState } from "../../../../domain/ports/domain-contracts";
-import staffDesignUrl from '../../assets/itens/staff-design-1.png';
-import gunDesignUrl from '../../assets/itens/gun-design-1.png';
-import scytheDesignUrl from '../../assets/itens/scythe-design-1.png';
+import { VisualConfigMap, type ItemVisualConfig } from "../../shared/GlobalVisualRegistry";
 
 /** @class CharacterMenuGui Controla a interface principal do personagem com abas (Inv, Status, Skill). */
 export default class CharacterMenuGui {
@@ -20,6 +18,11 @@ export default class CharacterMenuGui {
     private togglePauseCallback: () => void;
     private bpSlots!: NodeListOf<HTMLElement>;
     private eqMain!: HTMLElement;
+    private eqHead!: HTMLElement;
+    private eqChest!: HTMLElement;
+    private eqPants!: HTMLElement;
+    private eqBoots!: HTMLElement;
+    private eqGloves!: HTMLElement;
     private pointsEl!: HTMLElement;
     private addBtns!: NodeListOf<HTMLButtonElement>;
 
@@ -54,6 +57,11 @@ export default class CharacterMenuGui {
 
         this.bpSlots = this.container.querySelectorAll('.bp-slot') as NodeListOf<HTMLElement>;
         this.eqMain = this.container.querySelector('.eq-main') as HTMLElement;
+        this.eqHead = this.container.querySelector('.eq-head') as HTMLElement;
+        this.eqChest = this.container.querySelector('.eq-chest') as HTMLElement;
+        this.eqPants = this.container.querySelector('.eq-pants') as HTMLElement;
+        this.eqBoots = this.container.querySelector('.eq-boots') as HTMLElement;
+        this.eqGloves = this.container.querySelector('.eq-gloves') as HTMLElement;
 
         this.bpSlots.forEach((slot, index) => {
             slot.addEventListener('click', () => {
@@ -61,9 +69,12 @@ export default class CharacterMenuGui {
             });
         });
 
-        this.eqMain.addEventListener('click', () => {
-            this.unequipItemCallback('mainHand');
-        });
+        this.eqMain.addEventListener('click', () => this.unequipItemCallback('mainHand'));
+        this.eqHead.addEventListener('click', () => this.unequipItemCallback('helmet'));
+        this.eqChest.addEventListener('click', () => this.unequipItemCallback('chestplate'));
+        this.eqPants.addEventListener('click', () => this.unequipItemCallback('pants'));
+        this.eqBoots.addEventListener('click', () => this.unequipItemCallback('boots'));
+        this.eqGloves.addEventListener('click', () => this.unequipItemCallback('gloves'));
 
         this.addBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -123,10 +134,10 @@ export default class CharacterMenuGui {
             this.bpSlots.forEach((slot, index) => {
                 const item = data.backpack![index];
                 if (item) {
-                    if (item.iconId === 1) slot.innerHTML = `<img src="${staffDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
-                    else if (item.iconId === 2) slot.innerHTML = `<img src="${gunDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
-                    else if (item.iconId === 3) slot.innerHTML = `<img src="${scytheDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
-                    else slot.textContent = '📦';
+                    const itemConfig = Object.values(VisualConfigMap).find(c => (c.category === 'equipment' || c.category === 'weapon') && (c as ItemVisualConfig).iconId === item.iconId) as ItemVisualConfig;
+                    if (itemConfig) {
+                        slot.innerHTML = `<img src="${itemConfig.uiIconUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
+                    } else { slot.innerHTML = ''; slot.textContent = '📦'; }
                     
                     slot.title = item.name;
                     slot.style.borderColor = '#FFD700';
@@ -134,19 +145,29 @@ export default class CharacterMenuGui {
             });
         }
         if (data.equipment) {
-            if (data.equipment.mainHand) {
-                if (data.equipment.mainHand.iconId === 1) this.eqMain.innerHTML = `<img src="${staffDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
-                else if (data.equipment.mainHand.iconId === 2) this.eqMain.innerHTML = `<img src="${gunDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
-                else if (data.equipment.mainHand.iconId === 3) this.eqMain.innerHTML = `<img src="${scytheDesignUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
-                else this.eqMain.textContent = '⚔️';
-                this.eqMain.title = data.equipment.mainHand.name;
-                this.eqMain.style.borderColor = '#FFD700';
-            } else {
-                this.eqMain.innerHTML = '';
-                this.eqMain.textContent = '⚔️';
-                this.eqMain.title = 'Mão Principal';
-                this.eqMain.style.borderColor = '#555';
-            }
+            // Helper inteligente para atualizar slots no DOM de forma limpa!
+            const updateSlot = (element: HTMLElement, itemData: any, defaultIcon: string, defaultTitle: string) => {
+                if (itemData) {
+                    const itemConfig = Object.values(VisualConfigMap).find(c => (c.category === 'equipment' || c.category === 'weapon') && (c as ItemVisualConfig).iconId === itemData.iconId) as ItemVisualConfig;
+                    if (itemConfig) {
+                        element.innerHTML = `<img src="${itemConfig.uiIconUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
+                    } else { element.textContent = defaultIcon; }
+                    element.title = itemData.name;
+                    element.style.borderColor = '#FFD700';
+                } else {
+                    element.innerHTML = '';
+                    element.textContent = defaultIcon;
+                    element.title = defaultTitle;
+                    element.style.borderColor = '#555';
+                }
+            };
+
+            updateSlot(this.eqMain, data.equipment.mainHand, '⚔️', 'Mão Principal');
+            updateSlot(this.eqHead, data.equipment.helmet, '🪖', 'Capacete');
+            updateSlot(this.eqChest, data.equipment.chestplate, '👕', 'Peitoral');
+            updateSlot(this.eqPants, data.equipment.pants, '👖', 'Calça');
+            updateSlot(this.eqBoots, data.equipment.boots, '🥾', 'Botas');
+            updateSlot(this.eqGloves, data.equipment.gloves, '🧤', 'Luvas');
         }
     }
 }

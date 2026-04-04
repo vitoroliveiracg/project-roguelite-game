@@ -2,7 +2,7 @@
 ## TODO (Organização)
 
 * [x] HUD Modular: Desenvolver as GUIs de HP, Mana e Status
-* [ ] Compositor Visual (O "Lego"): Sistema modular na fábrica visual para juntar formas simples/sprites para as magias dinâmicas, itens, armaduras, armas.
+* [x] Compositor Visual (O "Lego"): Sistema modular na fábrica visual para juntar formas simples/sprites para armaduras, itens e customização de personagem.
 * [x] Sistema de Drops e Inventário: Entidades droparem itens de verdade, lógica de coleta por proximidade e armazenamento.
 * [x] Lógica de Classes e Desbloqueio
 * [x] Mago (Spell Parser): Analisador no Domínio que traduz a sequência do buffer em ataques concretos (Lógica de Receitas).
@@ -77,7 +77,7 @@ Tarefa: [x] Implementar Aba "Inv" (Inventário)
 
     [x] Sub-tarefa: Implementar os slots de equipamento específicos (ex: capacete, peitoral, arma 1, arma 2, bota, pernas, e 3 slots de acessórios/anéis, conforme image_625278.png).
 
-    Sub-tarefa: Criar lógica de "Equipar/Desequipar" (arrastar e soltar, ou clique-direito) entre a Bolsa e o Paper Doll.
+    [x] Sub-tarefa: Criar lógica de "Equipar/Desequipar" via clique entre a Bolsa e o Paper Doll e refletir no Domínio.
 
 Tarefa: Implementar Aba "Status"
 
@@ -179,11 +179,11 @@ Tarefa: [x] [Domínio] Analisador Sintático (Spell Parser)
 
 *Módulo de renderização agnóstico focado em sobrepor ou compor imagens/formas base, servindo tanto para as magias do Axiomante quanto para armaduras e customização de personagem.*
 
-Tarefa: Compositor de Camadas (Layered Renderer)
+Tarefa: [x] Compositor de Camadas (Layered Renderer)
 
-    Sub-tarefa: Criar módulo visual que aceita um array de `SpriteConfigs` e os desenha na mesma coordenada, respeitando uma ordem de Z-Index.
+    [x] Sub-tarefa: Criar módulo visual que aceita um array de `SpriteConfigs` e os desenha na mesma coordenada, respeitando uma ordem de Z-Index.
 
-    Sub-tarefa: Integrar isso ao `RenderableFactory` para que um DTO de Domínio possa pedir um visual composto (Ex: Renderizar o sprite do Player "Liso" + Sprite de Armadura "Peitoral" por cima).
+    [x] Sub-tarefa: Integrar isso ao `RenderableFactory` lendo o `VisualConfigMap` automaticamente.
 
 Tarefa: Visual Procedural de Magias
 
@@ -235,9 +235,9 @@ Tarefa: Compositor de Sprites do Personagem
 
     Sub-tarefa: Criar a UI de seleção (cabelo, cor, olhos).
 
-    Sub-tarefa: [DEPENDE DO ÉPICO 7] Utilizar o Compositor de Camadas para "montar" o sprite do jogador visualmente.
+    [x] Sub-tarefa: Utilizar o Compositor de Camadas para "montar" o sprite do jogador visualmente.
 
-    Sub-tarefa: Integrar com o inventário: itens equipados devem enviar seus IDs visuais no `getRenderState` para serem anexados pelo Compositor.
+    [x] Sub-tarefa: Integrar com o inventário: O Compositor agora lê o `iconId` do que está equipado no DTO e busca as texturas dinamicamente!
 
 Tarefa: Lógica de Início de Jogo (Run)
 

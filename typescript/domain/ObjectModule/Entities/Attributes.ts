@@ -34,7 +34,7 @@ export default class Attributes {
   private _bonusInsight: number = 0;
 
   constructor(
-    hpDiceFaces :number,
+    private hpDiceFaces :number, // Tornado private para guardarmos na memória do objeto
     private _level: number, 
     
     private _strength: number,
@@ -44,17 +44,19 @@ export default class Attributes {
     private _wisdom: number,
     private _charisma: number,
   ){ 
-    this.setHp(hpDiceFaces * this.level);
+    this.setHp();
     this._mana = this.maxMana;
     // Inicializa o XP necessário para o primeiro level up.
   }
   
   //? ----------- Methods -----------
   
-  private setHp(hpDiceFaces :number){
-    for (let i = 0; i < hpDiceFaces; i++) 
-      this._hp += Dice.rollDice(hpDiceFaces);
-    this._maxHp = this._hp;
+  private setHp(){
+    this._maxHp = 0;
+    for (let i = 0; i < this._level; i++) {
+      this._maxHp += Math.max(1, Dice.rollDice(this.hpDiceFaces) + this._constitution);
+    }
+    this._hp = this._maxHp;
   }
 
   /**
@@ -74,6 +76,13 @@ export default class Attributes {
       this._currentXp -= this._xpToNextLevel;
       this._level++;
       this._xpToNextLevel = xpTable.fixedBase * Math.pow(xpTable.levelScale, this._level - 1);
+
+      const hpGain = Math.max(1, Dice.rollDice(this.hpDiceFaces) + this._constitution);
+      this._maxHp += hpGain;
+
+      // Restaura HP e Mana ao subir de nível
+      this._hp = this._maxHp;
+      this._mana = this.maxMana;
     }
   }
 
@@ -81,11 +90,19 @@ export default class Attributes {
     if (this._availablePoints > 0) {
       this._availablePoints--;
       if (attribute === 'strength') this._strength++;
-      else if (attribute === 'constitution') this._constitution++;
+      else if (attribute === 'constitution') {
+        this._constitution++;
+        this._maxHp += this._level; // Bônus retroativo de vida para todos os níveis que ele já possui!
+        this._hp += this._level;
+      }
       else if (attribute === 'dexterity') this._dexterity++;
-      else if (attribute === 'intelligence') this._intelligence++;
-      else if (attribute === 'wisdom') this._wisdom++;
-      else if (attribute === 'charisma') this._charisma++;
+      else if (attribute === 'intelligence' || attribute === 'wisdom' || attribute === 'charisma') {
+        const oldMaxMana = this.maxMana;
+        if (attribute === 'intelligence') this._intelligence++;
+        if (attribute === 'wisdom') this._wisdom++;
+        if (attribute === 'charisma') this._charisma++;
+        this._mana += Math.max(0, this.maxMana - oldMaxMana); // Aumenta a mana atual proporcionalmente
+      }
       return true;
     }
     return false;
@@ -192,8 +209,8 @@ export default class Attributes {
   public get insightDescription(): string { return "Increases the amount of experience points gained." }
 
 
-  public set hp(value: number) { this._hp = Math.max(0, value); }
-  public set mana(value: number) { this._mana = Math.max(0, Math.min(this.maxMana, this._mana + value)); }
+  public set hp(value: number) { this._hp = Math.max(0, Math.min(this._maxHp, value)); }
+  public set mana(value: number) { this._mana = Math.max(0, Math.min(this.maxMana, value)); }
   public set speed(value: number) { this._bonusSpeed += value; }
   public set critDamage(value: number) { this._bonusCritDamage += value; }
   public set critChance(value: number) { this._bonusCritChance += value; }

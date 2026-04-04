@@ -1,6 +1,5 @@
 /** @file Contém a classe ObjectElementManager, responsável por gerenciar o ciclo de vida (criação, atualização, remoção) de uma coleção de entidades de domínio. */
 import type { EntityRenderableState } from "../ports/domain-contracts";
-import Bullet from "./Entities/projectiles/Bullet";
 import Slime from "./Entities/Enemies/Slime";
 import Projectile from "./Entities/projectiles/Projectile";
 import type Player from "./Entities/Player/Player";
@@ -12,9 +11,13 @@ import type { IEventManager } from "../eventDispacher/IGameEvents";
 import DroppedItem from "./Items/DroppedItem";
 import Gun from "./Items/Weapons/RangedWeapons/Gun";
 import type { ICollisionService } from "../ports/ICollisionService";
-import { SimpleBullet } from "./Entities/projectiles/SimpleBullet";
 import Scythe from "./Items/Weapons/RangedWeapons/Scythe";
 import MagicWand from "./Items/Weapons/RangedWeapons/MagicWand";
+import IronHelmet from "./Items/Armors/helmet/IronHelmet";
+import IronChestplate from "./Items/Armors/chestplates/IronChestplate";
+import IronPants from "./Items/Armors/pants/IronPants";
+import IronBoots from "./Items/Armors/boots/IronBoots";
+import IronGloves from "./Items/Armors/glooves/IronGloves";
 import { SpawnRegistry } from "./SpawnRegistry";
 
 // Auto-carrega todas as entidades e itens do domínio para engatilhar os decorators @RegisterSpawner
@@ -168,7 +171,12 @@ export default class ObjectElementManager {
     // Spawna a arma inicial no chão, próxima de onde o jogador nasce (512, 512)
     this.spawn(id => new DroppedItem(id, { x: 550, y: 512 }, new Gun(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 580, y: 512 }, new Scythe(), this.eventManager));
-    this.spawn(id => new DroppedItem(id, { x: 520, y: 550 }, new MagicWand(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 520, y: 580 }, new MagicWand(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 450, y: 520 }, new IronHelmet(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 420, y: 520 }, new IronChestplate(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 390, y: 520 }, new IronPants(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 360, y: 520 }, new IronBoots(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 330, y: 520 }, new IronGloves(), this.eventManager));
   }
 
   /** * Instancia uma onda de inimigos atrelada ao loop de atualização do domínio. */
@@ -221,6 +229,8 @@ export default class ObjectElementManager {
       state.size.height = element.size.height;
       state.state = element.state;
       state.rotation = rotation;
+      state.equipment = (element as any).equipment;
+      state.hasBeard = (element as any).hasBeard;
       
       // Reciclando o Array de Hitboxes (Livre do Garbage Collector)
       if (!state.hitboxes) state.hitboxes = [];

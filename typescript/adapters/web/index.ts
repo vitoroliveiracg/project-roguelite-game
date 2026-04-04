@@ -4,7 +4,6 @@ import GameAdapter from "./components/GameAdapter";
 import { EventHandler } from "../../domain/eventDispacher/eventDispacher";
 import { logger } from "./shared/Logger";
 import { CollisionAdapter } from "../../domain/ports/CollisionAdapter";
-
 // Auto-carrega todos os arquivos de representação visual para disparar os Decorators de Registro
 import.meta.glob('./components/gameObjectModule/**/*.ts', { eager: true });
 

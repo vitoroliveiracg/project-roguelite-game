@@ -2,8 +2,8 @@ import type IXPTable from "./IXPTable";
 import type { ProgressionReward } from "./IXPTable";
 
 export default class DefaultXPTable implements IXPTable {
-    public fixedBase = 100;
-    public levelScale = 1.2;
+    public fixedBase = 200;
+    public levelScale = 1.5;
 
     public getRewardsForLevel(level: number): ProgressionReward[] {
         const rewards: ProgressionReward[] = ['attribute_point']; // Todo nível concede um ponto de atributo base

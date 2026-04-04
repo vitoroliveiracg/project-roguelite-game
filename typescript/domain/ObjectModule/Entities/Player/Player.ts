@@ -17,6 +17,8 @@ import Gunslinger from "./Classes/Gunslinger";
 import Necromancer from "./Classes/Necromancer";
 import { BindAction } from "../../../eventDispacher/ActionBindings";
 
+import type Armor from "../../Items/Armors/Armor";
+
 export type playerStates = 'idle' | 'walking' | 'dead'
 
 const defaultXpTable = new DefaultXPTable();
@@ -27,8 +29,22 @@ export default class Player extends Entity {
   private isDashing: boolean = false;
 
   public backpack: Item[] = [];
-  public equipment: { mainHand?: Weapon | undefined } = {};
+  public equipedItens: Item[] = [];
+  public equipment: { 
+    mainHand?: Weapon | undefined;
+    secondHand?: Weapon | undefined;
+    helmet?: Armor | undefined;
+    chestplate?: Armor | undefined;
+    pants?: Armor | undefined;
+    boots?: Armor | undefined;
+    gloves?: Armor | undefined;
+    amulet?: Armor | undefined;
+    ring1?: Armor | undefined;
+    ring2?: Armor | undefined;
+    ring3?: Armor | undefined;
+  } = {};
   private shooted: boolean = false;
+  public hasBeard: boolean = false; // Para validar a Regra de Negócio de Exceção Visual!
 
   // --- Sistema de Classes e Skills ---
   private _unlockedClasses: Set<string> = new Set();
@@ -107,7 +123,31 @@ export default class Player extends Entity {
    * disparar o evento 'playerDied' quando sua vida chega a zero.
    */
   public override takeDamage(damageInfo: DamageInfo): number {
-    const damageDealt = super.takeDamage(damageInfo);
+    let totalDodge = this.attributes.dodge;
+    let totalDamageReduction = 0;
+
+    // Soma os bônus defensivos de todas as armaduras equipadas
+    const armorSlots: (keyof Player['equipment'])[] = ['helmet', 'chestplate', 'pants', 'boots', 'gloves', 'amulet', 'ring1', 'ring2', 'ring3'];
+    for (const slot of armorSlots) {
+      const item = this.equipment[slot] as Armor | undefined;
+      if (item) {
+        totalDodge += item.dodgePercent || 0;
+        totalDamageReduction += item.damageReductionPercent || 0;
+      }
+    }
+
+    // 1. Verifica Esquiva (Dodge)
+    if (Math.random() * 100 < totalDodge) {
+      this.eventManager.dispatch('log', { channel: 'domain', message: 'Player esquivou do ataque!', params: [] });
+      return 0; // O jogador não toma nenhum dano!
+    }
+
+    // 2. Redução Percentual de Dano (Capado a 90% para não ficar totalmente imortal)
+    totalDamageReduction = Math.min(90, totalDamageReduction);
+    const reducedDamage = damageInfo.totalDamage * (1 - (totalDamageReduction / 100));
+
+    // Aplica o dano reduzido na entidade base (que também deduzirá a Defesa plana)
+    const damageDealt = super.takeDamage({ ...damageInfo, totalDamage: reducedDamage });
 
     if (this.attributes.hp <= 0) {
       this.eventManager.dispatch('playerDied', {});
@@ -283,7 +323,11 @@ export default class Player extends Entity {
     const item = this.backpack[backpackIndex];
     if (!item) return;
 
-    if (item.category === 'weapon') {
+    const category = item.category ? item.category.toLowerCase() : '';
+    
+    this.eventManager.dispatch('log', { channel: 'domain', message: `Tentando equipar [${item.name}]. Categoria detectada: '${category}'`, params: [] });
+
+    if (category === 'weapon') {
       const weapon = item as Weapon;
       if (this.equipment.mainHand) {
         this.backpack.push(this.equipment.mainHand);
@@ -296,6 +340,26 @@ export default class Player extends Entity {
         this.unlockClass(weapon.unlocksClass);
         this.setActiveClass(weapon.unlocksClass);
       }
+    } else if (category === 'armor') {
+      const armor = item as any; // Cast flexível para absorver a ArmorType
+      const slot = armor.armorType ? (armor.armorType as string).toLowerCase() : ''; // Força minúsculo (corrige 'Helmet' para 'helmet')
+      
+      this.eventManager.dispatch('log', { channel: 'domain', message: `ArmorType (Slot) detectado: '${slot}'`, params: [] });
+
+      if (!slot) {
+        this.eventManager.dispatch('log', { channel: 'error', message: `Erro ao equipar: O item '${item.name}' não possui um 'armorType' definido.`, params: [] });
+        return;
+      }
+      
+      if ((this.equipment as any)[slot]) {
+        this.backpack.push((this.equipment as any)[slot]); // Joga o antigo de volta na bolsa
+      }
+      (this.equipment as any)[slot] = armor;
+
+      this.backpack.splice(backpackIndex, 1);
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Equipped ${armor.name} in slot [${slot}]`, params: [] });
+    } else {
+      this.eventManager.dispatch('log', { channel: 'error', message: `Erro ao equipar: Categoria '${item.category}' não reconhecida no item '${item.name}'.`, params: [] });
     }
   }
 
@@ -304,6 +368,10 @@ export default class Player extends Entity {
       this.backpack.push(this.equipment.mainHand);
       this.equipment.mainHand = undefined;
       this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped mainHand`, params: [] });
+    } else if (slot !== 'mainHand' && (this.equipment as any)[slot]) {
+      this.backpack.push((this.equipment as any)[slot]);
+      (this.equipment as any)[slot] = undefined;
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped ${slot}`, params: [] });
     }
   }
 

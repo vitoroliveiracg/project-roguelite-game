@@ -1,5 +1,6 @@
-import type { SpriteConfig, GameObjectConstructorParams } from "../components/gameObjectModule/GameObjectElement";
-import type GameObjectElement from "../components/gameObjectModule/GameObjectElement";
+import type { SpriteConfig, GameObjectConstructorParams } from "../components/renderModule/visuals/GameObjectElement";
+import type GameObjectElement from "../components/renderModule/visuals/GameObjectElement";
+import { VisualConfigMap, type ItemVisualConfig } from "./GlobalVisualRegistry";
 
 /**
  * Sistema Central de Registro de Renderização.
@@ -8,15 +9,28 @@ import type GameObjectElement from "../components/gameObjectModule/GameObjectEle
 export class RenderRegistry {
     public static strategies = new Map<string, (params: GameObjectConstructorParams) => GameObjectElement>();
     public static spriteConfigs = new Map<string, SpriteConfig>();
+
+    static {
+        for (const [objectId, config] of Object.entries(VisualConfigMap)) {
+            for (const [state, spriteConfig] of Object.entries(config.animations)) {
+                RenderRegistry.spriteConfigs.set(`${objectId}-${state}`, spriteConfig);
+            }
+            if (config.category === 'equipment' || config.category === 'weapon') {
+                const itemConfig = config as ItemVisualConfig;
+                if (itemConfig.droppedConfig && itemConfig.iconId !== undefined) {
+                    // Mapeia o item dropado pelo seu iconId para compatibilidade com o Domínio
+                    RenderRegistry.spriteConfigs.set(`droppedItem-${itemConfig.iconId}`, itemConfig.droppedConfig);
+                }
+            }
+        }
+    }
 }
 
 /**
- * Decorator: Registra automaticamente uma classe visual e seu sprite no motor de renderização.
+ * Decorator: Registra a classe de renderização (Fábrica) atrelada ao seu objectId.
  */
-export function RegisterSprite(entityId: string, state: string, config: SpriteConfig) {
+export function RegisterRenderer(entityId: string) {
     return function (target: any) {
-        RenderRegistry.spriteConfigs.set(`${entityId}-${state}`, config);
-        
         // Se a classe possui um método estático de fábrica (padrão do projeto), registra a estratégia
         if (target.createWithSprite && !RenderRegistry.strategies.has(entityId)) {
             RenderRegistry.strategies.set(entityId, target.createWithSprite.bind(target));

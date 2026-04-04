@@ -129,6 +129,7 @@ export default class DomainFacade implements IGameDomain {
     ps.state = this.player.state;
     ps.rotation = this.player.rotation;
     ps.hitboxes = this.player.hitboxes?.map(hb => hb.getDebugShape()) ?? [];
+    ps.hasBeard = this.player.hasBeard;
     
     ps.level = this.player.attributes.level;
     ps.currentXp = this.player.attributes.currentXp;
@@ -146,8 +147,8 @@ export default class DomainFacade implements IGameDomain {
     ps.attributes.charisma = this.player.attributes.charisma;
     ps.attributes.availablePoints = this.player.attributes.availablePoints;
 
-    ps.backpack = this.player.backpack.map(item => ({ name: item.name, iconId: item.iconId }));
-    ps.equipment.mainHand = this.player.equipment.mainHand ? { name: this.player.equipment.mainHand.name, iconId: this.player.equipment.mainHand.iconId } : undefined;
+    ps.backpack = this.player.backpack;
+    ps.equipment = this.player.equipment;
 
     ps.activeClass = this.player.activeClass;
     ps.unlockedClasses = this.player.unlockedClasses;

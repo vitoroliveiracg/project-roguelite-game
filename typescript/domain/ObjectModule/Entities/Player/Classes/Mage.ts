@@ -67,7 +67,10 @@ export default class Mage extends Class {
         const sequence = this.spellBuffer.join(',');
         const direction = this.player.facingDirection.clone();
 
-        if (sequence === 'spell_0,spell_4') {
+        if (sequence === 'spell_0,spell_4') { //?fireball
+            if(this.player.attributes.mana < 5) return false;
+
+            this.player.attributes.mana -= 5;
             const baseDamage = 30 + Math.floor(this.player.attributes.intelligence * 2);
             const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
             this.eventManager.dispatch('spawn', {
@@ -79,7 +82,7 @@ export default class Mage extends Class {
             this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Fireball!`, params: [] });
             return true;
         } 
-        else if (sequence === 'spell_0,spell_5') {
+        else if (sequence === 'spell_0,spell_5') { //?magicMissile
             const baseDamage = 15 + Math.floor(this.player.attributes.intelligence);
             const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
             this.eventManager.dispatch('spawn', {

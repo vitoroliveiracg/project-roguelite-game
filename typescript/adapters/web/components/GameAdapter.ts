@@ -1,25 +1,25 @@
 /** @file Contém a classe GameAdapter, o orquestrador principal da camada de Adaptação (apresentação). */
 import type { IEventManager } from "../../../domain/eventDispacher/IGameEvents";
 import { logger } from "../shared/Logger";
-import type { EntityRenderableState, IGameDomain } from "../../../domain/ports/domain-contracts";
+import type {IGameDomain } from "../../../domain/ports/domain-contracts";
 
 import { initializeGame } from "./Game";
 
-import Camera from "./cameraModule/Camera";
-import Canvas from "./canvasModule/Canvas";
-import WebGPURenderer from "./renderModule/WebGPURenderer";
-import Renderer from "./renderModule/Renderer";
-import type IRenderer from "./renderModule/IRenderer";
-import GameMap from "./mapModule/Map";
+import Camera from "./renderModule/scene/Camera";
+import Canvas from "./renderModule/engine/Canvas";
+import WebGPURenderer from "./renderModule/engine/WebGPURenderer";
+import Renderer from "./renderModule/engine/Renderer";
+import type IRenderer from "./renderModule/engine/IRenderer";
+import GameMap from "./renderModule/scene/Map";
 
-import SceneManager from "./renderModule/SceneManager";
+import SceneManager from "./renderModule/scene/SceneManager";
 import UIManager from "./UiManager/UIManager";
 import InputGateway from "./keyboardModule/InputGateway";
-import type IRenderable from "./renderModule/IRenderable";
+import type IRenderable from "./renderModule/visuals/IRenderable";
 
 /** @class GameAdapter O "Adaptador" principal que conecta a lógica de domínio (`IGameDomain`) com as tecnologias da web (Canvas, Input, DOM), traduzindo eventos e dados entre as camadas e gerenciando o ciclo de vida dos componentes de apresentação. */
 export default class GameAdapter {
-  private readonly isDebugMode = false; /** @private Flag para controlar a renderização de elementos de depuração, como hitboxes. */
+  private isDebugMode = false; /** @private Flag para controlar a renderização de elementos de depuração, como hitboxes. */
   private renderer!: IRenderer<any>; /** @private A instância do `Renderer` responsável por desenhar no canvas. */
   private camera!: Camera; /** @private A instância da `Camera` que controla a viewport do jogo. */
   private map?: GameMap; /** @private A instância do `GameMap` que gerencia o mapa de fundo, opcional. */
@@ -31,6 +31,13 @@ export default class GameAdapter {
   /** @constructor @param domain Uma instância que implementa a interface do domínio. A injeção de dependência via interface permite que o Adapter seja agnóstico à implementação do domínio. */
   constructor(private domain: IGameDomain, private eventManager: IEventManager) {
     logger.log('init', 'GameAdapter instantiated.');
+
+    // Expõe a função global para alternar o modo de depuração no console
+    (window as any).toggleDebugMode = () => {
+      this.isDebugMode = !this.isDebugMode;
+      if (this.sceneManager) this.sceneManager.setDebugMode(this.isDebugMode);
+      console.log(`%c[Debug] %cModo de depuração de HitBoxes: ${this.isDebugMode ? 'ATIVADO' : 'DESATIVADO'}`, 'color: orange', 'color: white');
+    };
   }
 
 
