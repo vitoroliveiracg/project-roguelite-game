@@ -192,9 +192,9 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
         animations: { 
             'travelling': { 
                 imageSrc: new URL('../assets/entities/projectile.png', import.meta.url).href, 
-                frameCount: 1, animationSpeed: 10, 
+                frameCount: 1, animationSpeed: 1, 
                 frameWidth: 16, frameHeight: 16, 
-                spriteSize: { width: 16, height: 16 }
+                spriteSize: { width: 10, height: 10 }
              } 
         }
     },
@@ -210,7 +210,7 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
                 frameCount: 6, animationSpeed: 3,
                 frameWidth: 64, frameHeight: 64,
                 atlasOffset: { x: 0, y: 0 },
-                spriteSize: { width: 64, height: 64 },
+                spriteSize: { width: 70, height: 70 },
                 rotationOffset: Math.PI / 4,
                 anchor: 'bottom-left'
             }

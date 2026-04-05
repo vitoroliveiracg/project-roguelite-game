@@ -16,19 +16,20 @@ export class DynamicProjectile extends Bullet {
     public effects: Effect[];
     public attack: Attack;
     public spellElements: string[]; // <--- As essências que darão cor à magia no Visual!
+    
+    public static readonly BASE_SIZE = { width: 10, height: 10 };
 
     constructor(
         id: number, coordinates: { x: number; y: number; }, direction: Vector2D,
         attack: Attack, effects: Effect[] = [], eventManager: IEventManager,
         elements: string[] = []
     ) {
-        const size = { width: 16, height: 16 };
-        super(id, coordinates, size, 'dynamicSpell' as any, eventManager, 'travelling');
+        super(id, coordinates, DynamicProjectile.BASE_SIZE, 'dynamicSpell' as any, eventManager, 'travelling');
         this.direction = direction;
         this.attack = attack;
         this.effects = effects;
         this.spellElements = elements;
-        this.hitboxes = [...this.setHitboxes(size)];
+        this.hitboxes = [...this.setHitboxes(DynamicProjectile.BASE_SIZE)];
         this.rotation = this.direction.angle();
     }
 
@@ -55,7 +56,7 @@ export class DynamicProjectile extends Bullet {
     }
 
     public static createSpawn(id: number, payload: SpawnPayload, eventManager: IEventManager): DynamicProjectile {
-        const size = { width: 16, height: 16 };
+        const size = DynamicProjectile.BASE_SIZE;
         const centeredCoordinates = { x: payload.coordinates.x - size.width / 2, y: payload.coordinates.y - size.height / 2 };
         return new DynamicProjectile(id, centeredCoordinates, payload.direction!, payload.attack!, [], eventManager, payload.spellElements || []);
     }

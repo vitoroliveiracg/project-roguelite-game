@@ -125,7 +125,7 @@ export default class ObjectElementManager {
     // O timer de spawn agora respeita o deltaTime. Se o jogo pausar, o deltaTime para de somar aqui.
     this.waveTimer += deltaTime;
     if (this.waveTimer >= this.WAVE_INTERVAL) {
-      this.spawnWave();
+      // this.spawnWave();
       this.waveTimer = 0;
     }
 

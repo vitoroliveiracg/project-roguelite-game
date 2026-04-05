@@ -12,7 +12,7 @@ export default class Mage extends Class {
 
     private spellBuffer: action[] = [];
     private timeoutId: ReturnType<typeof setTimeout> | null = null;
-    private readonly SPELL_TIMEOUT = 1500;
+    private readonly SPELL_TIMEOUT = 500;
 
     constructor(xpTable: IXPTable, player: Player, eventManager: IEventManager) {
         super('Mago', xpTable, player, eventManager);
@@ -46,21 +46,20 @@ export default class Mage extends Class {
         
         if (this.timeoutId) clearTimeout(this.timeoutId);
 
-        if (this.evaluateSpellBuffer()) {
-            this.spellBuffer = []; // Magia auto-conjurada com sucesso! Limpa a fila.
-        } else {
-            this.timeoutId = setTimeout(() => {
-                this.spellBuffer = [];
-                this.eventManager.dispatch('log', { channel: 'input', message: "Spell buffer expired and cleared.", params: [] });
-            }, this.SPELL_TIMEOUT);
-        }
+        // O timer agora é o responsável por engatilhar a magia (Auto-Cast) após o jogador parar de digitar
+        this.timeoutId = setTimeout(() => {
+            this.evaluateSpellBuffer();
+            this.spellBuffer = [];
+        }, this.SPELL_TIMEOUT);
     }
 
     @BindAction('castSpell')
-    public onClearSpellBuffer() {
-        this.spellBuffer = [];
-        if (this.timeoutId) clearTimeout(this.timeoutId);
-        this.eventManager.dispatch('log', { channel: 'input', message: "Spell buffer cleared manually (Panic Button).", params: [] });
+    public onCastSpell() {
+        if (this.spellBuffer.length > 0) {
+            this.evaluateSpellBuffer();
+            this.spellBuffer = [];
+            if (this.timeoutId) clearTimeout(this.timeoutId);
+        }
     }
 
     private evaluateSpellBuffer(): boolean {
@@ -82,7 +81,7 @@ export default class Mage extends Class {
             'spell_9': 'magic'
         };
 
-        if (sequence === 'spell_0,spell_4') { //?fireball
+        if (sequence === 'spell_0,spell_4,spell_0') { //?fireball (040)
             if(this.player.attributes.mana < 5) return false;
 
             this.player.attributes.mana -= 5;
@@ -97,18 +96,6 @@ export default class Mage extends Class {
             this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Fireball!`, params: [] });
             return true;
         } 
-        else if (sequence === 'spell_0,spell_5') { //?magicMissile
-            const baseDamage = 15 + Math.floor(this.player.attributes.intelligence);
-            const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
-            this.eventManager.dispatch('spawn', {
-                type: 'magicMissile',
-                coordinates: spawnCoordinates,
-                direction: direction,
-                attack: playerAttack
-            });
-            this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Water Missile!`, params: [] });
-            return true;
-        }
         // REGRA GERAL (O Lego Visual): Se começou com "Projectile" (spell_0) e possui outros modificadores não catalogados
         else if (this.spellBuffer[0] === 'spell_0' && this.spellBuffer.length > 1) {
             const elements: string[] = [];
