@@ -130,6 +130,7 @@ export default class DomainFacade implements IGameDomain {
     ps.rotation = this.player.rotation;
     ps.hitboxes = this.player.hitboxes?.map(hb => hb.getDebugShape()) ?? [];
     ps.hasBeard = this.player.hasBeard;
+    ps.facingDirection = this.player.facingDirection;
     
     ps.level = this.player.attributes.level;
     ps.currentXp = this.player.attributes.currentXp;

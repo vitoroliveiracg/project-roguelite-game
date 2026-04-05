@@ -205,9 +205,25 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
     this.instanceData[offset + 1] = destY;
     this.instanceData[offset + 2] = destWidth;
     this.instanceData[offset + 3] = destHeight;
-    this.instanceData[offset + 4] = state.rotation;
+    this.instanceData[offset + 4] = state.rotation + (config?.rotationOffset ?? 0);
+
+    let anchorX = 0.0;
+    let anchorY = 0.0;
+    if (config?.anchor) {
+        switch(config.anchor) {
+            case 'top-left': anchorX = -0.5; anchorY = -0.5; break;
+            case 'top-right': anchorX = 0.5; anchorY = -0.5; break;
+            case 'bottom-left': anchorX = -0.5; anchorY = 0.5; break;
+            case 'bottom-right': anchorX = 0.5; anchorY = 0.5; break;
+            case 'center-left': anchorX = -0.5; anchorY = 0.0; break;
+            case 'center-right': anchorX = 0.5; anchorY = 0.0; break;
+            case 'top-center': anchorX = 0.0; anchorY = -0.5; break;
+            case 'bottom-center': anchorX = 0.0; anchorY = 0.5; break;
+        }
+    }
+    this.instanceData[offset + 5] = anchorX;
+    this.instanceData[offset + 6] = anchorY;
     
-    // Pula 3 espaços para o WGSL alinhamento do Vec2 (Paddings: offset + 5, + 6, + 7 vazios)
     this.instanceData[offset + 8] = currentFrame % (config?.frameCount ?? 1);
     this.instanceData[offset + 9] = config?.frameCount ?? 1;
     this.instanceData[offset + 10] = config?.atlasOffset?.x ?? 0;
@@ -265,7 +281,9 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
           pos: vec2<f32>,
           scale: vec2<f32>,
           rot: f32,
-          pad1: vec3<f32>, // WGSL Padding Explícito (Força o offset para 32 bytes)
+          anchor_x: f32,
+          anchor_y: f32,
+          pad1: f32, // WGSL Padding Explícito (Força o offset para 32 bytes)
           anim_data: vec2<f32>, // frameIndex, totalFrames
           atlas_offset: vec2<f32>,
           sprite_size: vec2<f32>,
@@ -292,9 +310,19 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
           let cos_rot = cos(instance.rot);
           let sin_rot = sin(instance.rot);
           let rot_matrix = mat2x2<f32>(cos_rot, -sin_rot, sin_rot, cos_rot);
+          
+          // Calcula o pivô real no mundo Canvas (Y cresce para baixo)
+          let canvas_anchor_offset = vec2<f32>(instance.anchor_x, instance.anchor_y);
+          let pivot_world = instance.pos + (instance.scale / 2.0) + (canvas_anchor_offset * instance.scale);
+          
+          // Converte o anchor para o espaço WGSL (Y cresce para cima) invertendo o Y
+          let wgsl_anchor_offset = vec2<f32>(instance.anchor_x, -instance.anchor_y);
+          let pos_relative = pos - wgsl_anchor_offset;
+          let rotated_pos = rot_matrix * (pos_relative * instance.scale);
 
-          // Aplica escala, rotação e translação
-          var transformed_pos = rot_matrix * (pos * instance.scale) + instance.pos + (instance.scale / 2.0);
+          // Aplica o vetor rotacionado ao pivô.
+          // ATENÇÃO: Como o rotated_pos.y está no WGSL (Y para cima), aplicamos invertendo o Y no Canvas!
+          var transformed_pos = pivot_world + vec2<f32>(rotated_pos.x, -rotated_pos.y);
 
           // Calcula UVs da animação a partir do Atlas
           let frame_index = floor(instance.anim_data.x);

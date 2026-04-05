@@ -23,6 +23,10 @@ export default class CharacterMenuGui {
     private eqPants!: HTMLElement;
     private eqBoots!: HTMLElement;
     private eqGloves!: HTMLElement;
+    private eqAmulet!: HTMLElement;
+    private eqRing1!: HTMLElement;
+    private eqRing2!: HTMLElement;
+    private eqRing3!: HTMLElement;
     private pointsEl!: HTMLElement;
     private addBtns!: NodeListOf<HTMLButtonElement>;
 
@@ -62,6 +66,10 @@ export default class CharacterMenuGui {
         this.eqPants = this.container.querySelector('.eq-pants') as HTMLElement;
         this.eqBoots = this.container.querySelector('.eq-boots') as HTMLElement;
         this.eqGloves = this.container.querySelector('.eq-gloves') as HTMLElement;
+        this.eqAmulet = this.container.querySelector('.eq-amulet') as HTMLElement;
+        this.eqRing1 = this.container.querySelector('.eq-ring1') as HTMLElement;
+        this.eqRing2 = this.container.querySelector('.eq-ring2') as HTMLElement;
+        this.eqRing3 = this.container.querySelector('.eq-ring3') as HTMLElement;
 
         this.bpSlots.forEach((slot, index) => {
             slot.addEventListener('click', () => {
@@ -75,6 +83,10 @@ export default class CharacterMenuGui {
         this.eqPants.addEventListener('click', () => this.unequipItemCallback('pants'));
         this.eqBoots.addEventListener('click', () => this.unequipItemCallback('boots'));
         this.eqGloves.addEventListener('click', () => this.unequipItemCallback('gloves'));
+        this.eqAmulet.addEventListener('click', () => this.unequipItemCallback('amulet'));
+        this.eqRing1.addEventListener('click', () => this.unequipItemCallback('ring1'));
+        this.eqRing2.addEventListener('click', () => this.unequipItemCallback('ring2'));
+        this.eqRing3.addEventListener('click', () => this.unequipItemCallback('ring3'));
 
         this.addBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -168,6 +180,10 @@ export default class CharacterMenuGui {
             updateSlot(this.eqPants, data.equipment.pants, '👖', 'Calça');
             updateSlot(this.eqBoots, data.equipment.boots, '🥾', 'Botas');
             updateSlot(this.eqGloves, data.equipment.gloves, '🧤', 'Luvas');
+            updateSlot(this.eqAmulet, data.equipment.amulet, '📿', 'Amuleto');
+            updateSlot(this.eqRing1, data.equipment.ring1, '💍', 'Anel 1');
+            updateSlot(this.eqRing2, data.equipment.ring2, '💍', 'Anel 2');
+            updateSlot(this.eqRing3, data.equipment.ring3, '💍', 'Anel 3');
         }
     }
 }

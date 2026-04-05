@@ -29,6 +29,7 @@ export class Fireball extends Bullet {
         this.attack = attack;
         this.effects = effects;
         this.hitboxes = [...this.setHitboxes(size)];
+        
         this.rotation = this.direction.angle();
     }
 
@@ -58,9 +59,17 @@ export class Fireball extends Bullet {
 
     public static createSpawn(id: number, payload: SpawnPayload, eventManager: IEventManager): Fireball {
         const effects = [
-            new AreaDamageEffect(eventManager, 64, payload.attack), // Aplica o dano em raio
-            new VisualEffect(eventManager, 'explosion', 0.25, { width: 64, height: 64 }) // Efeito de explosão efêmero
+            new AreaDamageEffect(eventManager, 80, payload.attack), // Aplica o dano em raio
+            new VisualEffect(eventManager, 'explosion', 0.25, { width: 80, height: 80 }) // Efeito de explosão efêmero
         ];
-        return new Fireball(id, payload.coordinates, payload.direction!, payload.attack!, effects, eventManager);
+        
+        const size = { width: 24, height: 24 };
+        
+        const centeredCoordinates = {
+            x: payload.coordinates.x - size.width / 2,
+            y: payload.coordinates.y - size.height / 2
+        };
+        
+        return new Fireball(id, centeredCoordinates, payload.direction!, payload.attack!, effects, eventManager, 'fireball', size);
     }
 }

@@ -12,13 +12,16 @@ import DroppedItem from "./Items/DroppedItem";
 import Gun from "./Items/Weapons/RangedWeapons/Gun";
 import type { ICollisionService } from "../ports/ICollisionService";
 import Scythe from "./Items/Weapons/RangedWeapons/Scythe";
-import MagicWand from "./Items/Weapons/RangedWeapons/MagicWand";
+import SimpleStaff from "./Items/Weapons/RangedWeapons/Staffs/SimpleStaff";
 import IronHelmet from "./Items/Armors/helmet/IronHelmet";
 import IronChestplate from "./Items/Armors/chestplates/IronChestplate";
 import IronPants from "./Items/Armors/pants/IronPants";
 import IronBoots from "./Items/Armors/boots/IronBoots";
 import IronGloves from "./Items/Armors/glooves/IronGloves";
 import { SpawnRegistry } from "./SpawnRegistry";
+import SimpleAmulet from "./Items/Armors/necklaces/SimpleAmulet";
+import SimpleRing from "./Items/Armors/rings/SimpleRing";
+import SimpleSword from "./Items/Weapons/MeleeWeapons/SimpleSword";
 
 // Auto-carrega todas as entidades e itens do domínio para engatilhar os decorators @RegisterSpawner
 import.meta.glob('./Entities/**/*.ts', { eager: true });
@@ -65,24 +68,33 @@ export default class ObjectElementManager {
       this.removeByID(payload.objectId);
     });
 
-    this.eventManager.on('requestNeighbors', (payload) => {
+    this.eventManager.on('requestNeighbors', (payload :any) => {
       const neighbors: ObjectElement[] = [];
       
       // Centro de quem solicitou a busca
-      const reqX = payload.requester.coordinates.x + (payload.requester.size.width / 2);
-      const reqY = payload.requester.coordinates.y + (payload.requester.size.height / 2);
+      let reqX = 0;
+      let reqY = 0;
+
+      if (payload.coordinates) {
+        reqX = payload.coordinates.x;
+        reqY = payload.coordinates.y;
+      } else if (payload.requester) {
+        reqX = payload.requester.coordinates.x + (payload.requester.size.width / 2);
+        reqY = payload.requester.coordinates.y + (payload.requester.size.height / 2);
+      } else {
+        return payload.callback(neighbors);
+      }
+
 
       for (const element of this.elements.values()) {
-        if (element.id !== payload.requester.id) {
-          // Centro do alvo avaliado
-          const elX = element.coordinates.x + (element.size.width / 2);
-          const elY = element.coordinates.y + (element.size.height / 2);
-          
-          const distance = Math.sqrt(Math.pow(reqX - elX, 2) + Math.pow(reqY - elY, 2));
-          
-          if (distance <= payload.radius) {
-            neighbors.push(element);
-          }
+        if (payload.requester && element.id === payload.requester.id) continue;
+        
+        const elX = element.coordinates.x + (element.size.width / 2);
+        const elY = element.coordinates.y + (element.size.height / 2);
+        const distance = Math.hypot(reqX - elX, reqY - elY);
+        
+        if (distance <= payload.radius) {
+          neighbors.push(element);
         }
       }
       
@@ -166,17 +178,20 @@ export default class ObjectElementManager {
 
   /** * Popula o mundo com os elementos iniciais (inimigos, NPCs, itens, etc.). Este método pode ser expandido para ler de uma configuração de nível no futuro. */
   public spawnInitialElements(): void { 
-    this.spawnWave();
+    // this.spawnWave();
 
     // Spawna a arma inicial no chão, próxima de onde o jogador nasce (512, 512)
     this.spawn(id => new DroppedItem(id, { x: 550, y: 512 }, new Gun(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 580, y: 512 }, new Scythe(), this.eventManager));
-    this.spawn(id => new DroppedItem(id, { x: 520, y: 580 }, new MagicWand(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 490, y: 512 }, new SimpleSword(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 520, y: 580 }, new SimpleStaff(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 450, y: 520 }, new IronHelmet(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 420, y: 520 }, new IronChestplate(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 390, y: 520 }, new IronPants(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 360, y: 520 }, new IronBoots(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 330, y: 520 }, new IronGloves(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 380, y: 520 }, new SimpleAmulet(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 400, y: 520 }, new SimpleRing(), this.eventManager));
   }
 
   /** * Instancia uma onda de inimigos atrelada ao loop de atualização do domínio. */
@@ -231,6 +246,7 @@ export default class ObjectElementManager {
       state.rotation = rotation;
       state.equipment = (element as any).equipment;
       state.hasBeard = (element as any).hasBeard;
+      (state as any).facingDirection = (element as any).facingDirection;
       
       // Reciclando o Array de Hitboxes (Livre do Garbage Collector)
       if (!state.hitboxes) state.hitboxes = [];

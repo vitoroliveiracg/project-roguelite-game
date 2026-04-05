@@ -3,6 +3,8 @@ import type { EntityRenderableState } from "../../../../../domain/ports/domain-c
 import { logger } from "../../../shared/Logger";
 import type IRenderable from "./IRenderable";
 
+export type RenderAnchor = 'center' | 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right' | 'center-left' | 'center-right' | 'top-center' | 'bottom-center';
+
 export interface SpriteConfig {
   /** O caminho ou URL (import estático) da imagem do spritesheet. */
   imageSrc: string;
@@ -22,6 +24,10 @@ export interface SpriteConfig {
   spriteSize?: { width: number, height: number };
   /** Deslocamento opcional {x,y} para alinhar equipamentos. Se for um Array, acompanhará os frames de animação do objeto base! */
   renderOffset?: { x: number, y: number } | { x: number, y: number }[];
+  /** Deslocamento opcional da rotação (em radianos) para corrigir sprites desenhados fora do eixo padrão (ex: diagonais). */
+  rotationOffset?: number;
+  /** Define o ponto de pivô para a rotação matemática do sprite. O padrão é 'center'. */
+  anchor?: RenderAnchor;
 }
 
 export interface GameObjectConstructorParams {
@@ -58,7 +64,7 @@ export default class GameObjectElement implements IRenderable {
     this.size = initialState.size;
     this.config = initialConfig;
     this.image = initialImage;
-    this.rotation = 0
+    this.rotation = initialState.rotation || 0;
   }
 
   /**
@@ -111,15 +117,27 @@ export default class GameObjectElement implements IRenderable {
     }
     ctx.save();
 
+    let pivotX = this.coordinates.x + this.size.width / 2;
+    let pivotY = this.coordinates.y + this.size.height / 2;
 
-    const centerX = this.coordinates.x + this.size.width / 2;
-    const centerY = this.coordinates.y + this.size.height / 2;
-    
-    ctx.translate(centerX, centerY);
+    if (this.config.anchor) {
+        switch(this.config.anchor) {
+            case 'bottom-left': pivotX = this.coordinates.x; pivotY = this.coordinates.y + this.size.height; break;
+            case 'bottom-right': pivotX = this.coordinates.x + this.size.width; pivotY = this.coordinates.y + this.size.height; break;
+            case 'top-left': pivotX = this.coordinates.x; pivotY = this.coordinates.y; break;
+            case 'top-right': pivotX = this.coordinates.x + this.size.width; pivotY = this.coordinates.y; break;
+            case 'center-left': pivotX = this.coordinates.x; pivotY = this.coordinates.y + this.size.height / 2; break;
+            case 'center-right': pivotX = this.coordinates.x + this.size.width; pivotY = this.coordinates.y + this.size.height / 2; break;
+            case 'top-center': pivotX = this.coordinates.x + this.size.width / 2; pivotY = this.coordinates.y; break;
+            case 'bottom-center': pivotX = this.coordinates.x + this.size.width / 2; pivotY = this.coordinates.y + this.size.height; break;
+        }
+    }
 
-    ctx.rotate(this.rotation)
+    ctx.translate(pivotX, pivotY);
 
-    ctx.translate(-centerX, -centerY);
+    ctx.rotate(this.rotation + (this.config.rotationOffset || 0));
+
+    ctx.translate(-pivotX, -pivotY);
     
     this.updateAnimation();
     ctx.imageSmoothingEnabled = false;

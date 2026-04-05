@@ -43,7 +43,9 @@ export default class Player extends Entity {
     ring2?: Armor | undefined;
     ring3?: Armor | undefined;
   } = {};
-  private shooted: boolean = false;
+  private isLeftClickActiveThisFrame: boolean = false;
+  private wasLeftClickActiveLastFrame: boolean = false;
+  private attackCooldownTimer: number = 0;
   public hasBeard: boolean = false; // Para validar a Regra de Negócio de Exceção Visual!
 
   // --- Sistema de Classes e Skills ---
@@ -88,7 +90,10 @@ export default class Player extends Entity {
           const enemyAttack = (otherElement as any).onStrike();
           
           if (enemyAttack) {
-            let directionToPlayer = new Vector2D(this.coordinates.x - otherElement.coordinates.x, this.coordinates.y - otherElement.coordinates.y);
+            let directionToPlayer = new Vector2D(
+              (this.coordinates.x + this.size.width / 2) - (otherElement.coordinates.x + otherElement.size.width / 2),
+              (this.coordinates.y + this.size.height / 2) - (otherElement.coordinates.y + otherElement.size.height / 2)
+            );
             
             // Proteção Anti-NaN: Se estiverem exatamente no mesmo pixel, força uma direção arbitrária
             if (directionToPlayer.x === 0 && directionToPlayer.y === 0) {
@@ -110,10 +115,17 @@ export default class Player extends Entity {
       return;
     }
 
+    if (this.attackCooldownTimer > 0) {
+      this.attackCooldownTimer -= deltaTime;
+    }
+
     this.move(deltaTime)
     if (!this.movementSinceLastUpdate)  this.state = 'idle';
     
     this.movementSinceLastUpdate = false;
+
+    this.wasLeftClickActiveLastFrame = this.isLeftClickActiveThisFrame;
+    this.isLeftClickActiveThisFrame = false; // Reseta para a coleta do próximo frame
     
     this.direction.resetMut()
   }
@@ -233,28 +245,32 @@ export default class Player extends Entity {
 
   @BindAction('leftClick')
   public onLeftClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
+    this.isLeftClickActiveThisFrame = true;
+
     if (this.activeClass === 'Mago') return; // Mago não atira com o mouse!
 
-    if (!this.shooted && this.equipment.mainHand) {
-      const direction = new Vector2D(
-          mouseLastCoordinates.x - this.coordinates.x,
-          mouseLastCoordinates.y - this.coordinates.y
-      );
-      
-      this.shooted = true;
-      this.equipment.mainHand.attack(this, direction, this.eventManager); // A arma atira
-      
-      setTimeout(() => { this.shooted = false }, 100);
-    } else if (!this.equipment.mainHand) {
-      this.eventManager.dispatch('log', { channel: 'domain', message: "Cannot shoot without a weapon", params: [] });
+    const weapon = this.equipment.mainHand;
+
+    if (!weapon) {
+      if (!this.wasLeftClickActiveLastFrame) this.eventManager.dispatch('log', { channel: 'domain', message: "Cannot shoot without a weapon", params: [] });
+      return;
+    }
+
+    if (weapon.weaponType === 'melee' && this.wasLeftClickActiveLastFrame) return; 
+
+    if (this.attackCooldownTimer <= 0) {
+        const direction = new Vector2D(mouseLastCoordinates.x - (this.coordinates.x + this.size.width / 2), mouseLastCoordinates.y - (this.coordinates.y + this.size.height / 2));
+        weapon.attack(this, direction, this.eventManager);
+        
+        this.attackCooldownTimer = weapon.attackSpeed > 0 ? weapon.attackSpeed : 0.7;
     }
   }
 
   @BindAction('rightClick')
   public onRightClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
     const direction = new Vector2D(
-      mouseLastCoordinates.x - this.coordinates.x,
-      mouseLastCoordinates.y - this.coordinates.y
+      mouseLastCoordinates.x - (this.coordinates.x + this.size.width / 2),
+      mouseLastCoordinates.y - (this.coordinates.y + this.size.height / 2)
     )
     
     this.dashToDirection(direction)
@@ -342,7 +358,7 @@ export default class Player extends Entity {
       }
     } else if (category === 'armor') {
       const armor = item as any; // Cast flexível para absorver a ArmorType
-      const slot = armor.armorType ? (armor.armorType as string).toLowerCase() : ''; // Força minúsculo (corrige 'Helmet' para 'helmet')
+      let slot = armor.armorType ? (armor.armorType as string).toLowerCase() : ''; // Força minúsculo (corrige 'Helmet' para 'helmet')
       
       this.eventManager.dispatch('log', { channel: 'domain', message: `ArmorType (Slot) detectado: '${slot}'`, params: [] });
 
@@ -351,6 +367,14 @@ export default class Player extends Entity {
         return;
       }
       
+      // Lógica inteligente para Anéis (procura o primeiro dedo vazio!)
+      if (slot === 'ring') {
+        if (!this.equipment.ring1) slot = 'ring1';
+        else if (!this.equipment.ring2) slot = 'ring2';
+        else if (!this.equipment.ring3) slot = 'ring3';
+        else slot = 'ring1'; // Substitui o primeiro se os três estiverem cheios
+      }
+
       if ((this.equipment as any)[slot]) {
         this.backpack.push((this.equipment as any)[slot]); // Joga o antigo de volta na bolsa
       }

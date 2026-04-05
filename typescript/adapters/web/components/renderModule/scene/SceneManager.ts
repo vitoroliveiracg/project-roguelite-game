@@ -2,8 +2,10 @@ import type { EntityRenderableState } from "../../../../../domain/ports/domain-c
 import type IRenderableObject from "../visuals/IRenderable";
 import { RenderableFactory } from "./RenderableFactory";
 import DebugCircle from "../customRenderables/DebugCircle";
+import DebugRectangle from "../customRenderables/DebugRectangle";
 import { AnimationManager } from "../visuals/AnimationManager";
 import WebGPURenderer from "../engine/WebGPURenderer";
+import { RenderRegistry } from "../../../shared/RenderRegistry";
 import type IRenderer from "../engine/IRenderer";
 
 /** @class SceneManager Gerencia as instâncias visuais e a sincronização entre o estado do Domínio e as entidades gráficas na tela. */
@@ -34,28 +36,118 @@ export default class SceneManager {
     }
   }
 
-  public updateAnimations(deltaTime: number): void {
+  public updateAnimations(deltaTime: number, mouseWorldPos?: {x: number, y: number}): void {
     for (const animManager of this.animationManagers.values()) {
       animManager.update(deltaTime);
     }
+
+    const playerRenderable = this.renderables.get(1);
 
     for (const [id, visual] of this.transientVisuals.entries()) {
       visual.timeRemaining -= deltaTime;
       if (visual.timeRemaining <= 0) {
         this.transientVisuals.delete(id);
-      } else if (visual.animationManager) {
-        visual.animationManager.update(deltaTime);
+        if (this.debugRenderables.has(`${id}_debug`)) this.debugRenderables.delete(`${id}_debug`);
+      } else {
+        if (visual.animationManager) {
+            visual.animationManager.update(deltaTime);
+        }
+        
+        // Cola o VFX no player e faz acompanhar o mouse continuamente!
+        const config = RenderRegistry.spriteConfigs.get(`${visual.state.entityTypeId}-active`) || RenderRegistry.spriteConfigs.get(`${visual.state.entityTypeId}-travelling`);
+        if (playerRenderable && config && config.anchor && config.anchor !== 'center') {
+            const pCenterX = playerRenderable.coordinates.x + playerRenderable.size.width / 2;
+            const pCenterY = playerRenderable.coordinates.y + playerRenderable.size.height / 2;
+
+            let anchorX = 0.0;
+            let anchorY = 0.0;
+            switch(config.anchor) {
+                case 'top-left': anchorX = -0.5; anchorY = -0.5; break;
+                case 'top-right': anchorX = 0.5; anchorY = -0.5; break;
+                case 'bottom-left': anchorX = -0.5; anchorY = 0.5; break;
+                case 'bottom-right': anchorX = 0.5; anchorY = 0.5; break;
+                case 'center-left': anchorX = -0.5; anchorY = 0.0; break;
+                case 'center-right': anchorX = 0.5; anchorY = 0.0; break;
+                case 'top-center': anchorX = 0.0; anchorY = -0.5; break;
+                case 'bottom-center': anchorX = 0.0; anchorY = 0.5; break;
+            }
+
+            visual.state.coordinates.x = pCenterX - (visual.state.size.width / 2) - (anchorX * visual.state.size.width);
+            visual.state.coordinates.y = pCenterY - (visual.state.size.height / 2) - (anchorY * visual.state.size.height);
+
+            if (mouseWorldPos) {
+                visual.state.rotation = Math.atan2(mouseWorldPos.y - pCenterY, mouseWorldPos.x - pCenterX);
+            }
+
+            if (visual.renderable) {
+                visual.renderable.updateState(visual.state);
+            }
+            if (this.isDebugMode && this.debugRenderables.has(`${id}_debug`)) {
+                this.debugRenderables.get(`${id}_debug`)!.updateState(visual.state);
+            }
+        }
       }
     }
   }
 
-  public addVisualEffect(payload: { type: string, coordinates: {x:number, y:number}, duration: number, size: {width:number, height:number} }): void {
+  public addVisualEffect(payload: { type: string, coordinates: {x:number, y:number}, duration: number, size: {width:number, height:number}, rotation?: number, direction?: {x:number, y:number} }): void {
+    let finalRotation = payload.rotation || 0;
+    if (payload.direction) {
+        finalRotation = Math.atan2(payload.direction.y, payload.direction.x);
+    }
+
+    // Identifica a âncora visual para alinhar o ponto de origem do Domínio (payload.coordinates)
+    // com o pivô geométrico da sprite, ajustando o top-left do DTO.
+    let anchor: any = 'center';
+    const config = RenderRegistry.spriteConfigs.get(`${payload.type}-active`) || RenderRegistry.spriteConfigs.get(`${payload.type}-travelling`);
+    if (config && config.anchor) {
+        anchor = config.anchor;
+    }
+
+    let anchorX = 0.0;
+    let anchorY = 0.0;
+    switch(anchor) {
+        case 'top-left': anchorX = -0.5; anchorY = -0.5; break;
+        case 'top-right': anchorX = 0.5; anchorY = -0.5; break;
+        case 'bottom-left': anchorX = -0.5; anchorY = 0.5; break;
+        case 'bottom-right': anchorX = 0.5; anchorY = 0.5; break;
+        case 'center-left': anchorX = -0.5; anchorY = 0.0; break;
+        case 'center-right': anchorX = 0.5; anchorY = 0.0; break;
+        case 'top-center': anchorX = 0.0; anchorY = -0.5; break;
+        case 'bottom-center': anchorX = 0.0; anchorY = 0.5; break;
+    }
+
+    // O Domínio normalmente envia as coordenadas como o Top-Left de uma caixa já centralizada.
+    // Portanto, o "centro alvo" real do ataque no mundo é:
+    let targetCenterX = payload.coordinates.x + payload.size.width / 2;
+    let targetCenterY = payload.coordinates.y + payload.size.height / 2;
+
+    const playerRenderable = this.renderables.get(1);
+    if (playerRenderable) {
+        const pCenterX = playerRenderable.coordinates.x + playerRenderable.size.width / 2;
+        const pCenterY = playerRenderable.coordinates.y + playerRenderable.size.height / 2;
+        
+        // SNAP MÁGICO: Se for um VFX com âncora corporal (ex: espada),
+        // anulamos o offset físico do Domínio e cravamos o pivô visual estritamente no centro do personagem!
+        if (config?.anchor && config.anchor !== 'center') {
+            targetCenterX = pCenterX;
+            targetCenterY = pCenterY;
+        } else if (payload.coordinates.x === playerRenderable.coordinates.x && payload.coordinates.y === playerRenderable.coordinates.y) {
+            targetCenterX = pCenterX;
+            targetCenterY = pCenterY;
+        }
+    }
+
+    // Calcula o novo Top-Left da sprite para que a 'âncora' (ex: bottom-left) caia milimetricamente no alvo
+    const topLeftX = targetCenterX - (payload.size.width / 2) - (anchorX * payload.size.width);
+    const topLeftY = targetCenterY - (payload.size.height / 2) - (anchorY * payload.size.height);
+
     const state: EntityRenderableState = {
       id: this.nextTransientId--, // Mock ID negativo para não colidir com entidades reais
-      entityTypeId: payload.type,
-      coordinates: payload.coordinates,
+      entityTypeId: payload.type as any,
+      coordinates: { x: topLeftX, y: topLeftY },
       size: payload.size,
-      rotation: 0,
+      rotation: finalRotation,
       state: 'active'
     };
 
@@ -74,6 +166,19 @@ export default class SceneManager {
     }
 
     this.transientVisuals.set(`vfx_${state.id}`, transientData);
+
+    if (this.isDebugMode) {
+        let anchor: any = 'center';
+        let rotationOffset: number = 0;
+        if (this.renderer instanceof WebGPURenderer) {
+            const config = this.renderer.getSpriteConfig(state.entityTypeId, state.state);
+            if (config) { anchor = config.anchor; rotationOffset = config.rotationOffset || 0; }
+        } else if (transientData.renderable) {
+            const config = (transientData.renderable as any).config;
+            if (config) { anchor = config.anchor; rotationOffset = config.rotationOffset || 0; }
+        }
+        this.debugRenderables.set(`vfx_${state.id}_debug`, new DebugRectangle(state.id, state, anchor, rotationOffset));
+    }
   }
 
   /** Compara o estado do domínio com os objetos visuais, criando/atualizando-os. */
@@ -134,7 +239,10 @@ export default class SceneManager {
     }
     if (this.isDebugMode) {
       for (const id of this.debugRenderables.keys()) {
-        if (!this.activeDebugIds.has(id)) this.debugRenderables.delete(id);
+        // Protege os nós de debug transitórios de serem coletados, já que não estão no `activeDebugIds`
+        if (!id.toString().startsWith('vfx_') && !this.activeDebugIds.has(id)) {
+            this.debugRenderables.delete(id);
+        }
       }
     }
   }

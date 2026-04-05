@@ -87,8 +87,8 @@ export default abstract class Entity extends ObjectElement {
   }
 
   protected disperseFrom(otherElement: ObjectElement) {
-    const dX = this.coordinates.x - otherElement.coordinates.x
-    const dY = this.coordinates.y - otherElement.coordinates.y
+    const dX = (this.coordinates.x + this.size.width / 2) - (otherElement.coordinates.x + otherElement.size.width / 2);
+    const dY = (this.coordinates.y + this.size.height / 2) - (otherElement.coordinates.y + otherElement.size.height / 2);
 
     const disperseVector = new Vector2D(dX,dY).normalizeMut()
     this.velocity = disperseVector.clone().addMut(this.accelerator);
@@ -97,8 +97,8 @@ export default abstract class Entity extends ObjectElement {
   }
   /** * Calcula a distância euclidiana do centro desta entidade até o centro de outro elemento. * @param otherElement O outro elemento para o qual a distância será medida. * @returns A distância como um número. */
   public getDistanceTo(otherElement: ObjectElement): number {
-    const dx = this.coordinates.x - otherElement.coordinates.x;
-    const dy = this.coordinates.y - otherElement.coordinates.y;
+    const dx = (this.coordinates.x + this.size.width / 2) - (otherElement.coordinates.x + otherElement.size.width / 2);
+    const dy = (this.coordinates.y + this.size.height / 2) - (otherElement.coordinates.y + otherElement.size.height / 2);
     // Usa o Teorema de Pitágoras para encontrar a distância
     return Math.sqrt(dx * dx + dy * dy);
   }

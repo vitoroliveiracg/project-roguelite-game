@@ -15,6 +15,7 @@ export default class VisualComposer {
         'pants': 10,
         'boots': 20,
         'chestplate': 30,
+        'amulet': 32,
         'beard': 35,
         'helmet': 40,
         'gloves': 50,
@@ -25,7 +26,9 @@ export default class VisualComposer {
         const layers: VisualLayer[] = [{ id: state.entityTypeId, type: 'body' }];
 
         if (state.equipment) {
-            const armorSlots = ['chestplate', 'helmet', 'pants', 'boots', 'gloves'];
+            // Extraímos o Amuleto para pintar. 
+            // Ao NÃO colocar 'ring1', 'ring2', 'ring3' aqui, garantimos que eles fiquem invisíveis no corpo!
+            const armorSlots = ['chestplate', 'helmet', 'pants', 'boots', 'gloves', 'amulet'];
             for (const slot of armorSlots) {
                 const item = state.equipment[slot];
                 if (item && item.iconId !== undefined) {

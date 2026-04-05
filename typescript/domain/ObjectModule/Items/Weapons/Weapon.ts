@@ -13,6 +13,7 @@ export default abstract class Weapon extends Item {
   public unlocksClass?: string | undefined;
   public onHitActions: OnHitAction[] = []; // Permite injetar efeitos de impacto (ex: roubo de vida) na arma
   public projectileType?: objectTypeId;
+  public weaponType: string = 'melee'; // Campo discriminador para o DTO (UI e lógicas)
 
   constructor(
     public readonly baseDamage: number,

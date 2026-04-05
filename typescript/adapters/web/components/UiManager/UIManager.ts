@@ -4,6 +4,7 @@ import PlayerStatusGui from "../../GUIS/playerStatusHudModule/PlayerStatusGui";
 import CharacterMenuGui from "../../GUIS/characterMenuHudModule/CharacterMenuGui";
 import SkillTreeGui from "../../GUIS/skillTreeHudModule/SkillTreeGUI";
 import GameOverGui from "../../GUIS/gameoverHudModule/GameOverGui";
+import WeaponHudGui from "../../GUIS/weaponHudModule/WeaponHudGui";
 
 /** @class UIManager Gerencia todas as interfaces de usuário baseadas em DOM do jogo. */
 export default class UIManager {
@@ -12,6 +13,7 @@ export default class UIManager {
   private characterMenuGui: CharacterMenuGui;
   private skillTreeGui: SkillTreeGui;
   private gameOverGui: GameOverGui;
+  private weaponHudGui: WeaponHudGui;
 
   constructor(
     togglePauseCallback: () => void, 
@@ -24,6 +26,7 @@ export default class UIManager {
     this.characterMenuGui = new CharacterMenuGui(togglePauseCallback, equipItemCallback, unequipItemCallback, allocateAttributeCallback);
     this.skillTreeGui = new SkillTreeGui(togglePauseCallback, skillActionCallback);
     this.gameOverGui = new GameOverGui(restartCallback);
+    this.weaponHudGui = new WeaponHudGui();
   }
 
   public showGameOver(): void {
@@ -45,12 +48,13 @@ export default class UIManager {
   }
 
   /** Atualiza as GUIs com os dados mais recentes. */
-  public update(playerState: EntityRenderableState | undefined): void {
+  public update(playerState: EntityRenderableState | undefined, playerScreenPos?: {x: number, y: number}, mousePos?: {x: number, y: number}): void {
     if (playerState) {
       this.xpBarGui.update(playerState);
       this.playerStatusGUI.update(playerState)
       this.characterMenuGui.update(playerState);
       this.skillTreeGui.update(playerState);
+      this.weaponHudGui.update(playerState, playerScreenPos, mousePos);
     }
   }
 }

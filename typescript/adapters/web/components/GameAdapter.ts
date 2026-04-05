@@ -112,16 +112,24 @@ export default class GameAdapter {
       this.uiManager.toggleSkillTree();
     }
 
+    const mousePos = this.inputGateway.inputManager.mouseLastCoordinates;
+    const mouseWorldPos = this.screenToWorld(mousePos.x, mousePos.y);
+
     if (!this.isPaused) {
       this.handlePlayerInteractions();
       this.domain.update(deltaTime);
-      this.sceneManager.updateAnimations(deltaTime);
+      this.sceneManager.updateAnimations(deltaTime, mouseWorldPos);
     }
 
     this.syncScene();
 
     const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
-    this.uiManager.update(playerState);
+    
+    let playerScreenPos = { x: 0, y: 0 };
+    if (playerState) {
+        playerScreenPos = this.worldToScreen(playerState.coordinates.x + playerState.size.width / 2, playerState.coordinates.y + playerState.size.height / 2);
+    }
+    this.uiManager.update(playerState, playerScreenPos, mousePos);
   }
 
   /** Fase de Desenho: Função final do ciclo de vida, chamada a cada frame após o `update` para delegar a responsabilidade de desenhar o frame atual para o `Renderer`. */
@@ -242,5 +250,26 @@ export default class GameAdapter {
     const clampedCamY = Math.max(0, Math.min(camY, world.height - viewHeight));
     
     return { x: (screenX / zoom) + clampedCamX, y: (screenY / zoom) + clampedCamY };
+  }
+
+  private worldToScreen(worldX: number, worldY: number): { x: number, y: number } {
+    const zoom = this.camera.zoom;
+    const { world } = this.domain.getRenderState();
+    const playerRenderable = this.sceneManager.renderables.get(1);
+
+    const target = playerRenderable 
+        ? { coordinates: playerRenderable.coordinates, size: playerRenderable.size }
+        : { coordinates: { x: 0, y: 0 }, size: { width: 0, height: 0 } };
+
+    const viewWidth = this.renderer.canvas.element.width / zoom;
+    const viewHeight = this.renderer.canvas.element.height / zoom;
+
+    const camX = (target.coordinates.x + target.size.width / 2) - viewWidth / 2;
+    const camY = (target.coordinates.y + target.size.height / 2) - viewHeight / 2;
+
+    const clampedCamX = Math.max(0, Math.min(camX, world.width - viewWidth));
+    const clampedCamY = Math.max(0, Math.min(camY, world.height - viewHeight));
+    
+    return { x: (worldX - clampedCamX) * zoom, y: (worldY - clampedCamY) * zoom };
   }
 }

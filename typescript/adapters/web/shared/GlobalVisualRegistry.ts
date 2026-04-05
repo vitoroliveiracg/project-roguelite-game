@@ -51,47 +51,90 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
         category: 'equipment',
         iconId: 10, // Liga ao iconId: 10 do Domínio
         uiIconUrl: new URL('../assets/itens/capacete-simples.png', import.meta.url).href,
-        droppedConfig: { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        droppedConfig: { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, 
+        frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, 
+        atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
         animations: {
-            'idle': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 0 }, { x: 5, y: 1 }] },
+            'idle': { 
+                imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, 
+                frameCount: 1, 
+                animationSpeed: 20, 
+                frameWidth: 22, 
+                frameHeight: 16, 
+                atlasOffset: { x: 0, y: 0 }, 
+                spriteSize: { width: 22, height: 16 }, 
+                renderOffset: [{ x: 5, y: 0 }, { x: 5, y: 1 }] 
+            },
             'walking': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 0 }, { x: 5, y: 1 }] },
             'dead': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 0 }, { x: 5, y: 1 }] }
         }
     },
     'iron-chestplate': {
         category: 'equipment', iconId: 11,
-        uiIconUrl: new URL('../assets/itens/capacete-simples.png', import.meta.url).href,
-        droppedConfig: { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        uiIconUrl: new URL('../assets/itens/peitoral-de-ferro.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/peitoral-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 18, frameHeight: 10, atlasOffset: { x: 7, y: 17 }, 
+        spriteSize: { width: 18, height: 10 } },
         animations: {
-            'idle': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 8 }, { x: 5, y: 9 }] },
-            'walking': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 8 }, { x: 5, y: 9 }] },
+            'idle': { imageSrc: new URL('../assets/itens/peitoral-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 18, frameHeight: 10, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 18, height: 10 }, renderOffset: [{ x: 7, y: 17 }, { x: 7, y: 17 }] },
+            'walking': { imageSrc: new URL('../assets/itens/peitoral-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 18, frameHeight: 10, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 18, height: 10 }, 
+            renderOffset: [{ x: 7, y: 17 }, { x: 7, y: 18 }] },
         }
     },
     'iron-pants': {
         category: 'equipment', iconId: 12,
-        uiIconUrl: new URL('../assets/itens/capacete-simples.png', import.meta.url).href,
-        droppedConfig: { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        uiIconUrl: new URL('../assets/itens/calça-de-ferro.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/calça-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 10, frameHeight: 3, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 10, height: 3 } },
         animations: {
-            'idle': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 16 }, { x: 5, y: 17 }] },
-            'walking': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 16 }, { x: 5, y: 17 }] },
+            'idle': { 
+                imageSrc: new URL('../assets/itens/calça-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 10, frameHeight: 3, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 10, height: 3 }, 
+                renderOffset: [{ x: 11, y: 27 }, { x: 11, y: 27 }] 
+            },
+            'walking': { 
+                imageSrc: new URL('../assets/itens/calça-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 10, frameHeight: 3, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 10, height: 3 }, 
+                renderOffset: [{ x: 11, y: 27 }, { x: 11, y: 27 }] 
+            },
         }
     },
     'iron-boots': {
         category: 'equipment', iconId: 13,
-        uiIconUrl: new URL('../assets/itens/capacete-simples.png', import.meta.url).href,
-        droppedConfig: { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        uiIconUrl: new URL('../assets/itens/botas-de-ferro.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/botas-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 10, frameHeight: 2, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 10, height: 2 } },
         animations: {
-            'idle': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 24 }, { x: 5, y: 25 }] },
-            'walking': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 5, y: 24 }, { x: 5, y: 25 }] },
+            'idle': { imageSrc: new URL('../assets/itens/botas-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 10, frameHeight: 2, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 10, height: 2 }, renderOffset: [{ x: 11, y: 31 }, { x: 11, y: 31 }] },
+            'walking': { imageSrc: new URL('../assets/itens/botas-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 10, frameHeight: 2, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 11, y: 31 }, { x: 11, y: 31 }] },
         }
     },
     'iron-gloves': {
         category: 'equipment', iconId: 14,
-        uiIconUrl: new URL('../assets/itens/capacete-simples.png', import.meta.url).href,
-        droppedConfig: { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        uiIconUrl: new URL('../assets/itens/luvas-de-ferro.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/luvas-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 18, frameHeight: 10, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 18, height: 10 } },
         animations: {
-            'idle': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 0, y: 12 }, { x: 0, y: 13 }] },
-            'walking': { imageSrc: new URL('../assets/itens/capacete-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 22, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 22, height: 16 }, renderOffset: [{ x: 0, y: 12 }, { x: 0, y: 13 }] },
+            'idle': { imageSrc: new URL('../assets/itens/luvas-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 18, frameHeight: 10, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 18, height: 10 }, 
+            renderOffset: [{ x:7 , y: 18 }, { x: 7, y: 19 }] },
+            'walking': { 
+                imageSrc: new URL('../assets/itens/luvas-de-ferro.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 18, frameHeight: 10, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 18, height: 10 }, 
+                renderOffset: [{ x:7 , y: 18 }, { x: 7, y: 19 }] 
+            },
+        }
+    },
+    'simple-amulet': {
+        category: 'equipment', iconId: 15,
+        uiIconUrl: new URL('../assets/itens/nackless-simples.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/nackless-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 } },
+        animations: {
+            'idle': { imageSrc: new URL('../assets/itens/nackless-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 16, height: 16 }, 
+            renderOffset: [{ x: 8, y: 17 }, { x: 8, y: 18 }] },
+            'walking': { imageSrc: new URL('../assets/itens/nackless-simples.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 16, height: 16 }, 
+            renderOffset: [{ x: 8, y: 17 }, { x: 8, y: 18 }] },
+        }
+    },
+    'simple-ring': {
+        category: 'equipment', iconId: 16,
+        uiIconUrl: new URL('../assets/itens/simple-ring.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 } },
+        animations: {
+            'idle': { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 16, height: 16 }, renderOffset: [{ x: 0, y: 0 }, { x: 0, y: 0 }] },
+            'walking': { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 16, height: 16 }, renderOffset: [{ x: 0, y: 0 }, { x: 0, y: 0 }] },
         }
     },
     'staff': {
@@ -112,6 +155,12 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
         droppedConfig: { imageSrc: new URL('../assets/itens/scythe-design-1.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
         animations: {}
     },
+    'simple-sword': {
+        category: 'weapon', iconId: 4,
+        uiIconUrl: new URL('../assets/itens/simple-sword.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/simple-sword.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
 
     // ================== PROJÉTEIS & VFX ==================
     'simpleBullet': {
@@ -128,10 +177,32 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
     },
     'fireball': {
         category: 'projectile',
-        animations: { 'travelling': { imageSrc: new URL('../assets/entities/firebola.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } } }
+        animations: { 
+            'travelling': { 
+                imageSrc: new URL('../assets/entities/firebola.png', import.meta.url).href, 
+                frameCount: 1, animationSpeed: 10, 
+                frameWidth: 16, frameHeight: 16, 
+                atlasOffset: { x: 0, y: 32 }, 
+                spriteSize: { width: 16, height: 16 }
+             } 
+        }
     },
     'explosion': {
         category: 'vfx',
         animations: { 'active': { imageSrc: new URL('../assets/entities/explosion.png', import.meta.url).href, frameCount: 16, animationSpeed: 1, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 128, height: 128 } } }
+    },
+    'slash' :{
+        category: 'vfx',
+        animations: {
+            'active': { 
+                imageSrc: new URL('../assets/entities/sword-atack-spritesheet.png', import.meta.url).href, 
+                frameCount: 6, animationSpeed: 3,
+                frameWidth: 64, frameHeight: 64,
+                atlasOffset: { x: 0, y: 0 },
+                spriteSize: { width: 64, height: 64 },
+                rotationOffset: Math.PI / 4,
+                anchor: 'bottom-left'
+            }
+        }
     }
 };

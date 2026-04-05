@@ -46,9 +46,14 @@ export default abstract class RangedWeapon extends Weapon {
     const weaponAttack = new Attack(attacker, baseDamage, 'physical', this.onHitActions);
     const projType = this.projectileType || 'simpleBullet';
     
+    const spawnCoordinates = {
+        x: attacker.coordinates.x + attacker.size.width / 2,
+        y: attacker.coordinates.y + attacker.size.height / 2
+    };
+
     eventManager.dispatch('spawn', {
       type: projType,
-      coordinates: { ...attacker.coordinates },
+      coordinates: spawnCoordinates,
       direction: direction.clone().normalizeMut(),
       attack: weaponAttack
     });

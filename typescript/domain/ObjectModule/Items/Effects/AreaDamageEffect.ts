@@ -2,6 +2,7 @@ import Effect from "./Effect";
 import type Entity from "../../Entities/Entity";
 import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import type Attack from "../Attack";
+import Vector2D from "../../../shared/Vector2D";
 
 export default class AreaDamageEffect extends Effect {
     constructor(
@@ -19,8 +20,10 @@ export default class AreaDamageEffect extends Effect {
             callback: (neighbors) => {
                 neighbors.forEach(neighbor => {
                     if (neighbor !== target && 'takeDamage' in neighbor && neighbor.id !== this.originalAttack.attacker.id) {
-                        const splashDamage = Math.floor(this.originalAttack.attacker.attributes.splashDamage || 5);
-                        (neighbor as Entity).takeDamage({ totalDamage: splashDamage, damageType: 'magical', isCritical: false, direction: { x: 0, y: 0 } as any, attacker: this.originalAttack.attacker });
+                        // A explosão agora causa muito dano, escalando com a Inteligência do mago + bônus de Splash!
+                        const baseMagicalDamage = this.originalAttack.attacker.attributes.intelligence * 1.5;
+                        const splashDamage = Math.floor(baseMagicalDamage + (this.originalAttack.attacker.attributes.splashDamage || 0));
+                                (neighbor as Entity).takeDamage({ totalDamage: splashDamage || 10, damageType: 'magical', isCritical: false, direction: new Vector2D(0, 0), attacker: this.originalAttack.attacker });
                     }
                 });
             }

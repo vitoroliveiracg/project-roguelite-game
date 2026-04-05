@@ -52,11 +52,26 @@ export default class LayeredGameObjectElement extends GameObjectElement {
         }
 
         ctx.save();
-        const centerX = this.coordinates.x + this.size.width / 2;
-        const centerY = this.coordinates.y + this.size.height / 2;
-        ctx.translate(centerX, centerY);
-        ctx.rotate(this.rotation);
-        ctx.translate(-centerX, -centerY);
+        const baseConfig = this.composedLayers[0]!.config;
+        let pivotX = this.coordinates.x + this.size.width / 2;
+        let pivotY = this.coordinates.y + this.size.height / 2;
+
+        if (baseConfig.anchor) {
+            switch(baseConfig.anchor) {
+                case 'bottom-left': pivotX = this.coordinates.x; pivotY = this.coordinates.y + this.size.height; break;
+                case 'bottom-right': pivotX = this.coordinates.x + this.size.width; pivotY = this.coordinates.y + this.size.height; break;
+                case 'top-left': pivotX = this.coordinates.x; pivotY = this.coordinates.y; break;
+                case 'top-right': pivotX = this.coordinates.x + this.size.width; pivotY = this.coordinates.y; break;
+                case 'center-left': pivotX = this.coordinates.x; pivotY = this.coordinates.y + this.size.height / 2; break;
+                case 'center-right': pivotX = this.coordinates.x + this.size.width; pivotY = this.coordinates.y + this.size.height / 2; break;
+                case 'top-center': pivotX = this.coordinates.x + this.size.width / 2; pivotY = this.coordinates.y; break;
+                case 'bottom-center': pivotX = this.coordinates.x + this.size.width / 2; pivotY = this.coordinates.y + this.size.height; break;
+            }
+        }
+
+        ctx.translate(pivotX, pivotY);
+        ctx.rotate(this.rotation + (baseConfig.rotationOffset || 0));
+        ctx.translate(-pivotX, -pivotY);
 
         this.updateAnimation();
         ctx.imageSmoothingEnabled = false;

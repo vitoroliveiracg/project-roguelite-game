@@ -34,8 +34,8 @@ export default class Slime extends Enemy {
 
   public update(deltaTime: number, player?: any): void {
     if (player) {
-      this.lastPlayerPos.x = player.coordinates.x;
-      this.lastPlayerPos.y = player.coordinates.y;
+      this.lastPlayerPos.x = player.coordinates.x + player.size.width / 2;
+      this.lastPlayerPos.y = player.coordinates.y + player.size.height / 2;
     }
 
     this.hitboxes?.forEach(hb => hb.update(
@@ -73,8 +73,8 @@ export default class Slime extends Enemy {
   
     //* 1. Define linha reta até a última posição conhecida do jogador.
     const primaryDirection = new Vector2D(
-      this.lastPlayerPos.x - this.coordinates.x,
-      this.lastPlayerPos.y - this.coordinates.y
+      this.lastPlayerPos.x - (this.coordinates.x + this.size.width / 2),
+      this.lastPlayerPos.y - (this.coordinates.y + this.size.height / 2)
     ).normalizeMut();
   
     //* 2. Verifica se vai colidir

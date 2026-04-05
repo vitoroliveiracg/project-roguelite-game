@@ -86,6 +86,8 @@ export class SimpleBullet extends Bullet {
     }
 
     private generateRandomNoiseAccelerator(): void {
+        if (this.objectId !== 'simpleBullet') return; // Magias e foices devem ir sempre em linha reta!
+
         let lateral_noise_factor = 0.1
         const normalizedDirection = this.direction.clone().normalizeMut();
         
@@ -110,6 +112,11 @@ export class SimpleBullet extends Bullet {
         let size = { width: 8, height: 8 };
         if (payload.type === 'scytheProjectile') size = { width: 24, height: 24 };
         if (payload.type === 'magicMissile') size = { width: 12, height: 12 };
-        return new SimpleBullet(id, payload.coordinates, payload.direction!, payload.attack!, eventManager, 'travelling', payload.type, size);
+        
+        const centeredCoordinates = {
+            x: payload.coordinates.x - size.width / 2,
+            y: payload.coordinates.y - size.height / 2
+        };
+        return new SimpleBullet(id, centeredCoordinates, payload.direction!, payload.attack!, eventManager, 'travelling', payload.type, size);
     }
 }

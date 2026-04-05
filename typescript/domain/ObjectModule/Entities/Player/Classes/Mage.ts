@@ -67,6 +67,11 @@ export default class Mage extends Class {
         const sequence = this.spellBuffer.join(',');
         const direction = this.player.facingDirection.clone();
 
+        const spawnCoordinates = {
+            x: this.player.coordinates.x + this.player.size.width / 2,
+            y: this.player.coordinates.y + this.player.size.height / 2
+        };
+
         if (sequence === 'spell_0,spell_4') { //?fireball
             if(this.player.attributes.mana < 5) return false;
 
@@ -75,7 +80,7 @@ export default class Mage extends Class {
             const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
             this.eventManager.dispatch('spawn', {
                 type: 'fireball',
-                coordinates: { ...this.player.coordinates },
+                coordinates: spawnCoordinates,
                 direction: direction,
                 attack: playerAttack
             });
@@ -87,7 +92,7 @@ export default class Mage extends Class {
             const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
             this.eventManager.dispatch('spawn', {
                 type: 'magicMissile',
-                coordinates: { ...this.player.coordinates },
+                coordinates: spawnCoordinates,
                 direction: direction,
                 attack: playerAttack
             });

@@ -39,13 +39,14 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       - **Atualização de Estado:** Itera sobre todos os elementos a cada frame, chamando seus respectivos métodos `update`.
       - **Detecção de Colisão Otimizada e Zero-GC:** Delega a colisão para a Porta Secundária `ICollisionService` utilizando buffers contíguos de memória (`Float32Array`), abolindo a alocação de objetos descartáveis. A resolução ocorre em um modelo de **Física Atrasada (Delayed Resolution)**: envia-se os dados em um frame e as reações são aplicadas no início do frame seguinte, impedindo gargalos assíncronos no Game Loop.
       Ele efetivamente desacopla a `DomainFacade` da complexidade de gerenciar uma coleção massiva e mutável de objetos.
+      - **Query Espacial Otimizada (`requestNeighbors`):** Implementa busca de vizinhança usando Teorema de Pitágoras (Distância Euclidiana via `Math.hypot`), permitindo varreduras a partir de entidades ou de pontos arbitrários no espaço (útil para magias de área como meteoros e explosões procedurais).
     - **`objectType.type.ts`**: Um arquivo de tipo (`type`) que define uma união de strings literais (`'player' | 'slime' | ...`). Ele fornece uma maneira centralizada e com segurança de tipo (type-safe) para identificar os diferentes tipos de `ObjectElement` no jogo. Isso é crucial para a `RenderableFactory` na camada de adaptação, que o utiliza para decidir qual sprite ou animação carregar para cada entidade.
     - **`Entities/`**: Contém as classes que representam seres "vivos" ou com comportamento autônomo no jogo.
       - **`Entity.ts`**: Uma classe abstrata fundamental que herda de `ObjectElement`. Ela adiciona o conceito de "vida" e "movimento" a um objeto. Suas responsabilidades incluem: gerenciar `velocity` e `direction` (usando `Vector2D`), aplicar dano (`takeDamage`), e definir um contrato `update(deltaTime)` que força subclasses (como `Player` e `Slime`) a implementar sua própria lógica de comportamento a cada frame.
       - **`Attributes.ts`**: Uma classe complexa e central que encapsula **toda** a lógica de atributos de uma entidade. Ela gerencia os 6 atributos primários (força, destreza, etc.) e calcula uma vasta gama de atributos secundários derivados (dano crítico, velocidade, regeneração de HP/Mana, etc.). Também contém a lógica para ganho de experiência (`addXp`) e progressão de nível. É um componente puramente de dados e regras, sem conhecimento de sua posição no mundo.
       - **`IXPTable.ts`**: Uma interface simples que define o contrato para uma "curva de experiência". Ao desacoplar a lógica de `addXp` da `Attributes` dos valores concretos, ela permite que diferentes tipos de entidades (ou o jogo em diferentes dificuldades) progridam em ritmos distintos, simplesmente fornecendo uma implementação diferente desta interface.
       - **`Player/`**: Contém a lógica específica da entidade do jogador.
-        - **`Player.ts`**: A implementação concreta do jogador. Graças às refatorações recentes, deixou de ser uma "God Class": agora delega o disparo de tiros diretamente para a `Weapon` equipada e a conjuração de magias para a `Class` ativa (ex: `Mage`). Gerencia sua própria mochila (`backpack`) e se auto-inscreve nos eventos de input via Decorators.
+        - **`Player.ts`**: A implementação concreta do jogador. Graças às refatorações recentes, deixou de ser uma "God Class": agora delega o disparo de tiros diretamente para a `Weapon` equipada e a conjuração de magias para a `Class` ativa (ex: `Mage`). Gerencia sua própria mochila (`backpack`), se auto-inscreve nos eventos de input via Decorators e implementa lógicas de "Quality of Life" (QoL), como o bloqueio de auto-fire contínuo se a arma equipada for corpo-a-corpo (`melee`).
         - **`Classes/Class.ts`**: Classe abstrata de Profissão/Classe. Gerencia habilidades (`Skill`) in-game (temporárias da run, aplicando Passivas instantaneamente ao liberar) e intercepta inputs (como atalhos de magias) graças ao sistema de rotas dinâmicas da sua filha.
         - **`Classes/DefaultXPTable.ts`**: Implementa a interface `IXPTable`, gerenciando recompensas em determinados níveis (como ganho de atributos e espaços de habilidade).
       - **`Enemies/`**: Contém a hierarquia de classes para inimigos.
@@ -111,26 +112,28 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
   - **`Game.ts`:** Um utilitário simples que abstrai a API `requestAnimationFrame` do navegador para criar um game loop clássico.
     - **Coesão:** **Altíssima (Coesão Funcional)**. Sua única e exclusiva responsabilidade é executar um loop contínuo, calcular o `deltaTime` entre os frames e invocar os callbacks de `update` e `draw` que lhe foram fornecidos. Ele é completamente agnóstico ao que essas funções fazem, tornando-o um componente genérico, reutilizável e extremamente focado.
 
-  - **`SceneManager.ts`:** Gerencia a sincronização entre DTOs e entidades gráficas na tela. Agora suporta perfeitamente os **Efeitos Visuais Transientes (VFX)**: instâncias gráficas (como explosões) desenhadas sem existir na árvore física do Domínio, que desaparecem sozinhas após o tempo sem invocar o Garbage Collector da física.
+  - **`SceneManager.ts`:** Gerencia a sincronização entre DTOs e entidades gráficas na tela. Agora suporta perfeitamente os **Efeitos Visuais Transientes (VFX)**: instâncias gráficas (como explosões) desenhadas sem existir na árvore física do Domínio. Possui um sistema de **Snap Magnético** que atrela e rastreia a origem de golpes (ex: espadas e foices) diretamente no corpo de quem ataca e apontando para o mouse fluidamente, lidando com os diferenciais da álgebra linear do WebGPU e do Canvas 2D.
 
-  - **`UIManager.ts` e `GUIS/`:** Gerencia todas as interfaces DOM (HTML/CSS) sobrepostas ao canvas, como Barra de XP, Menu de Inventário, Menu de Status e Árvore de Habilidades, ouvindo o estado do jogador no domínio e respondendo com os botões e interações visuais.
+  - **`UIManager.ts` e `GUIS/`:** Gerencia todas as interfaces DOM (HTML/CSS) sobrepostas ao canvas. Atualmente orquestra de forma modular o `PlayerStatusGui` (HP/Mana), `XpBarGui`, `CharacterMenuGui` (Status e Inventário estilo "Paper Doll"), `SkillTreeGui`, `WeaponHudGui` (Rastreamento dinâmico da mira da arma em volta do jogador) e `GameOverGui`. Ouve o estado do jogador no domínio e sincroniza os dados visualmente a cada frame.
 
   - **`InputGateway.ts` e `InputManager.ts`:** Gerenciam a entrada de hardware. Diferencia atalhos de Numpad dos atalhos numéricos comuns de teclado, suporta array de binds e executa conversão de mouse screen-to-world perfeitamente, deixando o GameAdapter enxuto.
 
   #### renderModule (A Nova Engine Visual Data-Driven)
 
-    O módulo de renderização foi reestruturado para separar claramente a mecânica, a orquestração e a arte, abolindo a necessidade de criar classes repetitivas para cada entidade do jogo.
+    O módulo de renderização foi reestruturado para suportar WebGPU nativamente e separar claramente a mecânica, a orquestração e a arte, abolindo a necessidade de criar classes repetitivas para cada entidade do jogo através de um sistema guiado a dados (Data-Driven).
 
-    - **`engine/`**: O maquinário de baixo nível que conversa com as APIs do navegador. Contém `IRenderer.ts`, `Renderer.ts` (Canvas 2D), `WebGPURenderer.ts` e `Canvas.ts`. Totalmente agnóstico à lógica do jogo.
+    - **`engine/`**: O maquinário de baixo nível que conversa com as APIs do navegador. Contém `Renderer.ts` (Canvas 2D) e o avançado `WebGPURenderer.ts` (que utiliza *Instanced Rendering*, shaders em WGSL e um *Texture Atlas* global para desenhar centenas de objetos em uma única chamada de vídeo, garantindo os 60 FPS no Bullet Hell).
     - **`scene/`**: Os diretores e orquestradores do palco. Contém o `SceneManager.ts` (sincroniza os DTOs com a tela), a `RenderableFactory.ts` (fábrica inteligente), `Camera.ts` e `Map.ts`.
-    - **`visuals/`**: Os blocos construtores de arte e animação. Contém `GameObjectElement.ts` (renderizador procedural Data-Driven que lê do VisualConfigMap), `LayeredGameObjectElement.ts` (compositor de "Lego" visual para equipamentos), `VisualComposer.ts` (regras de Z-Index) e `AnimationManager.ts`.
+    - **`visuals/`**: Os blocos construtores de arte e animação. Contém `GameObjectElement.ts` (renderizador procedural Data-Driven), `LayeredGameObjectElement.ts` (desenha múltiplos sprites sobrepostos acompanhando os offsets de animação) e `VisualComposer.ts` (um poderoso motor de regras que calcula o Z-Index dinâmico de equipamentos, sabendo por exemplo que uma "barba" deve cobrir um "peitoral").
     - **`customRenderables/`**: Exceções que possuem lógica de pintura exclusiva e manual. Contém `Player.ts` (que aplica a ordem Z-Index de equipamentos) e `CircleForm.ts` (desenha linhas vetoriais ao invés de texturas de imagem).
 
+  - **`shared/RenderRegistry.ts` (Decorators e Auto-Descoberta):** O sistema central que utiliza decoradores (`@RegisterRenderer`) para registrar automaticamente estratégias de instigação de classes e mapear animações. Isso permite plugar novas representações visuais na engine sem nunca alterar o código da `RenderableFactory`.
   - **`shared/VisualConfigMap.ts` (O Coração Data-Driven):** Um dicionário estático imutável que mapeia os identificadores do domínio (ex: `'slime'`, `'iron-helmet'`) para suas configurações visuais exatas (URLs de imagens, tamanho dos frames, velocidade da animação, offsets de renderização). É ele quem permite que novas entidades, itens e magias sejam criados **sem escrever nenhuma nova classe na camada web**.
 
   #### keyboardModule
 
     - **`InputManager.ts`:** O adaptador de entrada do jogo. Sua responsabilidade é capturar todos os eventos brutos de hardware (teclado e mouse) e traduzi-los em um conjunto de `GameAction`s lógicas e abstratas (ex: 'move_up', 'mouse_left'). Ele carrega um mapa de teclas de um arquivo de configuração (`keymap.json`), permitindo fácil customização e remapeamento em tempo de execução.
+      Ele suporta a diferenciação vital entre ações contínuas (segurar o botão via `isActionActive`) e ações discretas (cliques de "consumo único" via `consumeAction`), garantindo um *Game Feel* responsivo para armas de fogo versus ataques pesados ou menus.
     - **Coesão:** **Altíssima (Coesão Funcional).** A classe é um tradutor puro. Ela não sabe o que é um "jogador" ou o que acontece quando a ação 'move_up' é ativada. Sua única função é gerenciar o estado das teclas pressionadas e fornecer uma API simples (`isActionActive`) para o `GameAdapter` consultar. Isso desacopla completamente o resto da camada de adaptação dos detalhes específicos de hardware.
 
 ### O Logger (Porta e Adaptador Secundário)
@@ -217,17 +220,17 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   Ele envia essa lista de dados para o `ICollisionService`.
 
   3.  **Processamento Otimizado (Camada de Adaptação - `CollisionAdapter`):**
-      -   O Adaptador utiliza a API `Worker` para paralelizar as tarefas de matemática intensiva (Quadtree). Otimizações futuras neste ponto envolvem utilizar `SharedArrayBuffer` para abolir o gargalo temporal da serialização.
+      -   O Adaptador utiliza a API `Worker` para paralelizar as tarefas de matemática intensiva (Quadtree) sem bloquear a thread principal ("Fogo e Esquece"). Otimizações futuras neste ponto envolvem utilizar `SharedArrayBuffer` para abolir de vez a latência da cópia do Buffer.
       -   O worker recebe os dados.
       -   Ele constrói uma `Quadtree` para otimizar a busca por colisões.
       -   Ele itera sobre os elementos, usando a `Quadtree` para encontrar pares potenciais.
       -   Para cada par, ele executa a lógica matemática para verificar se suas hitboxes se intersectam.
-      -   Ao final, ele envia de volta para a thread principal uma lista contendo apenas os **IDs** dos pares que colidiram (ex: `[[1, 101], [102, 103]]`).
+      -   Ao final, ele envia de volta para a thread principal um array linear (`Int32Array`) contendo apenas os **IDs** dos pares que colidiram (ex: `[1, 101, 102, 103]`).
 
-  4.  **Reação na Thread Principal (`ObjectElementManager.onmessage`):**
-      -   O `ObjectElementManager` recebe a lista de pares de IDs do worker.
-      -   Para cada par `[idA, idB]`, ele usa o array original de elementos para encontrar as **instâncias de classe completas** correspondentes a esses IDs.
-      -   Com as instâncias reais em mãos, ele finalmente invoca os callbacks `onColision` de suas hitboxes: `elementA.hitboxes[0].onColision(elementB)` e vice-versa.
+  4.  **Resolução Atrasada (Thread Principal - `ObjectElementManager.updateAll`):**
+      -   O `ObjectElementManager` salva silenciosamente a resposta assíncrona do Worker em um buffer transitório (`pendingCollisions`).
+      -   No **início do frame seguinte**, antes de executar a lógica de movimentação, ele itera sobre os pares pendentes.
+      -   Ele busca as instâncias de classe correspondentes aos IDs e invoca os callbacks `onColision` de suas hitboxes: `elementA.hitboxes[0].onColision(elementB)` e vice-versa. Isso zera o bloqueio do Event Loop e garante o determinismo.
 
   5.  **Lógica de Negócio:**
       -   É aqui que a lógica de negócio acontece. Por exemplo:
@@ -281,7 +284,8 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   4.  **Execução do Movimento (Domain - `updateAll`):**
       -   No mesmo ciclo de jogo, o `ObjectElementManager.updateAll()` chama o método `update(deltaTime)` de cada `Slime`.
-      -   O `Slime.update()` dispara um evento `requestNeighbors` para obter uma lista de outros Slimes próximos. No callback desse evento, o método `moveSlime` é executado, que contém a IA de perseguição e desvio de obstáculos. Atualmente, a implementação do listener para `requestNeighbors` no `ObjectElementManager` está "stubada" e retorna uma lista vazia, mas a estrutura da IA do `Slime` está pronta para utilizar os vizinhos quando a funcionalidade for completada.
+      -   O `Slime.update()` dispara um evento `requestNeighbors` para obter uma lista de outros Slimes próximos.
+      -   O `ObjectElementManager` processa a *Spatial Query* através de Distância Euclidiana nativa e retorna o Array de alvos. No callback desse evento, o método `moveSlime` é executado contendo a IA real de perseguição e separação (flocking).
 
   5.  **Visualização (Adapter):**
       -   O fluxo segue o padrão: `syncRenderables` detecta a nova posição do `Slime`, atualiza o `GameObjectElement` correspondente, e o `Renderer` o desenha no novo local no próximo ciclo de `draw`.
