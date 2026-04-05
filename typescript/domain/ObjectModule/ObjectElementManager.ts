@@ -247,6 +247,7 @@ export default class ObjectElementManager {
       state.equipment = (element as any).equipment;
       state.hasBeard = (element as any).hasBeard;
       (state as any).facingDirection = (element as any).facingDirection;
+      state.spellElements = (element as any).spellElements;
       
       // Reciclando o Array de Hitboxes (Livre do Garbage Collector)
       if (!state.hitboxes) state.hitboxes = [];

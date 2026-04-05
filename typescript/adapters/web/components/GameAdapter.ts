@@ -169,7 +169,7 @@ export default class GameAdapter {
         .map(v => v.renderable)
         .filter((r): r is IRenderable => r !== undefined);
 
-      const allRenderables = [...this.sceneManager.renderables.values(), ...transientRenderables];
+      const allRenderables = [...this.sceneManager.renderables.values(), ...transientRenderables, this.sceneManager.particleOrchestrator];
       if (this.isDebugMode) allRenderables.push(...this.sceneManager.debugRenderables.values());
 
       // Passa a lista de objetos visuais (IRenderableObject) para o renderer antigo.
@@ -201,6 +201,22 @@ export default class GameAdapter {
 
     this.eventManager.on('spawnVisual', (payload) => {
       this.sceneManager.addVisualEffect(payload);
+    });
+
+    // Novo ouvinte mágico para o sistema de partículas semântico!
+    (this.eventManager as any).on('particle', (payload: { effect: string, x: number, y: number, color?: string, angle?: number }) => {
+      const orchestrator = this.sceneManager.particleOrchestrator as any;
+      if (orchestrator[payload.effect]) {
+          if (payload.effect === 'slashSparks') {
+              orchestrator.slashSparks(payload.x, payload.y, payload.angle || 0);
+          } else if (payload.effect === 'magicAura') {
+              orchestrator.magicAura(payload.x, payload.y, payload.color);
+          } else {
+              orchestrator[payload.effect](payload.x, payload.y);
+          }
+      } else {
+          logger.log('error', `Efeito de partícula desconhecido requisitado: ${payload.effect}`);
+      }
     });
   }
 

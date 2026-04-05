@@ -74,6 +74,9 @@ export interface EntityRenderableState extends BaseRenderableState {
   unlockedClasses?: string[];
   classes?: ClassDTO[];
   skillTree?: SkillNodeDTO[];
+  
+  /** Elementos mágicos embutidos na entidade para guiar o Motor de Partículas (O Lego Visual) */
+  spellElements?: string[];
 }
 
 /** Tipo união para todos os possíveis estados de objetos renderizáveis, permitindo que o sistema seja estendido com outros tipos (ex: partículas) no futuro. */

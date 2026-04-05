@@ -71,6 +71,16 @@ export default class Mage extends Class {
             x: this.player.coordinates.x + this.player.size.width / 2,
             y: this.player.coordinates.y + this.player.size.height / 2
         };
+        
+        // Dicionário Léxico de Elementos Básicos
+        const elementMap: Record<string, string> = {
+            'spell_4': 'fire',
+            'spell_5': 'water',
+            'spell_6': 'nature',
+            'spell_7': 'thunder',
+            'spell_8': 'light',
+            'spell_9': 'magic'
+        };
 
         if (sequence === 'spell_0,spell_4') { //?fireball
             if(this.player.attributes.mana < 5) return false;
@@ -98,6 +108,36 @@ export default class Mage extends Class {
             });
             this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Water Missile!`, params: [] });
             return true;
+        }
+        // REGRA GERAL (O Lego Visual): Se começou com "Projectile" (spell_0) e possui outros modificadores não catalogados
+        else if (this.spellBuffer[0] === 'spell_0' && this.spellBuffer.length > 1) {
+            const elements: string[] = [];
+            
+            // Coleta todas as essências invocadas na sintaxe do mago
+            for (let i = 1; i < this.spellBuffer.length; i++) {
+                const el = elementMap[this.spellBuffer[i]!];
+                if (el) elements.push(el);
+            }
+
+            if (elements.length > 0) {
+                const manaCost = 2 * elements.length;
+                if(this.player.attributes.mana < manaCost) return false;
+
+                this.player.attributes.mana -= manaCost;
+                const baseDamage = 10 + (10 * elements.length) + Math.floor(this.player.attributes.intelligence);
+                const playerAttack = new Attack(this.player, baseDamage, 'magical', []);
+                
+                this.eventManager.dispatch('spawn', {
+                    type: 'dynamicSpell' as any, // ID para a fábrica genérica
+                    coordinates: spawnCoordinates,
+                    direction: direction,
+                    attack: playerAttack,
+                    spellElements: elements
+                });
+                
+                this.eventManager.dispatch('log', { channel: 'domain', message: `Cast Dynamic Spell with elements: [${elements.join(', ')}]!`, params: [] });
+                return true;
+            }
         }
         return false;
     }

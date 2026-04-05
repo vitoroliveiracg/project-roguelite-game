@@ -7,6 +7,7 @@ import { AnimationManager } from "../visuals/AnimationManager";
 import WebGPURenderer from "../engine/WebGPURenderer";
 import { RenderRegistry } from "../../../shared/RenderRegistry";
 import type IRenderer from "../engine/IRenderer";
+import ParticleOrchestrator from "../particlesModule/ParticleOrchestrator";
 
 /** @class SceneManager Gerencia as instâncias visuais e a sincronização entre o estado do Domínio e as entidades gráficas na tela. */
 export default class SceneManager {
@@ -19,9 +20,12 @@ export default class SceneManager {
   
   public transientVisuals: Map<string, { state: EntityRenderableState, renderable?: IRenderableObject, animationManager?: AnimationManager, timeRemaining: number }> = new Map();
   private nextTransientId: number = -1;
+  
+  public particleOrchestrator: ParticleOrchestrator;
 
   constructor(private renderer: IRenderer<any>, private isDebugMode: boolean) {
     this.renderableFactory = new RenderableFactory();
+    this.particleOrchestrator = new ParticleOrchestrator();
   }
 
   public async initialize(): Promise<void> {
@@ -37,6 +41,8 @@ export default class SceneManager {
   }
 
   public updateAnimations(deltaTime: number, mouseWorldPos?: {x: number, y: number}): void {
+    this.particleOrchestrator.updateAnimations(deltaTime);
+
     for (const animManager of this.animationManagers.values()) {
       animManager.update(deltaTime);
     }
@@ -188,6 +194,13 @@ export default class SceneManager {
 
     for (const state of domainStates) {
       this.activeIds.add(state.id);
+      
+      // A MÁGICA: Emissão de Aura Contínua se o DTO tiver elementos dinâmicos
+      if (state.spellElements && state.spellElements.length > 0) {
+          const centerX = state.coordinates.x + state.size.width / 2;
+          const centerY = state.coordinates.y + state.size.height / 2;
+          this.particleOrchestrator.dynamicSpellTrail(centerX, centerY, state.spellElements);
+      }
 
       if (this.renderer instanceof WebGPURenderer) {
         if (this.animationManagers.has(state.id)) {

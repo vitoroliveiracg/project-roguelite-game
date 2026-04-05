@@ -187,6 +187,17 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
              } 
         }
     },
+    'dynamicSpell': {
+        category: 'projectile',
+        animations: { 
+            'travelling': { 
+                imageSrc: new URL('../assets/entities/projectile.png', import.meta.url).href, 
+                frameCount: 1, animationSpeed: 10, 
+                frameWidth: 16, frameHeight: 16, 
+                spriteSize: { width: 16, height: 16 }
+             } 
+        }
+    },
     'explosion': {
         category: 'vfx',
         animations: { 'active': { imageSrc: new URL('../assets/entities/explosion.png', import.meta.url).href, frameCount: 16, animationSpeed: 1, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 128, height: 128 } } }
