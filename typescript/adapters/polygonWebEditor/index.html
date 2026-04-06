@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitbox Editor Tool</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div id="toolbar">
+        <h2>Hitbox Editor</h2>
+        <div class="tool-group">
+            <button id="btn-load-image">📂 Carregar Sprite</button>
+            <input type="file" id="file-input" accept="image/png, image/jpeg" style="display: none;">
+        </div>
+        <div class="tool-group">
+            <button id="btn-tool-select" class="active">🖱️ Selecionar</button>
+            <button id="btn-tool-polygon">⬠ Criar Polígono</button>
+            <button id="btn-tool-circle">⭕ Criar Círculo</button>
+        </div>
+        <div class="tool-group">
+            <button id="btn-export" class="action-btn">💾 Exportar JSON</button>
+            <button id="btn-import" class="action-btn" style="background-color: #b8860b; border-color: #daa520; margin-top: 10px;">📂 Importar JSON</button>
+            <input type="file" id="file-import-input" accept="application/json" style="display: none;">
+            <button id="btn-clear" class="action-btn" style="background-color: #8b0000; border-color: #ff5555; margin-top: 10px;">🗑️ Limpar Todas</button>
+        </div>
+    </div>
+    <div id="canvas-container">
+        <canvas id="editor-canvas"></canvas>
+    </div>
+
+    <!-- Painel movido para fora do canvas, flutuando independente na tela -->
+    <div id="controls-help" class="closed">
+        <div id="controls-help-header">
+            <h3>Comandos</h3>
+            <button id="btn-toggle-help">▲</button>
+        </div>
+        <ul id="controls-help-body">
+            <li><b>🖱️ Esq:</b> Adicionar Ponto / Selecionar</li>
+            <li><b>🖱️ Dir:</b> Desfazer / Apagar</li>
+            <li><b>⌨️ Enter:</b> Finalizar Polígono</li>
+            <li><b>⌨️ Esc:</b> Cancelar</li>
+            <li><b>🖱️ Scroll:</b> Mover Verticalmente</li>
+            <li><b>Shift + Scroll:</b> Mover Horizontalmente</li>
+            <li><b>Ctrl + Scroll:</b> Zoom (Focado no Mouse)</li>
+            <li><b>⌨️ Shift + Delete:</b> Limpar Todas (Rápido)</li>
+            <li><b>⌨️ Ctrl + Z:</b> Desfazer (Undo)</li>
+            <li><b>⌨️ Ctrl + Y:</b> Refazer (Redo)</li>
+        </ul>
+    </div>
+
+    <script type="module" src="./EditorApp.ts"></script>
+</body>
+</html>

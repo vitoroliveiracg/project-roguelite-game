@@ -1,0 +1,104 @@
+body {
+    margin: 0; padding: 0; display: flex; height: 100vh;
+    background-color: #1e1e1e; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+#toolbar {
+    width: 250px; background-color: #2d2d2d; padding: 15px;
+    display: flex; flex-direction: column; gap: 15px;
+    border-right: 1px solid #111; z-index: 10;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+}
+
+h2 { margin: 0 0 10px 0; font-size: 18px; color: #55aaff; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+
+.tool-group { display: flex; flex-direction: column; gap: 8px; padding-bottom: 15px; border-bottom: 1px solid #444; }
+
+button {
+    background-color: #3d3d3d; color: #ccc; border: 1px solid #555;
+    padding: 10px; cursor: pointer; border-radius: 4px; transition: all 0.2s;
+    text-align: left; font-size: 14px; font-weight: 500;
+}
+
+button:hover { background-color: #4d4d4d; border-color: #888; color: #fff; }
+button.active { background-color: #2b4b6b; color: #fff; border-color: #55aaff; font-weight: bold; border-left: 4px solid #55aaff; }
+
+.action-btn { background-color: #2d5a2d; border-color: #4CAF50; color: #fff; text-align: center; }
+.action-btn:hover { background-color: #3d7a3d; }
+
+#canvas-container {
+    flex: 1; position: relative; overflow: hidden; /* Corta o que passar do zoom */
+    background-color: #111;
+    background-image: 
+        linear-gradient(45deg, #222 25%, transparent 25%), 
+        linear-gradient(-45deg, #222 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #222 75%), 
+        linear-gradient(-45deg, transparent 75%, #222 75%);
+    background-size: 20px 20px; 
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+canvas {
+    position: absolute;
+    top: 0; left: 0;
+    background-color: transparent; 
+    cursor: crosshair;
+    border: 1px solid #55aaff;
+}
+
+#controls-help {
+    position: fixed; bottom: 20px; right: 20px;
+    background-color: rgba(30, 30, 30, 0.85);
+    border: 1px solid #555; border-radius: 8px; overflow: hidden;
+    font-size: 13px; color: #ccc;
+    z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+}
+#controls-help-header {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(0,0,0,0.5); padding: 10px 15px; cursor: pointer;
+    user-select: none;
+}
+#controls-help-header h3 {
+    margin: 0; color: #55aaff; font-size: 16px;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+#btn-toggle-help {
+    background: none; border: none; color: #fff; cursor: pointer;
+    font-size: 12px; padding: 0; outline: none; margin-left: 20px;
+    transition: transform 0.3s;
+}
+#controls-help-body {
+    list-style: none; padding: 15px; margin: 0;
+    display: flex; flex-direction: column; gap: 8px;
+}
+
+/* Estilização agressiva para quando o painel for fechado (vira um botão circular) */
+#controls-help.closed {
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+#controls-help.closed #controls-help-header {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid #55aaff;
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    padding: 0; justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+#controls-help.closed #controls-help-header h3 {
+    display: none !important;
+}
+#controls-help.closed #btn-toggle-help {
+    margin-left: 0;
+    transform: rotate(180deg);
+    font-size: 16px;
+}
+#controls-help.closed #controls-help-body {
+    display: none !important;
+}
+#controls-help b { color: #fff; }

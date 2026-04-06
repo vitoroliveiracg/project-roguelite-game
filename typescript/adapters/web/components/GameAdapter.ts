@@ -15,6 +15,7 @@ import GameMap from "./renderModule/scene/Map";
 import SceneManager from "./renderModule/scene/SceneManager";
 import UIManager from "./UiManager/UIManager";
 import InputGateway from "./keyboardModule/InputGateway";
+import MainMenuGui from "../GUIS/mainMenuHudModule/MainMenuGui";
 import type IRenderable from "./renderModule/visuals/IRenderable";
 
 /** @class GameAdapter O "Adaptador" principal que conecta a lógica de domínio (`IGameDomain`) com as tecnologias da web (Canvas, Input, DOM), traduzindo eventos e dados entre as camadas e gerenciando o ciclo de vida dos componentes de apresentação. */
@@ -27,6 +28,7 @@ export default class GameAdapter {
   private sceneManager!: SceneManager;
   private uiManager!: UIManager;
   private inputGateway!: InputGateway;
+  private mainMenuGui!: MainMenuGui;
   
   /** @constructor @param domain Uma instância que implementa a interface do domínio. A injeção de dependência via interface permite que o Adapter seja agnóstico à implementação do domínio. */
   constructor(private domain: IGameDomain, private eventManager: IEventManager) {
@@ -38,10 +40,16 @@ export default class GameAdapter {
       if (this.sceneManager) this.sceneManager.setDebugMode(this.isDebugMode);
       console.log(`%c[Debug] %cModo de depuração de HitBoxes: ${this.isDebugMode ? 'ATIVADO' : 'DESATIVADO'}`, 'color: orange', 'color: white');
     };
+
+    // Expõe a função global para abrir o Hitbox Editor Tool
+    (window as any).openHitboxEditor = () => {
+      window.open('/typescript/adapters/polygonWebEditor/index.html', '_blank');
+      console.log('%c[Editor] %cHitbox Editor Tool aberto em uma nova aba.', 'color: #55aaff', 'color: white');
+    };
   }
 
 
-  private isPaused: boolean = false;
+  private isPaused: boolean = true; // Inicia pausado aguardando o Menu Principal
   public togglePauseGame = (): void => {
     this.isPaused = !this.isPaused;
     logger.log('init', `Game paused state: ${this.isPaused}`);
@@ -97,8 +105,13 @@ export default class GameAdapter {
 
     logger.log('init', 'All assets preloaded.');
     this.syncScene();
-    initializeGame(this.update.bind(this), this.draw.bind(this));
     
+    // O Jogo só começa quando o botão TELEtrans é clicado na aba do mapa!
+    this.mainMenuGui = new MainMenuGui((mapId) => {
+        logger.log('init', `Map selected: ${mapId}. Starting game loop...`);
+        this.isPaused = false; // Descongela a lógica
+        initializeGame(this.update.bind(this), this.draw.bind(this));
+    });
     window.dispatchEvent(new Event('resize'));
   }
 
