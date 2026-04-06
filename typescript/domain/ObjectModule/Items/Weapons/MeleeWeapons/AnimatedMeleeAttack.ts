@@ -33,7 +33,11 @@ export default abstract class AnimatedMeleeAttack extends ObjectElement {
     protected config: AnimatedAttackConfig;
 
     constructor(id: number, payload: any, eventManager: IEventManager, config: AnimatedAttackConfig) {
-        super({ width: config.width, height: config.height }, payload.coordinates, id, config.typeId as any, eventManager, 'active');
+        
+        // O Megabonk das Foices e Armas Animadas: Escala os sprites e as Hitboxes brutas!
+        const areaMult = payload.attack?.attacker?.attributes?.areaMultiplier || 1;
+        config.scale *= areaMult;
+        super({ width: config.width * areaMult, height: config.height * areaMult }, payload.coordinates, id, config.typeId as any, eventManager, 'active');
         
         this.config = config;
         this.attacker = payload.attacker;

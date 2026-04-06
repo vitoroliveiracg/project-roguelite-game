@@ -43,7 +43,7 @@ export class SimpleBullet extends Bullet {
             size.width / 2, //* radius
             (otherElement: ObjectElement) => {
 
-                if ('onStrike' in otherElement && otherElement.id !== attack.attacker.id) {
+                if ('takeDamage' in otherElement && otherElement.id !== attack.attacker.id) {
                     if (this.hitTargets.has(otherElement.id)) return; // Evita acertar o mesmo inimigo multiplas vezes no mesmo frame
                     
                     this.hitTargets.add(otherElement.id);
@@ -112,6 +112,9 @@ export class SimpleBullet extends Bullet {
         let size = { width: 8, height: 8 };
         if (payload.type === 'scytheProjectile') size = { width: 24, height: 24 };
         if (payload.type === 'magicMissile') size = { width: 12, height: 12 };
+        
+        const areaMult = payload.attack?.attacker?.attributes?.areaMultiplier || 1;
+        size = { width: size.width * areaMult, height: size.height * areaMult };
         
         const centeredCoordinates = {
             x: payload.coordinates.x - size.width / 2,

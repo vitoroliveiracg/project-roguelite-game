@@ -18,12 +18,13 @@ export default class UIManager {
   constructor(
     togglePauseCallback: () => void, 
     equipItemCallback: (index: number) => void,
-    unequipItemCallback: (slot: string) => void,
+    unequipItemCallback: (slot: string, index?: number) => void,
     skillActionCallback: (action: 'unlock' | 'changeClass', payload: any) => void,
     allocateAttributeCallback: (attribute: string) => void,
-    restartCallback: () => void
+    restartCallback: () => void,
+    deleteItemCallback: (index: number) => void = () => {}
   ) {
-    this.characterMenuGui = new CharacterMenuGui(togglePauseCallback, equipItemCallback, unequipItemCallback, allocateAttributeCallback);
+    this.characterMenuGui = new CharacterMenuGui(togglePauseCallback, equipItemCallback, unequipItemCallback, allocateAttributeCallback, deleteItemCallback);
     this.skillTreeGui = new SkillTreeGui(togglePauseCallback, skillActionCallback);
     this.gameOverGui = new GameOverGui(restartCallback);
     this.weaponHudGui = new WeaponHudGui();

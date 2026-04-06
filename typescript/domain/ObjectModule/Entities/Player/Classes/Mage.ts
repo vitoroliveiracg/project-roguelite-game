@@ -32,6 +32,7 @@ export default class Mage extends Class {
     @BindAction('spell_8')
     @BindAction('spell_9')
     public onSpellInput(mouseCoordinates: any, action: action) {
+        if (this.player.activeStatuses.has('stun') || this.player.activeStatuses.has('paralyze')) return; // Concentração quebrada!
         this.spellBuffer.push(action);
         
         // Trava de segurança: se passar de 9 teclas (overload de magia), a concentração quebra e o buffer limpa

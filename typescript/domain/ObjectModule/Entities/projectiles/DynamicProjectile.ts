@@ -6,6 +6,12 @@ import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import type ObjectElement from "../../ObjectElement";
 import { RegisterSpawner, type SpawnPayload } from "../../SpawnRegistry";
+import FireEffect from "../../Items/Effects/ElementalEffects/FireEffect";
+import WaterEffect from "../../Items/Effects/ElementalEffects/WaterEffect";
+import PoisonEffect from "../../Items/Effects/ElementalEffects/PoisonEffect";
+import ThunderEffect from "../../Items/Effects/ElementalEffects/ThunderEffect";
+import LightEffect from "../../Items/Effects/ElementalEffects/LightEffect";
+import MagicEffect from "../../Items/Effects/ElementalEffects/MagicEffect";
 
 @RegisterSpawner('dynamicSpell')
 export class DynamicProjectile extends Bullet {
@@ -22,9 +28,10 @@ export class DynamicProjectile extends Bullet {
     constructor(
         id: number, coordinates: { x: number; y: number; }, direction: Vector2D,
         attack: Attack, effects: Effect[] = [], eventManager: IEventManager,
-        elements: string[] = []
+        elements: string[] = [],
+        size: { width: number, height: number } = DynamicProjectile.BASE_SIZE
     ) {
-        super(id, coordinates, DynamicProjectile.BASE_SIZE, 'dynamicSpell' as any, eventManager, 'travelling');
+        super(id, coordinates, size, 'dynamicSpell' as any, eventManager, 'travelling');
         this.direction = direction;
         this.attack = attack;
         this.effects = effects;
@@ -35,7 +42,7 @@ export class DynamicProjectile extends Bullet {
 
     private setHitboxes(size: { width: number, height: number }): HitBoxCircle[] {
         return [new HitBoxCircle({ x: this.coordinates.x + size.width / 2, y: this.coordinates.y + size.height / 2 }, 0, size.width / 2, (otherElement: ObjectElement) => {
-            if ('onStrike' in otherElement && otherElement.id !== this.attack.attacker.id) {
+            if ('takeDamage' in otherElement && otherElement.id !== this.attack.attacker.id) {
                 if (this.hitTargets.has(otherElement.id)) return;
                 this.hitTargets.add(otherElement.id);
                 this.attack.execute(otherElement as any, this.direction);
@@ -56,8 +63,28 @@ export class DynamicProjectile extends Bullet {
     }
 
     public static createSpawn(id: number, payload: SpawnPayload, eventManager: IEventManager): DynamicProjectile {
-        const size = DynamicProjectile.BASE_SIZE;
+        const areaMult = payload.attack?.attacker?.attributes?.areaMultiplier || 1;
+        const size = { 
+            width: DynamicProjectile.BASE_SIZE.width * areaMult, 
+            height: DynamicProjectile.BASE_SIZE.height * areaMult 
+        };
+        
         const centeredCoordinates = { x: payload.coordinates.x - size.width / 2, y: payload.coordinates.y - size.height / 2 };
-        return new DynamicProjectile(id, centeredCoordinates, payload.direction!, payload.attack!, [], eventManager, payload.spellElements || []);
+        
+        const elementalEffects: Effect[] = [];
+        const source = payload.attack?.attacker;
+        
+        if (source && payload.spellElements) {
+            for (const el of payload.spellElements) {
+                if (el === 'fire') elementalEffects.push(new FireEffect(source));
+                if (el === 'water') elementalEffects.push(new WaterEffect());
+                if (el === 'nature') elementalEffects.push(new PoisonEffect(source));
+                if (el === 'thunder') elementalEffects.push(new ThunderEffect());
+                if (el === 'light') elementalEffects.push(new LightEffect(source));
+                if (el === 'magic') elementalEffects.push(new MagicEffect());
+            }
+        }
+        
+        return new DynamicProjectile(id, centeredCoordinates, payload.direction!, payload.attack!, elementalEffects, eventManager, payload.spellElements || [], size);
     }
 }

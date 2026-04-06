@@ -64,6 +64,7 @@ export default class Particles {
             p.gravity = config.gravity || 0;
             p.friction = config.friction !== undefined ? config.friction : 1;
             p.fade = config.fade !== undefined ? config.fade : true;
+            p.isCircle = config.isCircle !== undefined ? config.isCircle : false;
 
             // Move o ponteiro, tornando-a "Viva"
             this.activeCount++;
@@ -99,7 +100,14 @@ export default class Particles {
             const p = this.pool[i]!;
             ctx.fillStyle = p.color;
             if (p.fade) ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
-            ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+            
+            if (p.isCircle) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+            }
         }
         ctx.globalAlpha = 1.0; // Reseta a transparência para não manchar outras instâncias visuais do jogo
     }

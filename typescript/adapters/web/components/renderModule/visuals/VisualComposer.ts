@@ -1,5 +1,5 @@
 import type { SpriteConfig } from "./GameObjectElement"; 
-import { VisualConfigMap, type ItemVisualConfig } from "../../../shared/GlobalVisualRegistry";
+import { VisualConfigMap, type ItemVisualConfig } from "../../../shared/VisualConfigMap";
 
 export type EquipmentLayerType = 'body' | 'pants' | 'boots' | 'chestplate' | 'beard' | 'helmet' | 'hand' | 'gloves' | 'amulet' | 'ring';
 

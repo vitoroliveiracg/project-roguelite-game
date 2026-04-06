@@ -28,7 +28,6 @@ export default class GameAdapter {
   private sceneManager!: SceneManager;
   private uiManager!: UIManager;
   private inputGateway!: InputGateway;
-  private mainMenuGui!: MainMenuGui;
   
   /** @constructor @param domain Uma instância que implementa a interface do domínio. A injeção de dependência via interface permite que o Adapter seja agnóstico à implementação do domínio. */
   constructor(private domain: IGameDomain, private eventManager: IEventManager) {
@@ -63,13 +62,14 @@ export default class GameAdapter {
     this.uiManager = new UIManager(
       this.togglePauseGame,
       (index: number) => this.domain.manageInventory('equip', { index }),
-      (slot: string) => this.domain.manageInventory('unequip', { slot }),
+      (slot: string, index?: number) => this.domain.manageInventory('unequip', index !== undefined ? { slot, index } : { slot }),
       (action: 'unlock' | 'changeClass', payload: any) => this.domain.manageSkillTree(action, payload),
       (attribute: string) => this.domain.allocateAttribute(attribute),
       () => {
         logger.log('domain', 'Restarting game via UI command...');
         window.location.href = window.location.pathname; // Força recarregamento limpo escapando do Vite
-      }
+      },
+      (index: number) => this.domain.manageInventory('delete', { index })
     );
     this.inputGateway = new InputGateway(this.domain);
     this.setupEventListeners();
@@ -107,7 +107,7 @@ export default class GameAdapter {
     this.syncScene();
     
     // O Jogo só começa quando o botão TELEtrans é clicado na aba do mapa!
-    this.mainMenuGui = new MainMenuGui((mapId) => {
+    new MainMenuGui((mapId) => {
         logger.log('init', `Map selected: ${mapId}. Starting game loop...`);
         this.isPaused = false; // Descongela a lógica
         initializeGame(this.update.bind(this), this.draw.bind(this));
@@ -216,7 +216,7 @@ export default class GameAdapter {
       this.sceneManager.addVisualEffect(payload);
     });
 
-    this.eventManager.on('levelUp', (payload) => {
+    this.eventManager.on('levelUp', (_payload) => {
       const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
       if (playerState) {
         const centerX = playerState.coordinates.x + playerState.size.width / 2;

@@ -1,7 +1,7 @@
 import type Vector2D from "../../shared/Vector2D";
 import type Entity from "../Entities/Entity";
 
-export type DamageType = 'physical' | 'magical' | 'true';
+export type DamageType = 'physical' | 'magical' | 'true' | 'fire' | 'water' | 'nature' | 'thunder' | 'light' | 'magic';
 
 /** * Define o contexto disponível quando uma ação "OnHit" é executada. * Isso permite que efeitos complexos (como roubo de vida) tenham acesso * a todas as informações relevantes do evento de ataque. */
 export interface AttackContext {

@@ -19,6 +19,12 @@ export interface ClassDTO {
   isActive: boolean;
 }
 
+export interface ActiveStatusDTO {
+  id: string;
+  description: string;
+  remaining: number;
+}
+
 /** DTO (Data Transfer Object) que representa o estado imutável do mundo do jogo, usado para transferir informações do domínio para a apresentação sem expor a entidade `World` interna. */
 export interface WorldState {
   /** A largura total do mundo do jogo em unidades (pixels). */
@@ -57,6 +63,8 @@ export interface EntityRenderableState extends BaseRenderableState {
   maxHp?: number;
   mana?: number;
   maxMana?: number;
+  coins?: number;
+  maxBackpackSize?: number;
   attributes?: {
     strength: number;
     constitution: number;
@@ -77,6 +85,8 @@ export interface EntityRenderableState extends BaseRenderableState {
   
   /** Elementos mágicos embutidos na entidade para guiar o Motor de Partículas (O Lego Visual) */
   spellElements?: string[];
+  /** Lista de buffs e debuffs ativos atualmente na entidade. */
+  activeStatuses?: ActiveStatusDTO[];
 }
 
 /** Tipo união para todos os possíveis estados de objetos renderizáveis, permitindo que o sistema seja estendido com outros tipos (ex: partículas) no futuro. */
@@ -91,7 +101,7 @@ export interface IGameDomain {
   /** Traduz uma intenção do usuário (capturada pela apresentação) em um comando que o domínio entende. @param command O comando de movimento. */
   handlePlayerInteractions(command: { actions: Array<action> }, mouseLastCoordinates: {x:number,y:number}): void; // eslint-disable-line
   /** Executa um comando de inventário, como equipar ou desequipar um item. */
-  manageInventory(action: 'equip' | 'unequip', payload: { index?: number; slot?: string }): void;
+  manageInventory(action: 'equip' | 'unequip' | 'consume' | 'delete', payload: { index?: number; slot?: string }): void;
   /** Executa um comando relacionado à árvore de habilidades, como trocar de classe selecionada ou comprar um nó. */
   manageSkillTree(action: 'unlock' | 'changeClass', payload: { className?: string; skillId?: string }): void;
   /** Solicita o gasto de um ponto de habilidade em um atributo primário. */

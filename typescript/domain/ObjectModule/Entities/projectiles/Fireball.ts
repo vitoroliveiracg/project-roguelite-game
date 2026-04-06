@@ -35,7 +35,7 @@ export class Fireball extends Bullet {
 
     private setHitboxes(size: { width: number, height: number }): HitBoxCircle[] {
         return [new HitBoxCircle({ x: this.coordinates.x + size.width / 2, y: this.coordinates.y + size.height / 2 }, 0, size.width / 2, (otherElement: ObjectElement) => {
-            if ('onStrike' in otherElement && otherElement.id !== this.attack.attacker.id) {
+            if ('takeDamage' in otherElement && otherElement.id !== this.attack.attacker.id) {
                 if (this.hitTargets.has(otherElement.id)) return;
                 this.hitTargets.add(otherElement.id);
                 
@@ -58,12 +58,13 @@ export class Fireball extends Bullet {
     }
 
     public static createSpawn(id: number, payload: SpawnPayload, eventManager: IEventManager): Fireball {
+        const areaMult = payload.attack?.attacker?.attributes?.areaMultiplier || 1;
         const effects = [
-            new AreaDamageEffect(eventManager, 80, payload.attack), // Aplica o dano em raio
-            new VisualEffect(eventManager, 'explosion', 0.25, { width: 80, height: 80 }) // Efeito de explosão efêmero
+            new AreaDamageEffect(eventManager, 80 * areaMult, payload.attack!), 
+            new VisualEffect(eventManager, 'explosion', 0.25, { width: 80 * areaMult, height: 80 * areaMult }) 
         ];
         
-        const size = { width: 24, height: 24 };
+        const size = { width: 24 * areaMult, height: 24 * areaMult };
         
         const centeredCoordinates = {
             x: payload.coordinates.x - size.width / 2,

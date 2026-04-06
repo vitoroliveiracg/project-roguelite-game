@@ -30,6 +30,8 @@ export default abstract class Enemy extends Entity {
   }
 
   public onStrike(): Attack | null {
+    if (this.activeStatuses.has('stun') || this.activeStatuses.has('paralyze')) return null; // CC previne ataques inimigos
+
     const now = Date.now();
     if (now - this.lastAttackTimestamp < this.attackCooldown) return null;
     this.lastAttackTimestamp = now;

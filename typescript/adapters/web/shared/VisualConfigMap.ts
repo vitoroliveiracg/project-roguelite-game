@@ -45,6 +45,14 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
         category: 'entity',
         animations: { 'normal': { imageSrc: '', frameCount: 1, animationSpeed: 1, frameWidth: 1, frameHeight: 1 } }
     },
+    'shadowMob': {
+        category: 'entity',
+        animations: {
+            'idle': { imageSrc: new URL('../assets/entities/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }, // Reciclando o slime temporariamente
+            'walking': { imageSrc: new URL('../assets/entities/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } },
+            'dead': { imageSrc: new URL('../assets/entities/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }
+        }
+    },
 
     // ================== ITENS E EQUIPAMENTOS ==================
     'iron-helmet': {
@@ -159,6 +167,66 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
         category: 'weapon', iconId: 4,
         uiIconUrl: new URL('../assets/itens/simple-sword.png', import.meta.url).href,
         droppedConfig: { imageSrc: new URL('../assets/itens/simple-sword.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'health-potion': {
+        category: 'equipment', iconId: 30,
+        uiIconUrl: new URL('../assets/itens/life-potion.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/life-potion.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'mana-potion': {
+        category: 'equipment', iconId: 31,
+        uiIconUrl: new URL('../assets/itens/mana-potion.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/mana-potion.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'apple': {
+        category: 'equipment', iconId: 32,
+        uiIconUrl: new URL('../assets/itens/apple.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/apple.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'coin': {
+        category: 'equipment', iconId: 33,
+        uiIconUrl: new URL('../assets/itens/coin.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/coin.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'experience-tome': {
+        category: 'equipment', iconId: 34,
+        uiIconUrl: new URL('../assets/itens/experience-tome.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/experience-tome.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'leather-bag': {
+        category: 'equipment', iconId: 100,
+        uiIconUrl: new URL('../assets/itens/bag.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/bag.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'vampire-fang': {
+        category: 'equipment', iconId: 40,
+        uiIconUrl: new URL('../assets/itens/vampire-fang.png', import.meta.url).href, // Substitua pelas imagens reais depois
+        droppedConfig: { imageSrc: new URL('../assets/itens/vampire-fang.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'mega-mushroom': {
+        category: 'equipment', iconId: 41,
+        uiIconUrl: new URL('../assets/itens/mega-mushroom.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/mega-mushroom.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'adrenaline-flask': {
+        category: 'equipment', iconId: 42,
+        uiIconUrl: new URL('../assets/itens/adranaline-flask.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/adranaline-flask.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
+    'demon-blood': {
+        category: 'equipment', iconId: 43,
+        uiIconUrl: new URL('../assets/itens/demon-blood.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/demon-blood.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
         animations: {}
     },
 

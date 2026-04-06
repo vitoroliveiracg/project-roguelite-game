@@ -5,7 +5,7 @@ import type Vector2D from "../shared/Vector2D";
 export interface GameEventMap {
   playerMoved: { x: number, y: number };
   playerDied: {};
-  spawn: { type: objectTypeId, coordinates: { x: number, y: number }, direction?: Vector2D, attack?: any, spellElements?: string[], attacker?: any };
+  spawn: { type: objectTypeId, coordinates: { x: number, y: number }, direction?: Vector2D, attack?: any, spellElements?: string[], attacker?: any, item?: any };
   despawn: { objectId: number };
   levelUp: { newLevel: number };
   requestNeighbors :{ requester: ObjectElement, radius: number, callback: (neighbors :ObjectElement[]) => void };

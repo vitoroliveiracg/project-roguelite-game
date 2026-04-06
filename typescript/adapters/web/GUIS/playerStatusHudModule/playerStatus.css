@@ -15,6 +15,7 @@
     height: 20px;
     background-color: #000000;
     border: 2px solid #111;
+    border-radius: 6px;
     padding: 1px;
     box-shadow: inset 0px 2px 1px rgba(0,0,0,0.7);
     overflow: hidden;
@@ -27,6 +28,8 @@
 }
 
 .hp-fill { background: linear-gradient(to bottom, #ff4d4d, #cc0000); }
+.hp-fill.poisoned { background: linear-gradient(to bottom, #11998e, #38ef7d) !important; }
+.hp-fill.burning { background: linear-gradient(to bottom, #ff4e00, #ec9f05) !important; }
 .mana-fill { background: linear-gradient(to bottom, #4da6ff, #0066cc); }
 
 .status-bar-text {
@@ -35,4 +38,33 @@
     font-size: 14px; font-weight: bold; color: #ffffff;
     text-shadow: 1px 1px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000;
     pointer-events: none;
+}
+
+.status-icon {
+    position: relative;
+}
+
+.status-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #555;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: pre-wrap;
+    min-width: 140px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 1000;
+}
+
+.status-icon:hover::after {
+    opacity: 1;
 }

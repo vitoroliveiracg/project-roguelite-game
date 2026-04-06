@@ -7,6 +7,7 @@ import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 import type ObjectElement from "../../ObjectElement";
 import type Item from "../../Items/Item";
 import type Weapon from "../../Items/Weapons/Weapon";
+import type Bag from "../../Items/Storage/Bag";
 import { type DamageInfo } from "../Entity";
 import Class from "./Classes/Class";
 import type { baseAttributes } from "../Attributes";
@@ -29,6 +30,7 @@ export default class Player extends Entity {
   private isDashing: boolean = false;
 
   public backpack: Item[] = [];
+  public coins: number = 0; // A carteira do jogador!
   public equipedItens: Item[] = [];
   public equipment: { 
     mainHand?: Weapon | undefined;
@@ -39,10 +41,10 @@ export default class Player extends Entity {
     boots?: Armor | undefined;
     gloves?: Armor | undefined;
     amulet?: Armor | undefined;
-    ring1?: Armor | undefined;
-    ring2?: Armor | undefined;
-    ring3?: Armor | undefined;
-  } = {};
+    bag?: Bag | undefined;
+    leftHandRings: Armor[];
+    rightHandRings: Armor[];
+  } = { leftHandRings: [], rightHandRings: [] };
   private isLeftClickActiveThisFrame: boolean = false;
   private wasLeftClickActiveLastFrame: boolean = false;
   private attackCooldownTimer: number = 0;
@@ -56,6 +58,11 @@ export default class Player extends Entity {
   // -----------------------------------
 
   public facingDirection: Vector2D = new Vector2D(1, 0); // Direção para onde o mago atira
+
+  /** Retorna a capacidade máxima dinâmica do inventário do jogador */
+  public get maxBackpackSize(): number {
+    return 24 + (this.equipment.bag?.capacityBonus || 0); // 24 slots base + Bônus da Bolsa equipada
+  }
 
   constructor (
     id: number,
@@ -115,6 +122,8 @@ export default class Player extends Entity {
       return;
     }
 
+    this.updateStatuses(deltaTime);
+
     if (this.attackCooldownTimer > 0) {
       this.attackCooldownTimer -= deltaTime;
     }
@@ -139,13 +148,18 @@ export default class Player extends Entity {
     let totalDamageReduction = 0;
 
     // Soma os bônus defensivos de todas as armaduras equipadas
-    const armorSlots: (keyof Player['equipment'])[] = ['helmet', 'chestplate', 'pants', 'boots', 'gloves', 'amulet', 'ring1', 'ring2', 'ring3'];
+    const armorSlots: (keyof Player['equipment'])[] = ['helmet', 'chestplate', 'pants', 'boots', 'gloves', 'amulet'];
     for (const slot of armorSlots) {
       const item = this.equipment[slot] as Armor | undefined;
       if (item) {
         totalDodge += item.dodgePercent || 0;
         totalDamageReduction += item.damageReductionPercent || 0;
       }
+    }
+    // Soma os bônus acumulativos dos Senhores dos Anéis (Os 10 Dedos)
+    for (const ring of [...this.equipment.leftHandRings, ...this.equipment.rightHandRings]) {
+      totalDodge += ring.dodgePercent || 0;
+      totalDamageReduction += ring.damageReductionPercent || 0;
     }
 
     // 1. Verifica Esquiva (Dodge)
@@ -245,6 +259,7 @@ export default class Player extends Entity {
 
   @BindAction('leftClick')
   public onLeftClickAction( mouseLastCoordinates: {x:number;y:number} ): void {
+    if (this.activeStatuses.has('stun') || this.activeStatuses.has('paralyze')) return; // Controle de Grupo o impede de atirar!
     this.isLeftClickActiveThisFrame = true;
 
     if (this.activeClass === 'Mago') return; // Mago não atira com o mouse!
@@ -299,6 +314,11 @@ export default class Player extends Entity {
       this.eventManager.dispatch('levelUp', { newLevel: level });
       this.eventManager.dispatch('log', { channel: 'domain', message: `Player leveled up to ${level}!`, params: [] });
       
+      // O ÁPICE VISUAL: Dispara o pilar de aura majestosa do "Level Up" no jogador!
+      const centerX = this.coordinates.x + this.size.width / 2;
+      const centerY = this.coordinates.y + this.size.height / 2;
+      this.eventManager.dispatch('particle', { effect: 'levelUp', x: centerX, y: centerY });
+
       const activeClass = this._classes.find(c => c.name === this._activeClass);
       const xpTable = activeClass ? activeClass.xpTable : defaultXpTable;
       const rewards = xpTable.getRewardsForLevel(level);
@@ -343,6 +363,21 @@ export default class Player extends Entity {
     
     this.eventManager.dispatch('log', { channel: 'domain', message: `Tentando equipar [${item.name}]. Categoria detectada: '${category}'`, params: [] });
 
+    // Intercepta a tentativa de "equipar" consumíveis e redireciona para a função correta
+    if (category === 'potion' || category === 'food' || category === 'currency' || category === 'quest') {
+      this.consumeItem(backpackIndex);
+      return;
+    }
+
+    if (category === 'storage') {
+      const bag = item as Bag;
+      if (this.equipment.bag) this.backpack.push(this.equipment.bag); // Joga a bolsa velha de volta na mochila
+      this.equipment.bag = bag;
+      this.backpack.splice(backpackIndex, 1); // Remove a nova da mochila
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Equipped ${bag.name} in slot [bag]`, params: [] });
+      return;
+    }
+
     if (category === 'weapon') {
       const weapon = item as Weapon;
       if (this.equipment.mainHand) {
@@ -367,12 +402,20 @@ export default class Player extends Entity {
         return;
       }
       
-      // Lógica inteligente para Anéis (procura o primeiro dedo vazio!)
       if (slot === 'ring') {
-        if (!this.equipment.ring1) slot = 'ring1';
-        else if (!this.equipment.ring2) slot = 'ring2';
-        else if (!this.equipment.ring3) slot = 'ring3';
-        else slot = 'ring1'; // Substitui o primeiro se os três estiverem cheios
+        if (this.equipment.leftHandRings.length < 5) {
+          this.equipment.leftHandRings.push(armor);
+        } else if (this.equipment.rightHandRings.length < 5) {
+          this.equipment.rightHandRings.push(armor);
+        } else {
+          // Arranca o anel do mindinho da mão esquerda e coloca na mochila se todos os 10 estiverem cheios
+          const oldRing = this.equipment.leftHandRings.shift();
+          if (oldRing) this.backpack.push(oldRing);
+          this.equipment.leftHandRings.push(armor);
+        }
+        this.backpack.splice(backpackIndex, 1);
+        this.eventManager.dispatch('log', { channel: 'domain', message: `Equipped ${armor.name} in rings`, params: [] });
+        return;
       }
 
       if ((this.equipment as any)[slot]) {
@@ -387,8 +430,22 @@ export default class Player extends Entity {
     }
   }
 
-  public unequipItem(slot: string) {
-    if (slot === 'mainHand' && this.equipment.mainHand) {
+  public unequipItem(slot: string, index?: number) {
+    if (slot === 'leftHandRings' && index !== undefined) {
+      const ring = this.equipment.leftHandRings.splice(index, 1)[0];
+      if (ring) this.backpack.push(ring);
+    } else if (slot === 'rightHandRings' && index !== undefined) {
+      const ring = this.equipment.rightHandRings.splice(index, 1)[0];
+      if (ring) this.backpack.push(ring);
+    } else if (slot === 'bag' && this.equipment.bag) {
+      // Regra de Ouro: Não dá pra desequipar uma mochila se o número de itens que você está carregando for maior que a mochila base (24)
+      if (this.backpack.length >= 24) {
+        this.eventManager.dispatch('log', { channel: 'error', message: `Mochila cheia demais para desequipar a bolsa!`, params: [] });
+        return;
+      }
+      this.backpack.push(this.equipment.bag);
+      this.equipment.bag = undefined;
+    } else if (slot === 'mainHand' && this.equipment.mainHand) {
       this.backpack.push(this.equipment.mainHand);
       this.equipment.mainHand = undefined;
       this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped mainHand`, params: [] });
@@ -396,6 +453,33 @@ export default class Player extends Entity {
       this.backpack.push((this.equipment as any)[slot]);
       (this.equipment as any)[slot] = undefined;
       this.eventManager.dispatch('log', { channel: 'domain', message: `Unequipped ${slot}`, params: [] });
+    }
+  }
+
+  public consumeItem(backpackIndex: number): void {
+    const item = this.backpack[backpackIndex];
+    if (!item) return;
+
+    if ('use' in item && typeof (item as any).use === 'function') {
+      (item as any).use(this); // Aplica todos os efeitos do consumível
+      
+      this.backpack.splice(backpackIndex, 1);
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Consumed ${item.name}`, params: [] });
+      
+      // Efeito visual terapêutico genérico
+      const centerX = this.coordinates.x + this.size.width / 2;
+      const centerY = this.coordinates.y + this.size.height / 2;
+      this.eventManager.dispatch('particle', { effect: 'magicAura', x: centerX, y: centerY, color: '#32CD32' }); // Verde cura
+    } else {
+      this.eventManager.dispatch('log', { channel: 'error', message: `O item ${item.name} não é consumível.`, params: [] });
+    }
+  }
+
+  public deleteItem(backpackIndex: number): void {
+    const item = this.backpack[backpackIndex];
+    if (item) {
+      this.backpack.splice(backpackIndex, 1);
+      this.eventManager.dispatch('log', { channel: 'domain', message: `Deleted item: ${item.name}`, params: [] });
     }
   }
 

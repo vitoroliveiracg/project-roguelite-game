@@ -23,4 +23,6 @@ export interface ParticleEmitterConfig {
     friction?: number;
     /** Se a partícula deve desaparecer suavemente (fade out) ao longo da vida */
     fade?: boolean;
+    /** Renderiza a partícula organicamente como um círculo em vez de um quadrado (Serotonérgico) */
+    isCircle?: boolean;
 }

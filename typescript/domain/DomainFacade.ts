@@ -91,12 +91,18 @@ export default class DomainFacade implements IGameDomain {
     this.actionManager.checkEvent(command.actions, mouseLastCoordinates)
   }
 
-  public manageInventory(action: 'equip' | 'unequip', payload: { index?: number; slot?: string }): void {
+  public manageInventory(action: 'equip' | 'unequip' | 'consume' | 'delete', payload: { index?: number; slot?: string }): void {
     if (action === 'equip' && payload.index !== undefined) {
       this.player.equipItem(payload.index);
     }
     if (action === 'unequip' && payload.slot !== undefined) {
       this.player.unequipItem(payload.slot);
+    }
+    if (action === 'consume' && payload.index !== undefined) {
+      this.player.consumeItem(payload.index);
+    }
+    if (action === 'delete' && payload.index !== undefined) {
+      this.player.deleteItem(payload.index);
     }
   }
 
@@ -149,6 +155,13 @@ export default class DomainFacade implements IGameDomain {
     ps.maxHp = this.player.attributes.maxHp;
     ps.mana = this.player.attributes.mana;
     ps.maxMana = this.player.attributes.maxMana;
+    ps.coins = this.player.coins;
+    
+    // Repassa os status ativos do Jogador (Veneno, Fogo, etc) para a UI desenhar os ícones
+    ps.activeStatuses = Array.from(this.player.activeStatuses.values()).map(s => ({
+      id: s.id,
+      remaining: Math.max(0, s.duration - s.elapsed)
+    }));
     
     ps.attributes.strength = this.player.attributes.strength;
     ps.attributes.constitution = this.player.attributes.constitution;

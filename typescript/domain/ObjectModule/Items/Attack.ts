@@ -36,9 +36,9 @@ export default class Attack implements IAtack {
     let totalDamage = this.baseDamage; // Começa com o dano base
 
     if (this.damageType === 'physical') {
-      totalDamage += this._attacker.attributes.strength;
+      totalDamage += this._attacker.attributes.strength * 0.5; // Escalonamento de dano físico reduzido
     } else if (this.damageType === 'magical') {
-      totalDamage += this._attacker.attributes.intelligence;
+      totalDamage += this._attacker.attributes.intelligence * 0.5; // Escalonamento de dano mágico reduzido
     }
 
     if (isCritical) {
@@ -57,6 +57,20 @@ export default class Attack implements IAtack {
     if (target.attributes.hp <= 0 && this._attacker.objectId === 'player') {
       if ('xpGiven' in target) {
         (this._attacker as any).gainXp((target as any).xpGiven);
+      }
+    }
+
+    // Vampirismo (Lifesteal) - Cura a entidade atacante baseada no dano real causado!
+    const lifestealPercent = this._attacker.attributes.lifesteal;
+    if (lifestealPercent > 0 && damageDealt > 0) {
+      const healAmount = damageDealt * (lifestealPercent / 100);
+      this._attacker.attributes.hp += healAmount; // Setter barra cura extra limitando ao maxHp
+      
+      const attackerAny = this._attacker as any;
+      if (attackerAny.eventManager) {
+        const cx = this._attacker.coordinates.x + this._attacker.size.width / 2;
+        const cy = this._attacker.coordinates.y + this._attacker.size.height / 2;
+        attackerAny.eventManager.dispatch('particle', { effect: 'magicAura', x: cx, y: cy, color: '#ff2a2a' }); // Gotículas de sangue voltando
       }
     }
 

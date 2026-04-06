@@ -33,6 +33,8 @@ export default class Slime extends Enemy {
   //? ----------- Methods -----------
 
   public update(deltaTime: number, player?: any): void {
+    this.updateStatuses(deltaTime);
+
     if (player) {
       this.lastPlayerPos.x = player.coordinates.x + player.size.width / 2;
       this.lastPlayerPos.y = player.coordinates.y + player.size.height / 2;

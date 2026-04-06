@@ -36,13 +36,15 @@ export default abstract class MeleeWeapon extends Weapon {
         // Dano de armas Melee escala fortemente com Força
         const scaledDamage = this.baseDamage + Math.floor(attacker.attributes.strength);
         const weaponAttack = new Attack(attacker, scaledDamage, 'physical', this.onHitActions);
+        const areaMult = (attacker.attributes as any).areaMultiplier || 1;
+        const currentRange = this.attackRange * areaMult;
 
         const attackDir = direction.clone().normalizeMut();
 
         // 1. Lógica de Negócio (O Dano) - Query Espacial Instantânea
         eventManager.dispatch('requestNeighbors', {
             requester: attacker,
-            radius: this.attackRange,
+            radius: currentRange,
             callback: (neighbors) => {
                 neighbors.forEach(neighbor => {
                     if (neighbor !== attacker && 'takeDamage' in neighbor) {
@@ -66,15 +68,15 @@ export default abstract class MeleeWeapon extends Weapon {
         });
 
         // 2. Apresentação Visual - Desacoplada da Física
-        const visualDistance = this.attackRange / 2;
+        const visualDistance = currentRange / 2;
         const visualX = attacker.coordinates.x + attacker.size.width / 2 + attackDir.x * visualDistance;
         const visualY = attacker.coordinates.y + attacker.size.height / 2 + attackDir.y * visualDistance;
 
         eventManager.dispatch('spawnVisual', {
             type: 'slash',
-            coordinates: { x: visualX - 16, y: visualY - 16 }, // Centralizando o tamanho 32x32
+            coordinates: { x: visualX - (16 * areaMult), y: visualY - (16 * areaMult) }, // Centralizando
             duration: 0.15,
-            size: { width: 32, height: 32 },
+            size: { width: 32 * areaMult, height: 32 * areaMult },
             rotation: Math.atan2(attackDir.y, attackDir.x) + Math.PI / 4 // Rotação dinâmica
         });
 

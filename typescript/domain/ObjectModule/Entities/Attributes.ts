@@ -32,6 +32,8 @@ export default class Attributes {
   private _bonusVigor: number = 0;
   private _bonusDodge: number = 0;
   private _bonusInsight: number = 0;
+  private _bonusLifesteal: number = 0;
+  private _bonusArea: number = 0;
 
   constructor(
     private hpDiceFaces :number, // Tornado private para guardarmos na memória do objeto
@@ -156,9 +158,9 @@ export default class Attributes {
   public get speed(): number { return 100 + (this.dexterity / 10) + this._bonusSpeed; }
   public get speedDescription(): string { return "Entity velocity modifier"  }
   
-  /** Critical hit damage multiplier. Base 150% + 2% per point of the best attribute. @returns percentage value */
-  public get critDamage(): number { return 150 + (this.getBestAttributeOfAll() * 2) + this._bonusCritDamage; }
-  public get critDamageDescription(): string { return "Crit damage multiplier. x1,5 + x0,02 for each point of your best attribute."  }
+  /** Critical hit damage multiplier. Base 150% + 1% per point of the best attribute. @returns percentage value */
+  public get critDamage(): number { return 150 + (this.getBestAttributeOfAll() * 1) + this._bonusCritDamage; }
+  public get critDamageDescription(): string { return "Crit damage multiplier. x1.5 + x0.01 for each point of your best attribute."  }
   
   /** The chance to land a critical hit, as a percentage. Formula: 3% base + (Best Attribute / 10) + Lucky. @returns percentage value */
   public get critChance(): number { return 3 + ( this.getBestAttributeOfAll() / 10 ) + this.lucky + this._bonusCritChance; }
@@ -223,6 +225,8 @@ export default class Attributes {
   public set vigor(value: number) { this._bonusVigor += value; }
   public set dodge(value: number) { this._bonusDodge += value; }
   public set insight(value: number) { this._bonusInsight += value; }
+  public set lifesteal(value: number) { this._bonusLifesteal += value; }
+  public set bonusArea(value: number) { this._bonusArea += value; }
 
   //? ----------- Atributos Primários -----------
 

@@ -1,6 +1,6 @@
 import type { SpriteConfig, GameObjectConstructorParams } from "../components/renderModule/visuals/GameObjectElement";
 import type GameObjectElement from "../components/renderModule/visuals/GameObjectElement";
-import { VisualConfigMap, type ItemVisualConfig } from "./GlobalVisualRegistry";
+import { VisualConfigMap, type ItemVisualConfig } from "./VisualConfigMap";
 
 /**
  * Sistema Central de Registro de Renderização.

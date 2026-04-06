@@ -2,7 +2,7 @@ import { logger } from "../../shared/Logger";
 import html from './weaponHud.html?raw';
 import css from './weaponHud.css?raw';
 import type { EntityRenderableState } from "../../../../domain/ports/domain-contracts";
-import { VisualConfigMap, type ItemVisualConfig } from "../../shared/GlobalVisualRegistry";
+import { VisualConfigMap, type ItemVisualConfig } from "../../shared/VisualConfigMap";
 
 /** @class WeaponHudGui Renderiza o círculo com a arma principal em volta do jogador. */
 export default class WeaponHudGui {

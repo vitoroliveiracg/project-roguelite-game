@@ -31,5 +31,5 @@ export default abstract class Projectile extends ObjectElement {
         super.coordinates.y += this.velocity.y;
     }
 
-    public abstract update(deltaTime: number): void;
+    public abstract override update(deltaTime: number): void;
 }

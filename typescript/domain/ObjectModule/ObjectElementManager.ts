@@ -1,10 +1,7 @@
 /** @file Contém a classe ObjectElementManager, responsável por gerenciar o ciclo de vida (criação, atualização, remoção) de uma coleção de entidades de domínio. */
 import type { EntityRenderableState } from "../ports/domain-contracts";
 import Slime from "./Entities/Enemies/Slime";
-import Projectile from "./Entities/projectiles/Projectile";
 import type Player from "./Entities/Player/Player";
-import Entity from "./Entities/Entity";
-import CircleForm from "./Entities/geometryForms/circleForm";
 import ObjectElement from "./ObjectElement";
 import Attributes from "./Entities/Attributes";
 import type { IEventManager } from "../eventDispacher/IGameEvents";
@@ -22,6 +19,11 @@ import { SpawnRegistry } from "./SpawnRegistry";
 import SimpleAmulet from "./Items/Armors/necklaces/SimpleAmulet";
 import SimpleRing from "./Items/Armors/rings/SimpleRing";
 import SimpleSword from "./Items/Weapons/MeleeWeapons/SimpleSword";
+import VampireFang from "./Items/Consumables/VampireFang";
+import MegaMushroom from "./Items/Consumables/MegaMushroom";
+import AdrenalineFlask from "./Items/Consumables/Potions/AdrenalineFlask";
+import DemonBlood from "./Items/Consumables/DemonBlood";
+import ShadowMob from "./Entities/Enemies/ShadowMob";
 
 // Auto-carrega todas as entidades e itens do domínio para engatilhar os decorators @RegisterSpawner
 import.meta.glob('./Entities/**/*.ts', { eager: true });
@@ -40,6 +42,8 @@ export default class ObjectElementManager {
 
   private waveTimer: number = 0;
   private readonly WAVE_INTERVAL: number = 5; // 5 segundos de jogo para a próxima onda
+  private shadowMobTimer: number = 0;
+  private readonly SHADOW_MOB_INTERVAL: number = 30; // 30 segundos para a aparição do mago sombrio
   private renderStatePool: EntityRenderableState[] = [];
   private pendingCollisions: Int32Array = new Int32Array(0);
   private collisionBuffer: Float32Array = new Float32Array(10000); // Espaço para 2500 hitboxes simultâneas
@@ -129,6 +133,12 @@ export default class ObjectElementManager {
       this.waveTimer = 0;
     }
 
+    this.shadowMobTimer += deltaTime;
+    if (this.shadowMobTimer >= this.SHADOW_MOB_INTERVAL) {
+      this.spawnShadowMob(player);
+      this.shadowMobTimer = 0;
+    }
+
     // Em seguida, atualizamos cada elemento. Durante seu update, ele pode pedir vizinhos.
     for (const element of this.elements.values()) {
       element.update(deltaTime, player);
@@ -188,6 +198,12 @@ export default class ObjectElementManager {
     this.spawn(id => new DroppedItem(id, { x: 330, y: 520 }, new IronGloves(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 380, y: 520 }, new SimpleAmulet(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 400, y: 520 }, new SimpleRing(), this.eventManager));
+
+    // Teste dos Efeitos Classic Survivor/Megabonk
+    this.spawn(id => new DroppedItem(id, { x: 500, y: 480 }, new VampireFang(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 530, y: 480 }, new MegaMushroom(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 560, y: 480 }, new AdrenalineFlask(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 590, y: 480 }, new DemonBlood(), this.eventManager));
   }
 
   /** * Instancia uma onda de inimigos atrelada ao loop de atualização do domínio. */
@@ -214,6 +230,19 @@ export default class ObjectElementManager {
       ));
     }
   }
+
+  /** Cria um inimigo sombrio fora do campo de visão imediato do jogador */
+  private spawnShadowMob(player: Player): void {
+    // Calcula uma distância aleatória entre 250 e 350 pixels (positiva ou negativa)
+    const distanceX = Math.random() > 0.5 ? 250 + Math.random() * 100 : -250 - Math.random() * 100;
+    const distanceY = Math.random() > 0.5 ? 250 + Math.random() * 100 : -250 - Math.random() * 100;
+    const x = player.coordinates.x + distanceX;
+    const y = player.coordinates.y + distanceY;
+
+    this.spawn(id => new ShadowMob(id, { x, y }, new Attributes(10, 5, 10, 10, 20, 10, 10, 10), this.eventManager));
+  }
+
+
   /** * Retorna uma lista de DTOs (`EntityRenderableState`) para todas as entidades gerenciadas. * @returns Um array com o estado renderizável de cada entidade. */
   public getAllRenderableStates(): EntityRenderableState[] {
     let index = 0;
@@ -241,10 +270,24 @@ export default class ObjectElementManager {
       state.state = element.state;
       state.rotation = rotation;
       state.equipment = (element as any).equipment;
+      state.backpack = (element as any).backpack;
+      state.coins = (element as any).coins;
+      state.maxBackpackSize = (element as any).maxBackpackSize;
       state.hasBeard = (element as any).hasBeard;
       (state as any).facingDirection = (element as any).facingDirection;
       state.spellElements = (element as any).spellElements;
       
+      if ('activeStatuses' in element) {
+        const statuses = (element as any).activeStatuses as Map<string, any>;
+        state.activeStatuses = Array.from(statuses.values()).map(s => ({
+          id: s.id,
+          description: s.description,
+          remaining: Math.max(0, s.duration - s.elapsed)
+        }));
+      } else {
+        state.activeStatuses = [];
+      }
+
       // Reciclando o Array de Hitboxes (Livre do Garbage Collector)
       if (!state.hitboxes) state.hitboxes = [];
       const stateHitboxes = state.hitboxes as any[];

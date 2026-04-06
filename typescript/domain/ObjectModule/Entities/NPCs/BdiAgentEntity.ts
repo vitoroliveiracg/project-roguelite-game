@@ -1,14 +1,14 @@
-import Enemy from "./Enemy";
+import Entity from "../Entity";
 import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import type Attributes from "../Attributes";
 import type { BdiIntention, IBdiGateway } from "../../../ports/IBdiGateway";
-import Vector2D from "../../../shared/Vector2D";
+import { HitBoxCircle } from "../../../hitBox/HitBoxCircle";
 
 /**
  * Entidade controlada por um Motor BDI (Belief-Desire-Intention) externo.
- * Não possui IA "hardcoded". Seu comportamento é ditado pelas intenções que recebe.
+ * NPCs neutros que podem interagir, vagar ou até mesmo atacar dependendo de suas crenças.
  */
-export default class BdiAgentEntity extends Enemy {
+export default class BdiAgentEntity extends Entity {
     private currentIntention: BdiIntention = { action: 'idle' };
     private perceptionTimer: number = 0;
 
@@ -19,7 +19,25 @@ export default class BdiAgentEntity extends Enemy {
         eventManager: IEventManager,
         private bdiGateway: IBdiGateway
     ) {
-        super(id, 1, 50, initialCoordinates, 'bdiAgent' as any, attributes, eventManager);
+        // Inicializa como uma Entidade neutra de tamanho padrão 16x16
+        super(id, initialCoordinates, { width: 16, height: 16 }, 'bdiAgent', attributes, eventManager);
+        
+        // Dá um corpo físico ao NPC para que ele exista na QuadTree
+        this.hitboxes = [
+            new HitBoxCircle(
+                { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
+                0,
+                8,
+                (otherElement) => {
+                    // No futuro: Lógica de esbarrão, iniciar diálogo ou detectar contato com o Player
+                }
+            )
+        ];
+    }
+
+    /** Necessário para a engine reconhecer o NPC como um ser atacável pelas magias do jogador. */
+    public onStrike(): any {
+        return null;
     }
 
     /** Chamado pelo Adaptador de Sockets quando o Athena envia uma nova decisão. */
@@ -28,6 +46,8 @@ export default class BdiAgentEntity extends Enemy {
     }
 
     public override update(deltaTime: number): void {
+      this.updateStatuses(deltaTime);
+
       // Envia percepções para o Motor BDI a cada ~0.5 segundos para não inundar o Socket
       this.perceptionTimer += deltaTime;
       if (this.perceptionTimer >= 0.5) {
@@ -44,7 +64,10 @@ export default class BdiAgentEntity extends Enemy {
           this.direction.x = this.currentIntention.targetPos.x - this.coordinates.x;
           this.direction.y = this.currentIntention.targetPos.y - this.coordinates.y;
           this.velocity = this.direction.clone().normalizeMut().multiplyMut(this.attributes.speed * deltaTime);
-          (this as any).updatePosition(); // Invoca a atualização de posição interna da Entity
+            this.updatePosition(); 
       }
+        
+        // Atualiza fisicamente a hitbox para acompanhar o NPC em movimento
+        this.hitboxes?.forEach(hb => hb.updatePosition({ x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }));
     }
 }

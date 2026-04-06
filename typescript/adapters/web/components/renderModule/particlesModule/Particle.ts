@@ -14,4 +14,5 @@ export default class Particle {
     gravity: number = 0;
     friction: number = 1;
     fade: boolean = true;
+    isCircle: boolean = false;
 }

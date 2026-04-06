@@ -11,7 +11,7 @@ export default class Necromancer extends Class {
         super('Necromante', xpTable, player, eventManager);
         this.skillsByLevel.set(2, new Skill('n_t1_reap', 'Colheita Sombria', 'active', 1));
         this.skillsByLevel.set(4, new Skill('n_t2_lifesteal', 'Sede de Sangue', 'passive', 2, 'n_t1_reap'));
-        this.skillsByLevel.set(6, new Skill('n_t3_soul', 'Forma Lich', 'rare', 3, 'n_t2_lifesteal'));
+        this.skillsByLevel.set(6, new Skill('n_t3_soul', 'Forma Lich', 'active', 3, 'n_t2_lifesteal'));
     }
 
     public getSkillForLevel(level: number): Skill | null {
