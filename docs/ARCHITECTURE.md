@@ -37,8 +37,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       - **Criação e Remoção (`spawn`/`despawn`):** Ouve eventos de domínio para criar e destruir dinamicamente inimigos, projéteis, itens, etc., usando um sistema de `factory`.
       - **Criação e Remoção (`spawn`/`despawn`):** Ouve eventos de domínio para criar e destruir dinamicamente entidades. Utiliza o `SpawnRegistry` (via Decorators `@RegisterSpawner`) para instanciar objetos sem possuir lógica acoplada (if/else) sobre o que está nascendo.
       - **Atualização de Estado:** Itera sobre todos os elementos a cada frame, chamando seus respectivos métodos `update`.
-      - **Detecção de Colisão Otimizada e Zero-GC:** Delega a colisão para a Porta Secundária `ICollisionService` utilizando buffers contíguos de memória (`Float32Array`), abolindo a alocação de objetos descartáveis. A resolução ocorre em um modelo de **Física Atrasada (Delayed Resolution)**: envia-se os dados em um frame e as reações são aplicadas no início do frame seguinte, impedindo gargalos assíncronos no Game Loop.
-      Ele efetivamente desacopla a `DomainFacade` da complexidade de gerenciar uma coleção massiva e mutável de objetos.
+      - **Detecção de Colisão Otimizada e Zero-GC:** Delega a colisão para a Porta Secundária `ICollisionService` utilizando buffers contíguos de memória (`Float32Array`) dinâmicos, capazes de empacotar círculos e polígonos complexos simultaneamente. A resolução ocorre em um modelo de **Física Atrasada (Delayed Resolution)**: envia-se os dados em um frame e as reações são aplicadas no início do frame seguinte, impedindo gargalos assíncronos no Game Loop.
       - **Query Espacial Otimizada (`requestNeighbors`):** Implementa busca de vizinhança usando Teorema de Pitágoras (Distância Euclidiana via `Math.hypot`), permitindo varreduras a partir de entidades ou de pontos arbitrários no espaço (útil para magias de área como meteoros e explosões procedurais).
     - **`objectType.type.ts`**: Um arquivo de tipo (`type`) que define uma união de strings literais (`'player' | 'slime' | ...`). Ele fornece uma maneira centralizada e com segurança de tipo (type-safe) para identificar os diferentes tipos de `ObjectElement` no jogo. Isso é crucial para a `RenderableFactory` na camada de adaptação, que o utiliza para decidir qual sprite ou animação carregar para cada entidade.
     - **`Entities/`**: Contém as classes que representam seres "vivos" ou com comportamento autônomo no jogo.
@@ -52,6 +51,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       - **`Enemies/`**: Contém a hierarquia de classes para inimigos.
         - **`Enemy.ts`**: Classe abstrata que herda de `Entity`. Define o contrato base para todos os inimigos, concedendo `xpGiven` e possuindo um ataque de contato (`onStrike`) com cooldown.
         - **`Slime.ts`**: Implementa IA de movimento com "steering behaviors" baseada na visão da vizinhança real.
+        - **`BdiAgentEntity.ts`**: Entidade despida de IA hardcoded, projetada para ser uma "marionete". Ela envia o que "enxerga" para o `IBdiGateway` e age puramente baseada nas intenções (`Intentions`) devolvidas pelo Motor Cognitivo Athena.
       - **`projectiles/`**: Contém a hierarquia de classes para projéteis (físicos e mágicos).
         - **`Projectile.ts`**: Classe abstrata genérica para objetos voadores e magias soltas pelo cenário.
         - **`SimpleBullet.ts`**: Projétil balístico que aplica um `Attack` customizado ao colidir (podendo perfurar alvos).
@@ -64,6 +64,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       - **`Item.ts`**: Classe base abstrata para todos os itens, definindo um contrato rico de propriedades (raridade, valor, etc.).
       - **`Weapons/Weapon.ts`**: Classe abstrata para armas. Agora recebe a própria entidade do atacante (`Entity`) por injeção ao atacar, não limitando o uso de armas apenas ao `Player`.
       - **`Weapons/RangedWeapons/RangedWeapon.ts`**: Armas de longo alcance. Absorveram a responsabilidade de calcular, disparar e instanciar os próprios projéteis via eventos (retirando esse engessamento do Player).
+      - **`Weapons/MeleeWeapons/AnimatedMeleeAttack.ts`**: Abstração poderosa (Data-Driven) para golpes corpo a corpo com hitboxes animadas. Ela isola o "inferno matemático" de offsets de spritesheet, âncoras de rotação e escalonamento, permitindo criar novas armas (como Foices e Machados) apenas injetando um JSON de hitboxes.
       - **`Attributes.ts`**: Uma **interface** simples que define a estrutura para requisitos de atributos de itens.
       - **`Effects/`**: Contém lógicas puras de domínios desencadeadas no impacto de armas e magias (ex: `AreaDamageEffect`, `VisualEffect`).
 
@@ -76,6 +77,8 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
   - **`hitBox/`**: Módulo responsável pela lógica de colisão.
     - **`HitBox.ts`**: Classe abstrata que serve como o contrato fundamental para todas as áreas de colisão. Sua responsabilidade é definir as propriedades essenciais (posição, rotação) e o comportamento esperado: um método `intersects(other)` para a lógica de detecção e um callback `onColision` que é invocado quando uma colisão ocorre, desacoplando a detecção do efeito.
     - **`HitBoxCircle.ts`**: Uma implementação concreta de `HitBox` para formas circulares. Sua única responsabilidade é implementar a lógica matemática para verificar a intersecção com outras `HitBox`es (atualmente, outras `HitBoxCircle`), encapsulando completamente a geometria de colisão de um círculo.
+    - **`HitBoxPolygon.ts`**: Implementação baseada no **Teorema dos Eixos Separadores (SAT)**, permitindo colisões de altíssima precisão com formas arbitrárias (como a lâmina de uma foice) que rotacionam em tempo real.
+    - **`HitboxParser.ts`**: Utilitário que desserializa JSONs gerados pela ferramenta `PolygonWebEditor`, convertendo os pontos escalados em classes `HitBoxPolygon` ou `HitBoxCircle` ativas no Domínio.
 
   - **`eventDispacher/`**: Implementa um sistema de eventos (Observer Pattern) para comunicação desacoplada dentro do Domínio.
     - **`eventDispacher.ts`**: O coração do sistema de eventos global (Pub/Sub).
@@ -88,6 +91,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
     - **`domain-contracts.ts`**: Contém a **Porta Primária** `IGameDomain` e os DTOs (`RenderableState`) que o domínio usa para se comunicar com o exterior.
     - **`ILogger.ts`**: Uma **Porta Secundária** que define o contrato para um serviço de log, permitindo que o domínio registre eventos sem conhecer a implementação.
     - **`ICollisionService.ts`**: Uma **Porta Secundária** que define o contrato para cálculo pesado de colisões, deixando as otimizações de concorrência ou serialização delegadas para o Adaptador Web.
+    - **`IBdiGateway.ts`**: **Porta Secundária** que exporta as Percepções dos NPCs para a IA (Athena) e recebe as Intenções de volta.
 
 
 ### 2.2. Camada de Adaptação (`typescript/adapters/web`)
@@ -103,6 +107,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       - **`maps`:** assets dos mapas do jogo
     - **`GUIS`:** Arquitetura modular contendo as GUIS do jogo. Cada módulo possui um arquivo html, um ts e um css para definir as GUIS. Essas serão por cima do canvas do jogo
     - **`shared`:** Contém utilitários vitais para a adaptação web, como o `Logger.ts`, e o **`VisualConfigMap.ts`** (O Banco de Dados Visual centralizado).
+  - **`polygonWebEditor/`:** Ferramenta visual autônoma (Hitbox Editor Tool). É um micro-app web que permite ao desenvolvedor carregar sprites, desenhar polígonos/círculos por cima deles (com câmera de zoom e pan) e exportar o JSON exato que o `HitboxParser` do Domínio consome.
 
   Tudo listado a seguir está no diretório `typescript/adapters/web/components/` e são componentes do jogo:
 
@@ -224,7 +229,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   O worker recebe os dados.
       -   Ele constrói uma `Quadtree` para otimizar a busca por colisões.
       -   Ele itera sobre os elementos, usando a `Quadtree` para encontrar pares potenciais.
-      -   Para cada par, ele executa a lógica matemática para verificar se suas hitboxes se intersectam.
+      -   Para cada par, ele executa a lógica matemática (SAT para Polígonos, ou Raio² para Círculos) para verificar se suas hitboxes se intersectam.
       -   Ao final, ele envia de volta para a thread principal um array linear (`Int32Array`) contendo apenas os **IDs** dos pares que colidiram (ex: `[1, 101, 102, 103]`).
 
   4.  **Resolução Atrasada (Thread Principal - `ObjectElementManager.updateAll`):**
@@ -440,6 +445,15 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   **Coleta:** A lógica de coleta pode ser implementada de forma semelhante a uma colisão. Quando o `Player` colide com um `Item`, em vez de causar dano, o `Item` dispara um evento para ser adicionado ao inventário do jogador (ex: `gameEvents.dispatch('itemCollected', { itemId: this.id, item: this })`) e, em seguida, dispara um evento `'despawn'` para si mesmo.
       -   **Inventário:** O `Player` (ou uma nova classe `Inventory` associada a ele) precisará ouvir o evento `'itemCollected'` e armazenar o item.
       -   **Uso:** A interface do usuário (UI) do inventário (ver próximo guia) terá um botão "Usar". Ao ser clicado, a UI chamará um método na `DomainFacade` (ex: `useItem(itemId)`), que encontrará o item no inventário do jogador e chamará seu método `use(player)`.
+
+### 4.9. Como Criar uma Arma Melee com Hitboxes Animadas (Ex: Foice)
+
+  Criar ataques dinâmicos com a classe `AnimatedMeleeAttack` é extremamente fácil.
+
+  1. **Desenhe as Hitboxes:** Abra o Hitbox Editor Tool (`toggleDebugMode()` -> `openHitboxEditor()`), carregue seu spritesheet de ataque, desenhe os polígonos quadro a quadro (fechando com `Enter`) e exporte o JSON.
+  2. **O Visual:** Registre o ataque (ex: `'axe-slash'`) no `VisualConfigMap.ts`. Preencha os dados do frame (largura, altura, velocidade) e defina a âncora (`anchor: 'bottom-left'` ou `center`).
+  3. **A Entidade:** Em `MeleeWeapons/`, crie uma classe `AxeSlash.ts` estendendo `AnimatedMeleeAttack`. Cole o JSON gerado em uma constante no topo da classe.
+  4. **Configuração Simples:** No `super()` do seu `AxeSlash`, passe o JSON para o `rawHitboxes`, informe o tamanho do frame original e a escala desejada (`scale: 0.5`). O Domínio fará toda a matemática de SAT e offset automaticamente!
 
   3.  **Visualização (Item no Chão):**
       -   O processo para fazer o item aparecer no chão é idêntico ao de criar um inimigo: adicione o asset, configure o sprite na `RenderableFactory` e registre a estratégia de criação.
