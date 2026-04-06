@@ -40,6 +40,13 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      - name: Auto-increment Version
+        shell: bash
+        run: |
+          NEW_VERSION="1.0.${{ github.run_number }}"
+          node -e "const fs = require('fs'); const p = 'src-tauri/tauri.conf.json'; const d = JSON.parse(fs.readFileSync(p)); d.version = '$NEW_VERSION'; fs.writeFileSync(p, JSON.stringify(d, null, 2));"
+          npm version $NEW_VERSION --no-git-tag-version
+
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
@@ -48,5 +55,5 @@ jobs:
           tagName: v__VERSION__
           releaseName: 'RPG Roguelite v__VERSION__'
           releaseBody: 'Nova versão do jogo gerada automaticamente para Windows, Mac e Linux!'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
