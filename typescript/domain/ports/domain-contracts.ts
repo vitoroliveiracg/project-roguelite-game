@@ -33,10 +33,6 @@ export interface WorldState {
   height: number;
   /** Identificador do mapa para carregar o cenário desenhado no adaptador (ex: 'vilgem'). */
   mapId: string;
-  /** O tamanho de cada bloco (chunk) quadrado do mapa em pixels. */
-  chunkSize: number;
-  /** Matriz bidimensional (linha x coluna) contendo os IDs mapeados dos chunks deste mundo. */
-  chunks: string[][];
 }
 
 /** DTO base para o estado de qualquer objeto que pode ser renderizado. */

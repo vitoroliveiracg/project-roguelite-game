@@ -28,7 +28,7 @@ export default class DomainFacade implements IGameDomain {
 
   private actionManager!: ActionManager;
   private cachedRenderState = {
-    world: { width: 0, height: 0, mapId: 'vilgem', chunkSize: 0, chunks: [] as string[][] },
+    world: { width: 0, height: 0, mapId: 'vilgem' },
     renderables: [] as any[]
   };
   private cachedPlayerState: any = null;
@@ -135,8 +135,6 @@ export default class DomainFacade implements IGameDomain {
     this.cachedRenderState.world.width = this.world.width;
     this.cachedRenderState.world.height = this.world.height;
     this.cachedRenderState.world.mapId = this.world.mapId;
-    this.cachedRenderState.world.chunkSize = this.world.chunkSize;
-    this.cachedRenderState.world.chunks = this.world.chunks;
 
     if (!this.cachedPlayerState) {
       this.cachedPlayerState = {

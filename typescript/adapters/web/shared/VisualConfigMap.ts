@@ -21,26 +21,26 @@ export interface ProjectileVisualConfig extends BaseVisualConfig {
 export interface VFXVisualConfig extends BaseVisualConfig {
     category: 'vfx';
 }
-export interface MapChunkVisualConfig {
-    category: 'map-chunk';
-    imageSrc: string;
+export interface MapVisualConfig {
+    category: 'map';
+    chunkSize: number;
+    chunks: string[][]; // Matriz de URLs de imagens para cada pedaço do mapa
 }
-export type AnyVisualConfig = EntityVisualConfig | ItemVisualConfig | ProjectileVisualConfig | VFXVisualConfig | MapChunkVisualConfig;
+export type AnyVisualConfig = EntityVisualConfig | ItemVisualConfig | ProjectileVisualConfig | VFXVisualConfig | MapVisualConfig;
 
-// Gerador dinâmico de Chunks pro mapa de Vilgem (Mock de fallback)
-// Eles todos usarão a mesma imagem pro chão até você desenhar e trocar os links!
-const mapChunks: Record<string, MapChunkVisualConfig> = {};
-for (let y = 0; y < 10; y++) {
-    for (let x = 0; x < 10; x++) {
-        mapChunks[`vilgem-${x}-${y}`] = {
-            category: 'map-chunk',
-            imageSrc: new URL('../assets/maps/map.jpeg', import.meta.url).href
-        };
-    }
-}
+const vilgemChunks: string[][] = Array.from({ length: 8 }, () => 
+    Array(8).fill(new URL('../assets/maps/map.jpeg', import.meta.url).href)
+);
 
 export const VisualConfigMap: Record<string, AnyVisualConfig> = {
    
+    // ================== MAPAS ==================
+    'vilgem': {
+        category: 'map',
+        chunkSize: 1024,
+        chunks: vilgemChunks
+    },
+
     // ================== ENTIDADES (Corpos) ==================
     'player': {
         category: 'entity',
@@ -310,8 +310,5 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
                 anchor: 'bottom-left'
             }
         }
-    },
-    
-    // Mescla os chunks que acabamos de gerar
-    ...mapChunks
+    }
 };

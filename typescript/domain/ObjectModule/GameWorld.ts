@@ -5,8 +5,6 @@ export default abstract class GameWorld {
     public abstract readonly mapId: string;
     public abstract readonly width: number;
     public abstract readonly height: number;
-    public abstract readonly chunkSize: number;
-    public abstract readonly chunks: string[][];
 
     constructor(protected eventManager: IEventManager) {}
 
@@ -17,6 +15,6 @@ export default abstract class GameWorld {
     public abstract generate(): void;
 
     public getState(): WorldState {
-        return { width: this.width, height: this.height, mapId: this.mapId, chunkSize: this.chunkSize, chunks: this.chunks };
+        return { width: this.width, height: this.height, mapId: this.mapId };
     }
 }

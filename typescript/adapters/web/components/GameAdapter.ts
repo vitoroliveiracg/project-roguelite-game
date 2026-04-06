@@ -107,7 +107,7 @@ export default class GameAdapter {
         
         // 3. Se estivermos no Canvas2D, carregamos a imagem física correspondente ao mapId
         if (this.renderer instanceof Renderer) {
-            this.map = new GameMap(world.chunks, world.chunkSize);
+            this.map = new GameMap(world.mapId);
         }
 
         this.isPaused = false; // Descongela a lógica

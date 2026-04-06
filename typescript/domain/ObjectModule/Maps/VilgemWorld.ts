@@ -7,19 +7,6 @@ export default class VilgemWorld extends GameWorld {
     // Dimensões exatas da imagem de mapa que será carregada pelo Adaptador Web
     public readonly width = 8192; // 8 chunks de 1024px
     public readonly height = 8192;
-    
-    public readonly chunkSize = 1024;
-    public readonly chunks = (() => {
-        const grid: string[][] = [];
-        for (let y = 0; y < 8; y++) {
-            const row: string[] = [];
-            for (let x = 0; x < 8; x++) {
-                row.push(`vilgem-${x}-${y}`);
-            }
-            grid.push(row);
-        }
-        return grid;
-    })();
 
     public generate(): void {
         this.eventManager.dispatch('log', { channel: 'init', message: 'Gerando o mundo de Vilgem...', params: [] });

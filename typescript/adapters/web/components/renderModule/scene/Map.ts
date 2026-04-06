@@ -1,43 +1,44 @@
 /** @file Contém a classe `GameMap`, responsável por desenhar e gerenciar chunks de mapas sob demanda. */
-import { VisualConfigMap, type MapChunkVisualConfig } from "../../../shared/VisualConfigMap";
+import { VisualConfigMap, type MapVisualConfig } from "../../../shared/VisualConfigMap";
 
 export default class GameMap {
-  private chunks: string[][];
-  private chunkSize: number;
+  private config: MapVisualConfig;
   private imageCache: Map<string, HTMLImageElement> = new Map();
   private loadingChunks: Set<string> = new Set();
 
-  constructor(chunks: string[][], chunkSize: number) {
-    this.chunks = chunks;
-    this.chunkSize = chunkSize;
+  constructor(mapId: string) {
+    const config = VisualConfigMap[mapId];
+    if (!config || config.category !== 'map') {
+        throw new Error(`Configuração visual não encontrada para o mapa: ${mapId}`);
+    }
+    this.config = config as MapVisualConfig;
   }
 
   /** Desenha os 9 chunks (3x3) ao redor do alvo da câmera de forma dinâmica. */
   public draw(ctx: CanvasRenderingContext2D, targetX: number, targetY: number): void {
-    const currentChunkX = Math.floor(targetX / this.chunkSize);
-    const currentChunkY = Math.floor(targetY / this.chunkSize);
+    const currentChunkX = Math.floor(targetX / this.config.chunkSize);
+    const currentChunkY = Math.floor(targetY / this.config.chunkSize);
 
     for (let y = currentChunkY - 1; y <= currentChunkY + 1; y++) {
       for (let x = currentChunkX - 1; x <= currentChunkX + 1; x++) {
-        if (y >= 0 && y < this.chunks.length && x >= 0 && x < this.chunks[y]!.length) {
-          const chunkId = this.chunks[y]![x]!;
-          this.drawChunk(ctx, chunkId, x, y);
+        if (y >= 0 && y < this.config.chunks.length && x >= 0 && x < this.config.chunks[y]!.length) {
+          const imageUrl = this.config.chunks[y]![x]!;
+          this.drawChunk(ctx, imageUrl, x, y);
         }
       }
     }
   }
 
-  private drawChunk(ctx: CanvasRenderingContext2D, chunkId: string, gridX: number, gridY: number): void {
-    if (this.imageCache.has(chunkId)) {
-      ctx.drawImage(this.imageCache.get(chunkId)!, gridX * this.chunkSize, gridY * this.chunkSize, this.chunkSize, this.chunkSize);
-    } else if (!this.loadingChunks.has(chunkId)) {
-      this.loadingChunks.add(chunkId);
-      const config = VisualConfigMap[chunkId] as MapChunkVisualConfig;
-      if (config && config.imageSrc) {
+  private drawChunk(ctx: CanvasRenderingContext2D, imageUrl: string, gridX: number, gridY: number): void {
+    if (this.imageCache.has(imageUrl)) {
+      ctx.drawImage(this.imageCache.get(imageUrl)!, gridX * this.config.chunkSize, gridY * this.config.chunkSize, this.config.chunkSize, this.config.chunkSize);
+    } else if (!this.loadingChunks.has(imageUrl)) {
+      this.loadingChunks.add(imageUrl);
+      if (imageUrl) {
         const img = new Image();
-        img.onload = () => { this.imageCache.set(chunkId, img); this.loadingChunks.delete(chunkId); };
-        img.onerror = () => { console.error(`Falha ao carregar o chunk: ${config.imageSrc}`); this.loadingChunks.delete(chunkId); };
-        img.src = config.imageSrc;
+        img.onload = () => { this.imageCache.set(imageUrl, img); this.loadingChunks.delete(imageUrl); };
+        img.onerror = () => { console.error(`Falha ao carregar a textura do mapa: ${imageUrl}`); this.loadingChunks.delete(imageUrl); };
+        img.src = imageUrl;
       }
     }
   }
