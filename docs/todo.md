@@ -6,8 +6,8 @@
 * [x] Sistema de Drops e Inventário: Entidades droparem itens de verdade, lógica de coleta por proximidade e armazenamento.
 * [x] Lógica de Classes e Desbloqueio
 * [x] Mago (Spell Parser): Analisador no Domínio que traduz a sequência do buffer em ataques concretos (Lógica de Receitas).
-* [ ] Seleção de mapas: criação de classes extendidas de mundo que são mapas que são mandadas do domínio para poder selecionar um mapa, que contém toda a estrutura para colocar tudo de um mapa em determinado mapa
-* [ ] Objetos do mapa: Tem que ter um jeito do adaptador web montar o mundo, o que tem no mundo é definido pelo domínio.
+* [x] Seleção de mapas: criação de classes extendidas de mundo que são mapas que são mandadas do domínio para poder selecionar um mapa, que contém toda a estrutura para colocar tudo de um mapa em determinado mapa
+* [x] Objetos do mapa: Tem que ter um jeito do adaptador web montar o mundo, o que tem no mundo é definido pelo domínio.
 
 * [X] Refatoração Web (God Class): Isolar o `GameAdapter` extraindo o `SceneManager` (visual), `UIManager` (DOM) e `InputGateway`.
 * [X] (Buffer de Input): Implementar buffer temporal no `ActionManager` para capturar sequências de teclas (ex: 0, 1, 2).
@@ -259,7 +259,7 @@
 
 ### Épico 10: Customização e Gameplay Inicial
 	* [x] Compositor de Camadas (Layered Renderer) para sprites do player e equipamentos.
-	* [ ] Seleção de Mapas: Classes estendidas de `World` enviadas do domínio para o adaptador web.
+	* [x] Seleção de Mapas: Classes estendidas de `World` enviadas do domínio para o adaptador web.
 	* [ ] Eventos Mundiais: Buffs/Debuffs de run (ex: dano de espada aumentado para todos).
     
 
@@ -306,10 +306,15 @@
     * Mapa contínuo com Fast Travel entre regiões (Vilgem, Cemii, Alun).
     * O `World` no domínio define coordenadas, enquanto o adaptador desenha chunks conforme a posição.
 
-    ### 🎒 Itens e Classes
+### 🎒 Itens e Classes
 
     * Armas desbloqueiam classes permanentemente no `Player`, mas passivas dependem da classe ativa.
     * Drops raros (3%) com ranges de atributos variáveis.
+
+### 🐾 Pets e Companheiros
+
+    * Itens de Invocação: Equipar um item específico (ex: "Osso") em um slot do inventário invoca um Pet (ex: Cachorro).
+    * O Pet atua como uma entidade aliada no Domínio, seguindo o jogador (IA de Flocking/Steering) e auxiliando-o. Desequipar o item causa o despawn imediato do Pet.
 
 ### 🎭 NPC e Interação
 

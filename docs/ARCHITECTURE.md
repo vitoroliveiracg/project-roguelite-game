@@ -29,7 +29,7 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
 
   - **`DomainFacade.ts`:** O guardião e **único ponto de entrada** para a camada de domínio. Como **Porta Primária**, ele implementa a interface `IGameDomain`, expondo um conjunto limitado de operações de alto nível (`update`, `setWorld`, `getRenderState`). Sua principal responsabilidade é orquestrar as interações entre os principais componentes do domínio (como `Player` e `ObjectElementManager`) e proteger a integridade das regras de negócio, garantindo que nenhuma lógica externa possa manipular diretamente o estado interno do jogo.
 
-  - **`World.ts`**: Uma classe DTO (Data Transfer Object) simples que representa as propriedades imutáveis do mundo do jogo, como sua largura e altura. Serve como a "fonte da verdade" para os limites do ambiente, garantindo que componentes como a `Quadtree` e a `Camera` (na camada de adaptação) tenham uma referência consistente do espaço em que operam.
+  - **`ObjectModule/GameWorld.ts` e Mapas:** A classe abstrata que define as propriedades espaciais e a identidade do mapa (ex: `mapId: 'vilgem'`). Suas filhas (como `VilgemWorld`) possuem um método `generate()` que despacha as hitboxes estáticas de rios, montanhas e spawns de inimigos assim que o jogador entra no mapa. O Domínio é cego: não conhece as imagens do chão, apenas as metragens e limites físicos.
 
   - **`ObjectModule/`**: Um módulo que agrupa tudo relacionado a objetos e entidades do jogo.
     - **`ObjectElement.ts`**: A classe base para qualquer objeto que existe no mundo (jogador, inimigo, item). Define propriedades essenciais como ID, coordenadas, tamanho e hitboxes.
@@ -128,12 +128,12 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
     O módulo de renderização foi reestruturado para suportar WebGPU nativamente e separar claramente a mecânica, a orquestração e a arte, abolindo a necessidade de criar classes repetitivas para cada entidade do jogo através de um sistema guiado a dados (Data-Driven).
 
     - **`engine/`**: O maquinário de baixo nível que conversa com as APIs do navegador. Contém `Renderer.ts` (Canvas 2D) e o avançado `WebGPURenderer.ts` (que utiliza *Instanced Rendering*, shaders em WGSL e um *Texture Atlas* global para desenhar centenas de objetos em uma única chamada de vídeo, garantindo os 60 FPS no Bullet Hell).
-    - **`scene/`**: Os diretores e orquestradores do palco. Contém o `SceneManager.ts` (sincroniza os DTOs com a tela), a `RenderableFactory.ts` (fábrica inteligente), `Camera.ts` e `Map.ts`.
+    - **`scene/`**: Os diretores e orquestradores do palco. Contém o `SceneManager.ts` (sincroniza os DTOs com a tela), a `RenderableFactory.ts` (fábrica inteligente), `Camera.ts` e `Map.ts` (gerencia a renderização assíncrona da matriz de Chunks do chão com base na posição da câmera).
     - **`visuals/`**: Os blocos construtores de arte e animação. Contém `GameObjectElement.ts` (renderizador procedural Data-Driven), `LayeredGameObjectElement.ts` (desenha múltiplos sprites sobrepostos acompanhando os offsets de animação) e `VisualComposer.ts` (um poderoso motor de regras que calcula o Z-Index dinâmico de equipamentos, sabendo por exemplo que uma "barba" deve cobrir um "peitoral").
     - **`customRenderables/`**: Exceções que possuem lógica de pintura exclusiva e manual. Contém `Player.ts` (que aplica a ordem Z-Index de equipamentos) e `CircleForm.ts` (desenha linhas vetoriais ao invés de texturas de imagem).
 
   - **`shared/RenderRegistry.ts` (Decorators e Auto-Descoberta):** O sistema central que utiliza decoradores (`@RegisterRenderer`) para registrar automaticamente estratégias de instigação de classes e mapear animações. Isso permite plugar novas representações visuais na engine sem nunca alterar o código da `RenderableFactory`.
-  - **`shared/VisualConfigMap.ts` (O Coração Data-Driven):** Um dicionário estático imutável que mapeia os identificadores do domínio (ex: `'slime'`, `'iron-helmet'`) para suas configurações visuais exatas (URLs de imagens, tamanho dos frames, velocidade da animação, offsets de renderização). É ele quem permite que novas entidades, itens e magias sejam criados **sem escrever nenhuma nova classe na camada web**.
+  - **`shared/VisualConfigMap.ts` (O Coração Data-Driven):** Um dicionário estático imutável que mapeia identificadores do domínio (ex: `'slime'`, `'iron-helmet'`, `'vilgem'`) para configurações visuais exatas. Além de animações, **ele gerencia as matrizes de Chunks de todos os mapas**, delegando a arte inteiramente para a camada Web.
 
   #### keyboardModule
 
@@ -165,18 +165,15 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   **Tenta inicializar o `WebGPURenderer`**.
           -   **Se sucesso:** O jogo usará o pipeline de alta performance. O `GameAdapter` informa ao domínio um tamanho de mundo fixo, pois o "mapa" é apenas parte de uma textura no atlas.
           -   **Se falhar (try-catch):** O `GameAdapter` entra no modo **fallback**. Ele instancia o `Renderer` de Canvas 2D. Neste modo, ele carrega a imagem real do mapa (`GameMap`) para definir os limites do mundo.
-      -   Informa o domínio sobre os limites do mundo (`domain.setWorld()`).
       -   Instancia a `RenderableFactory` e pré-carrega todos os assets (`preloadAssets`). Isso é feito para ambos os renderizadores, garantindo que os assets estejam prontos para o fallback ou para uso futuro.
 
-  3.  **Travessia da Fronteira (Adapter -> Domain):**
-      -   O `GameAdapter` chama `domain.setWorld()`, passando as dimensões do mapa que acabou de carregar. Esta é a primeira grande interação com o domínio.
+  3.  **O "Despertar" do Domínio via Menu Principal (`DomainFacade.loadWorld`):**
+      -   Quando o jogador clica em "Sonhar" escolhendo uma Ilha no Menu, o Adaptador chama `domain.loadWorld(mapId)`.
+      -   O Domínio ganha vida. A classe correspondente (`VilgemWorld`) é instanciada e orquestra a geração do mundo (Hitboxes de montanhas, tamanho do chão e NPCs).
 
-  4.  **"Despertar" do Domínio (`DomainFacade.setWorld`):**
-      -   O domínio finalmente ganha vida. Ele cria suas entidades internas: `World`, `Player` (com seus `Attributes`), `ActionManager` e o `ObjectElementManager`.
-      -   O `ObjectElementManager` é instruído a popular o mundo com os inimigos iniciais (`spawnInitialElements`).
-
-  5.  **Finalização da Inicialização do Adaptador (`GameAdapter.initialize`):**
+  4.  **Finalização da Inicialização do Adaptador (`GameAdapter.initialize`):**
       -   Se estiver no modo Canvas 2D, o `GameAdapter` executa `syncRenderables()` pela primeira vez para criar as representações visuais (`IRenderable`) dos objetos que já existem no domínio (jogador e inimigos iniciais).
+      -   A classe `GameMap` lê a matriz de Chunks do `VisualConfigMap` e passa a carregar as imagens do chão em tempo real.
       -   Se estiver no modo WebGPU, ele cria os `AnimationManager`s iniciais.
       -   Finalmente, `initializeGame()` é chamado, passando os métodos `update` e `draw` do `GameAdapter`, dando início ao game loop.
 
@@ -484,3 +481,12 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
       -   **Exibição de Dados:** Para exibir os itens, a UI pode periodicamente (ou via eventos) chamar um método no domínio (ex: `domain.getInventoryState()`) para obter os dados e renderizá-los no HTML.
       -   **Envio de Ações:** Para usar um item, o listener de clique no botão "Usar" deve chamar o método apropriado no domínio, como `domain.useItem(itemId)`.
   4.  **Integração:** No `index.ts` principal da camada de adaptação, instancie sua nova classe `InventoryGui` para que ela seja carregada junto com o jogo.
+
+### 4.9. Como Criar um Novo Mapa com Chunks Dinâmicos (Ex: "Deserto")
+
+  O mapeamento do mundo é 100% Data-Driven no Adaptador e Físico no Domínio.
+
+  1. **Domínio (Lógica e Barreiras):** Crie a classe `DesertWorld.ts` estendendo `GameWorld`. Defina no construtor `width` e `height`. No método `generate()`, despache os `EnvironmentCollider`s (Hitboxes) para as dunas impenetráveis e orquestre o nascimento dos monstros do deserto. Registre no `DomainFacade.ts`.
+  2. **Visual (Arte e Chunks):** Abra o arquivo `VisualConfigMap.ts`. Crie uma nova configuração na categoria `'map'` sob a chave `'deserto'`. Defina o `chunkSize` (ex: `1024`) e passe a matriz bidimensional (`string[][]`) contendo as URLs exatas de cada pedaço de imagem que forma o chão do mapa.
+  
+  A câmera inteligente do `GameMap` só vai puxar a imagem do chunk X,Y quando o jogador estiver caminhando sobre ele!
