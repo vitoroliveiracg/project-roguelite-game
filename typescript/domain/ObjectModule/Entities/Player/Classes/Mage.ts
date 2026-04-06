@@ -93,6 +93,7 @@ export default class Mage extends Class {
                 direction: direction,
                 attack: playerAttack
             });
+            this.eventManager.dispatch('particle', { effect: 'fireExplosion', x: spawnCoordinates.x, y: spawnCoordinates.y });
             this.eventManager.dispatch('log', { channel: 'domain', message: `Cast spell: Fireball!`, params: [] });
             return true;
         } 
@@ -107,7 +108,7 @@ export default class Mage extends Class {
             }
 
             if (elements.length > 0) {
-                const manaCost = 2 * elements.length;
+                const manaCost = 1 * elements.length;
                 if(this.player.attributes.mana < manaCost) return false;
 
                 this.player.attributes.mana -= manaCost;
@@ -121,6 +122,7 @@ export default class Mage extends Class {
                     attack: playerAttack,
                     spellElements: elements
                 });
+                this.eventManager.dispatch('particle', { effect: 'magicAura', x: spawnCoordinates.x, y: spawnCoordinates.y });
                 
                 this.eventManager.dispatch('log', { channel: 'domain', message: `Cast Dynamic Spell with elements: [${elements.join(', ')}]!`, params: [] });
                 return true;

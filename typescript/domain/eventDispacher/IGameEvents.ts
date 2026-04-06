@@ -12,6 +12,7 @@ export interface GameEventMap {
   log: { channel: string, message: string, params: any[] };
   spawnVisual: { type: string, coordinates: { x: number, y: number }, duration: number, size: { width: number, height: number }, rotation?: number };
   classChanged: { oldClassInstance: any, newClassInstance: any };
+  particle: { effect: string, x: number, y: number, color?: string, angle?: number };
 }
 export type EventKey = keyof GameEventMap;
 

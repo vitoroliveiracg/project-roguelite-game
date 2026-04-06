@@ -135,12 +135,13 @@ export default class ParticleOrchestrator implements IRenderable {
         });
     }
 
-    /** Explosão majestosa e dourada com vida longa, para celebrar a subida de nível! */
-    public levelUp(x: number, y: number): void {
+    /** Explosão majestosa e azulada com vida longa, para celebrar a subida de nível! */
+    public levelUp(x: number, y: number, hexColor?: string): void {
+        const colors = hexColor ? [hexColor, '#FFFFFF', '#E0FFFF'] : ['#00aaff', '#00ffff', '#e0ffff', '#87cefa'];
         this.particles.emit({
             x, y,
             count: 60,
-            colors: ['#FFD700', '#FFFF00', '#FFF8DC', '#DAA520'],
+            colors: colors,
             speedMin: 100, speedMax: 300,
             sizeMin: 3, sizeMax: 7,
             lifeMin: 1.0, lifeMax: 2.5,

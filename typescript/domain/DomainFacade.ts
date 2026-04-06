@@ -52,6 +52,16 @@ export default class DomainFacade implements IGameDomain {
     this.logger.log('domain', `Update cycle started (deltaTime: ${clampedDeltaTime})`);
 
     this.player.update(clampedDeltaTime);
+    
+    // Regeneração passiva do Jogador (Apenas se estiver vivo)
+    const attrs = this.player.attributes;
+    if (attrs.hp > 0 && attrs.hp < attrs.maxHp) {
+        attrs.hp = Math.min(attrs.maxHp, attrs.hp + (attrs.constitution * 0.1) * clampedDeltaTime);
+    }
+    if (attrs.mana < attrs.maxMana) {
+        attrs.mana = Math.min(attrs.maxMana, attrs.mana + (attrs.wisdom * 0.5) * clampedDeltaTime);
+    }
+
     this.objectManager.updateAll(clampedDeltaTime, this.player);
   }
 

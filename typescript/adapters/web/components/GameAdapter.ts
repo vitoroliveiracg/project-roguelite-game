@@ -216,8 +216,18 @@ export default class GameAdapter {
       this.sceneManager.addVisualEffect(payload);
     });
 
-    // Novo ouvinte mágico para o sistema de partículas semântico!
-    (this.eventManager as any).on('particle', (payload: { effect: string, x: number, y: number, color?: string, angle?: number }) => {
+    this.eventManager.on('levelUp', (payload) => {
+      const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
+      if (playerState) {
+        const centerX = playerState.coordinates.x + playerState.size.width / 2;
+        const centerY = playerState.coordinates.y + playerState.size.height / 2;
+        // Envia a cor Azul Mágico para o efeito de Level Up
+        this.eventManager.dispatch('particle', { effect: 'levelUp', x: centerX, y: centerY, color: '#00aaff' });
+      }
+    });
+
+    // Ouvinte oficial do sistema de partículas semântico!
+    this.eventManager.on('particle', (payload) => {
       const orchestrator = this.sceneManager.particleOrchestrator as any;
       if (orchestrator[payload.effect]) {
           if (payload.effect === 'slashSparks') {
@@ -225,7 +235,7 @@ export default class GameAdapter {
           } else if (payload.effect === 'magicAura') {
               orchestrator.magicAura(payload.x, payload.y, payload.color);
           } else {
-              orchestrator[payload.effect](payload.x, payload.y);
+              orchestrator[payload.effect](payload.x, payload.y, payload.color);
           }
       } else {
           logger.log('error', `Efeito de partícula desconhecido requisitado: ${payload.effect}`);

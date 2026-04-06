@@ -77,5 +77,12 @@ export default abstract class MeleeWeapon extends Weapon {
             size: { width: 32, height: 32 },
             rotation: Math.atan2(attackDir.y, attackDir.x) + Math.PI / 4 // Rotação dinâmica
         });
+
+        eventManager.dispatch('particle', {
+            effect: 'slashSparks',
+            x: visualX,
+            y: visualY,
+            angle: Math.atan2(attackDir.y, attackDir.x)
+        });
     }
 }
