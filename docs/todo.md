@@ -24,52 +24,52 @@
 
 ### Mapa
 
-* Mapa geral contínuo, fast travel para regiões já visitadas
+    * Mapa geral contínuo, fast travel para regiões já visitadas
 
-* Montaria para locomoção
+    * Montaria para locomoção
 
-* **Domínio Agnostico e Coordenadas:** O `World` define as regras do espaço contínuo. Adaptadores devem consumir coordenadas (x,y) relativas ao mapa para instanciar/desenhar blocos (chunks), enquanto o domínio apenas calcula distâncias matemáticas sem se importar com a imagem do chão.
+    * **Domínio Agnostico e Coordenadas:** O `World` define as regras do espaço contínuo. Adaptadores devem consumir coordenadas (x,y) relativas ao mapa para instanciar/desenhar blocos (chunks), enquanto o domínio apenas calcula distâncias matemáticas sem se importar com a imagem do chão.
 
 ### HUD e GUIs
 
-* GUI de HP e Mana na tela, lendo diretamente do estado do jogador no domínio.
-* UI modular para mostrar demais atributos de sistema em janelas sobrepostas.
+    * GUI de HP e Mana na tela, lendo diretamente do estado do jogador no domínio.
+    * UI modular para mostrar demais atributos de sistema em janelas sobrepostas.
 
 ### Armas e Classes
 
-* Habilidades passivas das classes funcionam somente com as classes ativas
+    * Habilidades passivas das classes funcionam somente com as classes ativas
 
-* Armas liberam classes mas as classes não são ligadas as armas, pegou o item e libera a classe, mas se tirou, tá desbloqueado
+    * Armas liberam classes mas as classes não são ligadas as armas, pegou o item e libera a classe, mas se tirou, tá desbloqueado
 
 ### Iniciar jogo
 
-* World event que favorece uma classe e outro world event que desfavorecem outras classe (Dois tigrinn na tela) - Seu dano de pistola é reduzido e o dano de pistola de inimigos é aumentado; Dano de espada é aumentado e dano de espada de inimigos é diminuido (Pode variar)
+    * World event que favorece uma classe e outro world event que desfavorecem outras classe (Dois tigrinn na tela) - Seu dano de pistola é reduzido e o dano de pistola de inimigos é aumentado; Dano de espada é aumentado e dano de espada de inimigos é diminuido (Pode variar)
 
-* Primeira entrada, NPC fala com você explica as classes base (Guerreiro, Feiticeiro, Mago, Arqueiro, )
+    * Primeira entrada, NPC fala com você explica as classes base (Guerreiro, Feiticeiro, Mago, Arqueiro, )
 
 ### Item Drop
 
-* Item fica no chão se inventário cheio.
+    * Item fica no chão se inventário cheio.
 
-* Item tem range de atributos (e muito menor de ter efeito)
+    * Item tem range de atributos (e muito menor de ter efeito)
 
-* Drops são raros e caem no chão. Pega ao passar perto (3% drop rate)
+    * Drops são raros e caem no chão. Pega ao passar perto (3% drop rate)
 
 ### Mobs
 
-* Range máximo para aggro dos inimigos. Fora do range desespawna (difício escapar no início)
+    * Range máximo para aggro dos inimigos. Fora do range desespawna (difício escapar no início)
 
 ## Lista de tarefas a discutir
 
 ### Épico 1: Interface de Usuário (UI) - Personagem
 
-Tarefa: [~] Criar Moldura Principal da Interface do Personagem
+    Tarefa: [~] Criar Moldura Principal da Interface do Personagem
 
     [x] Implementar o container principal com 3 abas navegáveis: "Inv" (Inventário), "Status", "Skill".
 
     [x] Garantir que o estado da aba selecionada seja mantido.
 
-Tarefa: [x] Implementar Aba "Inv" (Inventário)
+    Tarefa: [x] Implementar Aba "Inv" (Inventário)
 
     [x] Sub-tarefa: Criar a grade do inventário ("Bolsa") com slots.
 
@@ -79,7 +79,7 @@ Tarefa: [x] Implementar Aba "Inv" (Inventário)
 
     [x] Sub-tarefa: Criar lógica de "Equipar/Desequipar" via clique entre a Bolsa e o Paper Doll e refletir no Domínio.
 
-Tarefa: Implementar Aba "Status"
+    Tarefa: Implementar Aba "Status"
 
     Sub-tarefa: Criar a seção "ATRIBUTOS" (conforme image_6200bd.jpg).
 
@@ -99,7 +99,7 @@ Tarefa: Implementar Aba "Status"
 
 ### Épico 2: Sistema de Habilidades (Skills)
 
-Tarefa: [~] Criar UI da "Árvore de Habilidades" (Skill Tree)
+    Tarefa: [~] Criar UI da "Árvore de Habilidades" (Skill Tree)
 
     [x] Sub-tarefa: Focar esta interface para ser a Árvore GLOBAL (Meta-Progressão). O In-Game foi movido para o CharacterMenuGui.
     [x] Sub-tarefa: Implementar o layout visual da árvore com nós (círculos, retângulos) e linhas de conexão (conforme image_62009f.jpg).
@@ -112,7 +112,7 @@ Tarefa: [~] Criar UI da "Árvore de Habilidades" (Skill Tree)
 
     [x] Sub-tarefa: Associar visualmente cada árvore a uma Classe no topo.
 
-Tarefa: [x] Criar UI de Gerenciamento de Skills Ativas/Passivas
+    Tarefa: [x] Criar UI de Gerenciamento de Skills Ativas/Passivas
 
     [x] Sub-tarefa: Criar a UI para equipar skills in-game no CharacterMenuGui (conforme image_625255.jpg).
 
@@ -122,7 +122,7 @@ Tarefa: [x] Criar UI de Gerenciamento de Skills Ativas/Passivas
 
     [x] Sub-tarefa: Implementar sistema visual de slots trancados.
 
-Tarefa: [x] [Domínio] Lógica das Classes
+    Tarefa: [x] [Domínio] Lógica das Classes
 
     [x] Implementar a estrutura: "classes não são ligadas as armas" (desbloqueio no Player é permanente).
 
@@ -135,7 +135,7 @@ Tarefa: [x] [Domínio] Lógica das Classes
 ### Épico 3: Sistema de Mapas e Progressão
 
 
-Tarefa: Criar UI e Lógica do Mapa-Múndi
+    Tarefa: Criar UI e Lógica do Mapa-Múndi
 
     Sub-tarefa: Implementar a UI do mapa-múndi (conforme image_625293.jpg).
 
@@ -147,7 +147,7 @@ Tarefa: Criar UI e Lógica do Mapa-Múndi
 
     Sub-tarefa: Adicionar bússola e botão de fechar "X".
 
-Tarefa: Criar UI e Lógica do Mapa de Progressão (Run)
+    Tarefa: Criar UI e Lógica do Mapa de Progressão (Run)
 
     Requisito extraído de image_623b.png (parece um mapa de "run" estilo Slay the Spire).
 
@@ -163,13 +163,13 @@ Tarefa: Criar UI e Lógica do Mapa de Progressão (Run)
 
 ### Épico 6: Sistema de Conjuração do Mago Programador (Axiomante)
 
-Tarefa: [x] [Domínio] Buffer de Entrada (ActionManager)
+    Tarefa: [x] [Domínio] Buffer de Entrada (ActionManager)
 
     [x] Sub-tarefa: Implementar um buffer FIFO temporal no `ActionManager` para capturar e reter sequências curtas de teclas.
 
     [x] Sub-tarefa: Lógica de expiração (se o jogador não completar a string a tempo, limpa o buffer).
 
-Tarefa: [x] [Domínio] Analisador Sintático (Spell Parser)
+    Tarefa: [x] [Domínio] Analisador Sintático (Spell Parser)
 
     [x] Sub-tarefa: Criar módulo de domínio `SpellParser` que escuta o buffer e compara com padrões de "Receitas" de magias.
 
@@ -177,23 +177,23 @@ Tarefa: [x] [Domínio] Analisador Sintático (Spell Parser)
 
 ### Épico 7: Compositor Visual Dinâmico (Reutilizável)
 
-*Módulo de renderização agnóstico focado em sobrepor ou compor imagens/formas base, servindo tanto para as magias do Axiomante quanto para armaduras e customização de personagem.*
+    *Módulo de renderização agnóstico focado em sobrepor ou compor imagens/formas base, servindo tanto para as magias do Axiomante quanto para armaduras e customização de personagem.*
 
-Tarefa: [x] Compositor de Camadas (Layered Renderer)
+    Tarefa: [x] Compositor de Camadas (Layered Renderer)
 
     [x] Sub-tarefa: Criar módulo visual que aceita um array de `SpriteConfigs` e os desenha na mesma coordenada, respeitando uma ordem de Z-Index.
 
     [x] Sub-tarefa: Integrar isso ao `RenderableFactory` lendo o `VisualConfigMap` automaticamente.
 
-Tarefa: Visual Procedural de Magias
+    Tarefa: Visual Procedural de Magias
 
     Sub-tarefa: Usar o Compositor de Camadas para empilhar partículas simples (ex: base redonda vermelha + aura laranja) em magias não refinadas.
 
 
 ### Épico 8: Meta-Progressão (O Coração do Roguelite)
-*O sistema global de progressão que persiste entre as mortes, separando a árvore de classe (in-game) da árvore de conta (global).*
+    *O sistema global de progressão que persiste entre as mortes, separando a árvore de classe (in-game) da árvore de conta (global).*
 
-Tarefa: Árvore de Habilidades Global (Hub/Menu)
+    Tarefa: Árvore de Habilidades Global (Hub/Menu)
     Sub-tarefa: Criar interface para a Árvore Global, acessível fora das runs (Hub ou Main Menu).
     Sub-tarefa: Criar `MetaProgressionManager` no Domínio (persiste além do ciclo de vida do `Player`).
     Sub-tarefa: Implementar a injeção de bônus globais: Quando um novo `Player` nasce, o `MetaProgressionManager` injeta atributos bônus nas propriedades de `_bonus` da classe `Attributes`.
@@ -203,7 +203,7 @@ Tarefa: Árvore de Habilidades Global (Hub/Menu)
 ### Épico 4: Sistema de Itens, Crafting e Drops
 
 
-Tarefa: [~] [Domínio] Lógica de Drop de Itens
+    Tarefa: [~] [Domínio] Lógica de Drop de Itens
 
     Implementar taxa de drop (ex: 3%).
 
@@ -217,7 +217,7 @@ Tarefa: [~] [Domínio] Lógica de Drop de Itens
 
     [x] Implementar chance de itens terem "efeitos" especiais.
 
-Tarefa: Sistema de Crafting (Criação de Itens)
+    Tarefa: Sistema de Crafting (Criação de Itens)
 
     Requisito extraído de image_625255.jpg ("craftar").
 
@@ -231,7 +231,7 @@ Tarefa: Sistema de Crafting (Criação de Itens)
 
 ### Épico 5: Customização e Gameplay Inicial
 
-Tarefa: Compositor de Sprites do Personagem
+    Tarefa: Compositor de Sprites do Personagem
 
     Sub-tarefa: Criar a UI de seleção (cabelo, cor, olhos).
 
@@ -239,20 +239,82 @@ Tarefa: Compositor de Sprites do Personagem
 
     [x] Sub-tarefa: Integrar com o inventário: O Compositor agora lê o `iconId` do que está equipado no DTO e busca as texturas dinamicamente!
 
-Tarefa: Lógica de Início de Jogo (Run)
+    Tarefa: Lógica de Início de Jogo (Run)
 
     Sub-tarefa: Implementar o sistema de "World Events" (buffs/debuffs da run).
 
     Sub-tarefa: Criar a UI para exibir os eventos ativos (ex: "Dois tigrinn na tela").
 
     Sub-tarefa: Criar o diálogo/tutorial do NPC inicial para explicar as classes base.
+    
+    
+### Épico 6: Sistema de Conjuração do Mago (Axiomante)
+	* [x] Buffer FIFO temporal no `ActionManager`.
+	* [x] Spell Parser: Tradução de sequências (ex: 0-1-2) em ataques concretos.
+	* [ ] Visual Procedural: Empilhar partículas para magias não listadas no `VisualConfigMap`.
+
+### Épico 9: A Conexão BDI/TS (Túnel de Sockets)
+	* **Tarefa: Protocolo de Mensagens:** Definir estrutura JSON para comandos (ex: `{ "cmd": "move_to", "npcId": "mentor", "x": 150, "y": 200 }`).
+	* **Tarefa: Percepções de Mundo:** Enviar para o Athena dados de proximidade do player e obstáculos a cada N frames.
+
+### Épico 10: Customização e Gameplay Inicial
+	* [x] Compositor de Camadas (Layered Renderer) para sprites do player e equipamentos.
+	* [ ] Seleção de Mapas: Classes estendidas de `World` enviadas do domínio para o adaptador web.
+	* [ ] Eventos Mundiais: Buffs/Debuffs de run (ex: dano de espada aumentado para todos).
+    
 
 ### Épico Extra: Dívida Técnica & Refatoração (Camada Web)
 
-Tarefa: Desacoplar a "God Class" GameAdapter
+    Tarefa: Desacoplar a "God Class" GameAdapter
 
-    Sub-tarefa: Extrair lógica de inicialização de UI (`XpBarGui` e futuras) para um `UIManager` ou `GUIManager`.
+        Sub-tarefa: Extrair lógica de inicialização de UI (`XpBarGui` e futuras) para um `UIManager` ou `GUIManager`.
 
-    Sub-tarefa: Extrair a lógica pesada de iteração visual (`syncRenderables`) para um `SceneManager` responsável apenas por conectar DTOs a Factorys.
+        Sub-tarefa: Extrair a lógica pesada de iteração visual (`syncRenderables`) para um `SceneManager` responsável apenas por conectar DTOs a Factorys.
 
-    Sub-tarefa: Deixar o `GameAdapter` ser apenas um condutor (Bootstrapper) leve que liga os módulos.
+        Sub-tarefa: Deixar o `GameAdapter` ser apenas um condutor (Bootstrapper) leve que liga os módulos.
+
+    Aqui está o seu novo `todo.md`, atualizado com a transição para **Tauri**, a integração do motor **Athena (BDI)** e o sistema de **NPCs com LLM local (Ollama)**. 
+
+    Este documento mescla o progresso atual com os novos requisitos de infraestrutura desktop e IA.
+
+
+## 🏗️ INFRAESTRUTURA DESKTOP (TAURI)
+	* [ ] **Migração para Tauri:** Configurar o ambiente Rust e envelopar o diretório `adapters/web` atual.
+	* [ ] **Instalador Nativo (.exe):** Criar script de instalação que verifica/instala a JVM (Java) e o Ollama.
+	* [ ] **Gerenciador de Processos:** Implementar no backend do Tauri o "boot" silencioso do motor Athena (`.jar`) e do servidor Ollama.
+	* [ ] **Persistência Criptografada:** Implementar no Rust a lógica de save/load utilizando a palavra-chave encriptada para evitar edição externa do arquivo.
+	* [ ] **Tela de Loading (Handshake):** Criar tela de carregamento que aguarda a confirmação de conexão (handshake) dos processos Java e Ollama antes de liberar o menu.
+	
+## 🧠 SISTEMA DE NPCs COGNITIVOS (BDI + LLM)
+	* [ ] **Ponte de Baixa Latência (Sockets):** Implementar comunicação via TCP/UDP entre o Motor TS (Domínio) e o Athena (Java).
+	* [ ] **InteractiveEntity (Domínio):** Criar classe base para NPCs que recebem comandos diretos de movimento e animação via socket.
+	* [ ] **Integração Athena-Ollama:** Configurar o Athena para despachar intenções de fala para a porta local do Ollama.
+	* [ ] **Interface de Diálogo (DialogueGui):** Criar UI modular para exibição de textos da LLM e captação de input (texto/voz) do jogador.
+
+## ⚔️ PROGRESSO ATUAL E REVISÕES
+	* [x] HUD Modular: HP, Mana e Status.
+	* [x] Compositor Visual (O "Lego"): Sistema modular para armaduras e itens.
+	* [x] Sistema de Drops e Inventário: Coleta por proximidade e armazenamento.
+	* [x] Buffer de Input: Captura de sequências para o Mago.
+	* [ ] **Refatoração de Física:** Desacoplar Worker de colisão para evitar bloqueios no Game Loop (Double Buffering).
+	* [ ] **Limpeza de Memória:** Implementar Object Pooling para projéteis e DTOs de renderização para evitar GC Thrashing.
+
+## 📋 REQUISITOS GERAIS
+
+### 🌍 Mundo e Navegação
+
+    * Mapa contínuo com Fast Travel entre regiões (Vilgem, Cemii, Alun).
+    * O `World` no domínio define coordenadas, enquanto o adaptador desenha chunks conforme a posição.
+
+    ### 🎒 Itens e Classes
+
+    * Armas desbloqueiam classes permanentemente no `Player`, mas passivas dependem da classe ativa.
+    * Drops raros (3%) com ranges de atributos variáveis.
+
+### 🎭 NPC e Interação
+
+    * **NPC Mentor:** Tutorial inicial explicando as classes base no Hub.
+    * **Axiomante (Academia):** Torre de desafios para estabilizar magias via puzzle de conexão elementar.
+
+---
+**Nota de Arquitetura:** Mantenha o `DomainFacade` como o único ponto de entrada para o `SocketGateway` repassar os comandos da IA para o jogo.
