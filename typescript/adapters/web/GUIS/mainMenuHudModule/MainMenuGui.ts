@@ -1,7 +1,7 @@
 import { logger } from "../../shared/Logger";
 import html from './mainMenu.html?raw';
 import css from './mainMenu.css?raw';
-import { RepositoryAdapter } from "../../../RepositoryAdapter/RepositoryAdapter";
+import { LocalStorageAdapter } from "../../../../domain/ports/LocalStorageAdapter";
 
 export default class MainMenuGui {
     private container!: HTMLElement;
@@ -57,19 +57,9 @@ export default class MainMenuGui {
         // =========================================================================
         const worlds = [
             { 
-                id: 'cemii', name: 'Cemii', 
-                path: 'M 250 150 Q 180 110 120 140 Q 60 170 70 230 Q 80 310 140 320 Q 200 330 220 270 Q 210 210 250 150 Z', 
-                cx: 140, cy: 220, scale: 1.0, image: 'https://picsum.photos/seed/cemii/400/400' 
-            },
-            { 
                 id: 'vilgem', name: 'Vilgem', 
                 path: 'M 250 150 Q 210 210 220 270 Q 290 330 380 280 Q 390 220 350 160 Q 300 170 250 150 Z', 
                 cx: 300, cy: 260, scale: 1.0, image: 'https://picsum.photos/seed/vilgem/400/400' 
-            },
-            { 
-                id: 'alun', name: 'Alun', 
-                path: 'M 350 160 Q 390 220 380 280 Q 450 320 520 280 Q 550 210 500 130 Q 430 110 350 160 Z', 
-                cx: 460, cy: 220, scale: 1.0, image: 'https://picsum.photos/seed/alun/400/400' 
             }
         ];
 
@@ -96,12 +86,8 @@ export default class MainMenuGui {
 
         worlds.forEach(w => {
             let interiorDoodles = '';
-            if (w.id === 'cemii') {
-                interiorDoodles = `<use href="#tree" x="100" y="180"/><use href="#tree" x="120" y="190"/><use href="#tree" x="110" y="210"/><use href="#tree" x="140" y="170"/>`;
-            } else if (w.id === 'vilgem') {
+            if (w.id === 'vilgem') {
                 interiorDoodles = `<use href="#mountain" x="250" y="200"/><use href="#mountain" x="270" y="190"/><use href="#mountain" x="290" y="205"/><use href="#castle" x="310" y="230"/>`;
-            } else if (w.id === 'alun') {
-                interiorDoodles = `<use href="#castle" x="420" y="180"/><use href="#castle" x="440" y="170"/><use href="#mountain" x="460" y="240"/><use href="#mountain" x="480" y="230"/>`;
             }
 
             svgContent += `
@@ -126,15 +112,9 @@ export default class MainMenuGui {
         // =========================================================================
         svgContent += `
             <g class="map-poi-group">
-                <circle cx="140" cy="220" r="8" class="map-poi" data-poi="cemii_city">
-                    <title>Cidade de Cemii</title>
-                </circle>
                 <circle cx="300" cy="260" r="10" class="map-poi" data-poi="vilgem_tower">
                     <title>Torre de Vilgem</title>
                 </circle>
-                <rect x="440" y="200" width="16" height="16" rx="4" class="map-poi" data-poi="alun_dungeon">
-                    <title>Masmorra de Alun</title>
-                </rect>
             </g>
         `;
         
@@ -271,11 +251,12 @@ export default class MainMenuGui {
         
         if (!btnExport || !btnImport || !ioArea || !btnConfirm) return;
 
-        const repo = new RepositoryAdapter();
+        const repo = new LocalStorageAdapter();
 
-        btnExport.addEventListener('click', () => {
-            const saveStr = repo.exportSave();
-            if (saveStr) {
+        btnExport.addEventListener('click', async () => {
+            const data = await repo.loadProgress();
+            if (data) {
+                const saveStr = btoa(JSON.stringify(data));
                 ioArea.value = saveStr;
                 ioArea.style.display = 'block';
                 btnConfirm.style.display = 'none';
@@ -292,14 +273,16 @@ export default class MainMenuGui {
             ioArea.focus();
         });
 
-        btnConfirm.addEventListener('click', () => {
+        btnConfirm.addEventListener('click', async () => {
             const data = ioArea.value.trim();
             if (!data) return;
             
-            if (repo.importSave(data)) {
+            try {
+                const decoded = JSON.parse(atob(data));
+                await repo.saveProgress(decoded);
                 alert("Save importado com sucesso! Recarregando os sonhos...");
                 window.location.reload();
-            } else {
+            } catch (e) {
                 alert("Código de save inválido ou corrompido!");
             }
         });

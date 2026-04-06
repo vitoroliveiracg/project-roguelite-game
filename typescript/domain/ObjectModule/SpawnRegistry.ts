@@ -6,6 +6,8 @@ export type SpawnPayload = {
     coordinates: { x: number; y: number; };
     direction?: any;
     attack?: any;
+    hitboxes?: any[];
+    size?: { width: number; height: number; };
     [key: string]: any;
 };
 

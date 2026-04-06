@@ -31,6 +31,8 @@ export interface WorldState {
   width: number;
   /** A altura total do mundo do jogo em unidades (pixels). */
   height: number;
+  /** Identificador do mapa para carregar o cenário desenhado no adaptador (ex: 'vilgem'). */
+  mapId: string;
 }
 
 /** DTO base para o estado de qualquer objeto que pode ser renderizado. */
@@ -96,8 +98,8 @@ export type RenderableState = EntityRenderableState; // Por enquanto, só temos 
 export interface IGameDomain {
   /** Aciona a atualização de estado de todas as entidades do domínio a cada tick do game loop. @param deltaTime O tempo, em segundos, desde a última atualização. */
   update(deltaTime: number): void;
-  /** Permite que a camada de apresentação configure o contexto do mundo (ex: tamanho do mapa) no domínio durante a inicialização. @param width A largura do mundo. @param height A altura do mundo. */
-  setWorld(width: number, height: number): void;
+  /** Instruí o domínio a carregar um mapa específico (instanciando a classe World correspondente e gerando suas hitboxes). */
+  loadWorld(mapId: string): void;
   /** Traduz uma intenção do usuário (capturada pela apresentação) em um comando que o domínio entende. @param command O comando de movimento. */
   handlePlayerInteractions(command: { actions: Array<action> }, mouseLastCoordinates: {x:number,y:number}): void; // eslint-disable-line
   /** Executa um comando de inventário, como equipar ou desequipar um item. */

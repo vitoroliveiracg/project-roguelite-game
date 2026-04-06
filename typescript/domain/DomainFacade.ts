@@ -4,7 +4,8 @@ import type { IGameDomain, RenderableState, WorldState } from "./ports/domain-co
 
 import Player from "./ObjectModule/Entities/Player/Player";
 import ObjectElementManager from "./ObjectModule/ObjectElementManager";
-import World from "./World";
+import GameWorld from "./ObjectModule/GameWorld";
+import VilgemWorld from "./ObjectModule/Maps/VilgemWorld";
 import Attributes from "./ObjectModule/Entities/Attributes";
 import type { action } from "./eventDispacher/actions.type";
 import ActionManager from "./eventDispacher/ActionManager";
@@ -19,7 +20,7 @@ interface DomainConfig {
 
 /** @class DomainFacade @implements {IGameDomain} Atua como o guardião e orquestrador da camada de domínio, implementando a porta `IGameDomain` para proteger a integridade das entidades internas e expor apenas operações de alto nível. */
 export default class DomainFacade implements IGameDomain {
-  private world!: World; /** @private A instância do `World` que representa o ambiente do jogo. */
+  private world!: GameWorld; /** @private A instância do `GameWorld` que representa o ambiente do jogo. */
   private player!: Player; /** @private A instância do `Player` que representa o jogador. */
   private objectManager!: ObjectElementManager; /** @private O gerenciador de todas as outras entidades dinâmicas (inimigos, itens, etc.). */
   private config: DomainConfig; /** @private A configuração inicial do domínio. */
@@ -27,7 +28,7 @@ export default class DomainFacade implements IGameDomain {
 
   private actionManager!: ActionManager;
   private cachedRenderState = {
-    world: { width: 0, height: 0 },
+    world: { width: 0, height: 0, mapId: 'vilgem' },
     renderables: [] as any[]
   };
   private cachedPlayerState: any = null;
@@ -65,11 +66,19 @@ export default class DomainFacade implements IGameDomain {
     this.objectManager.updateAll(clampedDeltaTime, this.player);
   }
 
-  /** Fase de Inicialização: Cria as instâncias das entidades de domínio (`World`, `Player`) com base no contexto fornecido pelo Adapter. @param width A largura do mundo. @param height A altura do mundo. */
-  public setWorld(width: number, height: number): void {
-    this.logger.log('domain', `Setting world: ${width}x${height}`);
-    this.world = new World(width, height);
-    this.objectManager.setWorldBounds(width, height);
+  /** Fase de Inicialização: Cria as instâncias das entidades de domínio e orquestra a montagem do cenário. */
+  public loadWorld(mapId: string): void {
+    this.logger.log('domain', `Loading world: ${mapId}`);
+    
+    if (mapId === 'vilgem') {
+        this.world = new VilgemWorld(this.eventManager);
+    } else {
+        // Fallback genérico caso viaje para mapas sem classe registrada ainda
+        this.world = new VilgemWorld(this.eventManager); 
+    }
+    
+    this.world.generate();
+    this.objectManager.setWorldBounds(this.world.width, this.world.height);
     
     this.player = new Player(
       this.config.player.id,
@@ -82,7 +91,7 @@ export default class DomainFacade implements IGameDomain {
     
 
     this.objectManager.spawnInitialElements();
-    this.logger.log('domain', 'Initial enemies spawned via ObjectManager.');
+    this.logger.log('domain', 'Initial elements spawned via ObjectManager.');
   }
 
   /** Interface de comunicação que passa a responsabilidade para o domínio. @param command O objeto de comando vindo da camada de apresentação. @param deltaTime O tempo desde o último frame, usado para calcular o movimento. */
@@ -96,7 +105,7 @@ export default class DomainFacade implements IGameDomain {
       this.player.equipItem(payload.index);
     }
     if (action === 'unequip' && payload.slot !== undefined) {
-      this.player.unequipItem(payload.slot);
+      this.player.unequipItem(payload.slot as string);
     }
     if (action === 'consume' && payload.index !== undefined) {
       this.player.consumeItem(payload.index);
@@ -108,9 +117,9 @@ export default class DomainFacade implements IGameDomain {
 
   public manageSkillTree(action: 'unlock' | 'changeClass', payload: { className?: string; skillId?: string }): void {
     if (action === 'changeClass' && payload.className) {
-       this.player.setActiveClass(payload.className);
+       this.player.setActiveClass(payload.className as string);
     } else if (action === 'unlock' && payload.skillId) {
-       this.player.unlockSkill(payload.skillId);
+       this.player.unlockSkill(payload.skillId as string);
     }
   }
 
@@ -121,10 +130,11 @@ export default class DomainFacade implements IGameDomain {
   /** Fase de Desenho (Coleta de Dados): Constrói e retorna uma representação em DTOs do estado atual do jogo para a camada de renderização. @throws {Error} Se o mundo não foi inicializado. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   public getRenderState(): { world: WorldState; renderables: readonly RenderableState[] } {
     this.logger.log('sync', 'DomainFacade getting render state...');
-    if (!this.world) throw new Error("O mundo do domínio não foi inicializado. Chame setWorld() antes de getRenderState().");
+    if (!this.world) throw new Error("O mundo do domínio não foi inicializado. Chame loadWorld() antes de getRenderState().");
 
     this.cachedRenderState.world.width = this.world.width;
     this.cachedRenderState.world.height = this.world.height;
+    this.cachedRenderState.world.mapId = this.world.mapId;
 
     if (!this.cachedPlayerState) {
       this.cachedPlayerState = {

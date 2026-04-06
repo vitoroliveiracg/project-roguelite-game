@@ -82,21 +82,11 @@ export default class GameAdapter {
     try {
       this.renderer = new WebGPURenderer(canvas);
       await this.renderer.initialize();
-      // No modo WebGPU, o mapa é apenas uma textura no atlas, então definimos um tamanho fixo para o mundo.
-      const worldState = { width: 1024, height: 1024 };
-      this.domain.setWorld(worldState.width, worldState.height);
       logger.log('init', 'Successfully initialized WebGPU renderer.');
     } catch (error) {
       logger.log('error', `WebGPU initialization failed: ${(error as Error).message}. Falling back to Canvas 2D renderer.`);
       this.renderer = new Renderer(canvas, this.camera);
       await this.renderer.initialize(); // O initialize do Renderer antigo é síncrono, mas o await não causa problemas.
-
-      // No modo Canvas 2D, carregamos o mapa de verdade para definir o tamanho do mundo.
-      const mapImageUrl = new URL('../assets/maps/map.jpeg', import.meta.url).href;
-      this.map = new GameMap(mapImageUrl);
-      await this.map.waitUntilLoaded();
-      const worldState = { width: this.map.width, height: this.map.height };
-      this.domain.setWorld(worldState.width, worldState.height);
       logger.log('init', 'Initialized Canvas 2D renderer and loaded map.');
     }
 
@@ -104,11 +94,29 @@ export default class GameAdapter {
     await this.sceneManager.initialize();
 
     logger.log('init', 'All assets preloaded.');
-    this.syncScene();
     
     // O Jogo só começa quando o botão TELEtrans é clicado na aba do mapa!
-    new MainMenuGui((mapId) => {
-        logger.log('init', `Map selected: ${mapId}. Starting game loop...`);
+    new MainMenuGui(async (mapId) => {
+        logger.log('init', `Map selected: ${mapId}. Instructing domain to generate world...`);
+        
+        // 1. O Domínio assume a responsabilidade de instanciar o mundo (VilgemWorld, CemiiWorld)
+        this.domain.loadWorld(mapId);
+        
+        // 2. Lemos o DTO do mundo recém-gerado
+        const { world } = this.domain.getRenderState();
+        
+        // 3. Se estivermos no Canvas2D, carregamos a imagem física correspondente ao mapId
+        if (this.renderer instanceof Renderer) {
+            const fallbackMap = new URL('../assets/maps/map.jpeg', import.meta.url).href;
+            const mapUrls: Record<string, string> = {
+                'vilgem': new URL('../assets/maps/map.jpeg', import.meta.url).href,
+            };
+            
+            const mapBgUrl = mapUrls[world.mapId] || fallbackMap;
+            this.map = new GameMap(mapBgUrl);
+            await this.map.waitUntilLoaded();
+        }
+
         this.isPaused = false; // Descongela a lógica
         initializeGame(this.update.bind(this), this.draw.bind(this));
     });
