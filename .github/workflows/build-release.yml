@@ -1,10 +1,13 @@
 name: "Build and Release"
 
 on:
-  workflow_dispatch: # Permite disparar o build manualmente com um clique no GitHub
+  workflow_dispatch:
   push:
+    branches:
+      - main
+      - master
     tags:
-      - 'v*' # Roda automaticamente se você criar uma tag tipo "v1.0.0"
+      - 'v*'
 
 jobs:
   build-tauri:
