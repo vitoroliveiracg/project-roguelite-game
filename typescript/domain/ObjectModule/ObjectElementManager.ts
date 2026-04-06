@@ -169,6 +169,11 @@ export default class ObjectElementManager {
     return this.elements.delete(id);
   }
 
+  /** Busca uma entidade específica ativa no mundo pelo seu ID. */
+  public getElementById(id: number): ObjectElement | undefined {
+    return this.elements.get(id);
+  }
+
    /** Define os limites do mundo, essenciais para a inicialização da Quadtree. */
   public setWorldBounds(width: number, height: number): void {
     this.worldBounds = { x: 0, y: 0, width, height };
@@ -279,13 +284,19 @@ export default class ObjectElementManager {
       
       if ('activeStatuses' in element) {
         const statuses = (element as any).activeStatuses as Map<string, any>;
-        state.activeStatuses = Array.from(statuses.values()).map(s => ({
-          id: s.id,
-          description: s.description,
-          remaining: Math.max(0, s.duration - s.elapsed)
-        }));
+        if (!state.activeStatuses) state.activeStatuses = [];
+        let statusIndex = 0;
+        for (const s of statuses.values()) {
+            if (!state.activeStatuses[statusIndex]) state.activeStatuses[statusIndex] = { id: '', description: '', remaining: 0 };
+            const uiStatus = state.activeStatuses[statusIndex]!;
+            uiStatus.id = s.id;
+            uiStatus.description = s.description;
+            uiStatus.remaining = Math.max(0, s.duration - s.elapsed);
+            statusIndex++;
+        }
+        state.activeStatuses.length = statusIndex;
       } else {
-        state.activeStatuses = [];
+        if (state.activeStatuses) state.activeStatuses.length = 0;
       }
 
       // Reciclando o Array de Hitboxes (Livre do Garbage Collector)

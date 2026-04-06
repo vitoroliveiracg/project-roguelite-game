@@ -28,7 +28,7 @@ export default class BdiAgentEntity extends Entity {
                 { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 },
                 0,
                 8,
-                (otherElement) => {
+                (_otherElement) => {
                     // No futuro: Lógica de esbarrão, iniciar diálogo ou detectar contato com o Player
                 }
             )

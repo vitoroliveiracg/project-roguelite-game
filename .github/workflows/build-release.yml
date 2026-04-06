@@ -1,0 +1,47 @@
+name: "Build and Release"
+
+on:
+  workflow_dispatch: # Permite disparar o build manualmente com um clique no GitHub
+  push:
+    tags:
+      - 'v*' # Roda automaticamente se você criar uma tag tipo "v1.0.0"
+
+jobs:
+  build-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'RPG Roguelite v__VERSION__'
+          releaseBody: 'Nova versão do jogo gerada automaticamente para Windows, Mac e Linux!'
+          releaseDraft: true
+          prerelease: false

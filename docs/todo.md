@@ -286,8 +286,8 @@
 	* [ ] **Tela de Loading (Handshake):** Criar tela de carregamento que aguarda a confirmação de conexão (handshake) dos processos Java e Ollama antes de liberar o menu.
 	
 ## 🧠 SISTEMA DE NPCs COGNITIVOS (BDI + LLM)
-	* [ ] **Ponte de Baixa Latência (Sockets):** Implementar comunicação via TCP/UDP entre o Motor TS (Domínio) e o Athena (Java).
-	* [ ] **InteractiveEntity (Domínio):** Criar classe base para NPCs que recebem comandos diretos de movimento e animação via socket.
+	* [x] **Ponte de Baixa Latência (Sockets):** Implementar comunicação via TCP/UDP entre o Motor TS (Domínio) e o Athena (Java).
+	* [x] **InteractiveEntity (Domínio):** Criar classe base para NPCs que recebem comandos diretos de movimento e animação via socket.
 	* [ ] **Integração Athena-Ollama:** Configurar o Athena para despachar intenções de fala para a porta local do Ollama.
 	* [ ] **Interface de Diálogo (DialogueGui):** Criar UI modular para exibição de textos da LLM e captação de input (texto/voz) do jogador.
 
@@ -296,8 +296,8 @@
 	* [x] Compositor Visual (O "Lego"): Sistema modular para armaduras e itens.
 	* [x] Sistema de Drops e Inventário: Coleta por proximidade e armazenamento.
 	* [x] Buffer de Input: Captura de sequências para o Mago.
-	* [ ] **Refatoração de Física:** Desacoplar Worker de colisão para evitar bloqueios no Game Loop (Double Buffering).
-	* [ ] **Limpeza de Memória:** Implementar Object Pooling para projéteis e DTOs de renderização para evitar GC Thrashing.
+	* [x] **Refatoração de Física:** Desacoplar Worker de colisão para evitar bloqueios no Game Loop (Double Buffering).
+	* [x] **Limpeza de Memória:** Implementar Object Pooling para projéteis e DTOs de renderização para evitar GC Thrashing.
 
 ## 📋 REQUISITOS GERAIS
 

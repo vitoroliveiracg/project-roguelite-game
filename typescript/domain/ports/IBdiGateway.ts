@@ -25,4 +25,5 @@ export interface BdiIntention {
  */
 export interface IBdiGateway {
     sendPerceptions(perceptions: BdiPerception): void;
+    onIntentionReceived(callback: (intention: BdiIntention) => void): void;
 }

@@ -11,6 +11,7 @@ import type { action } from "./eventDispacher/actions.type";
 import ActionManager from "./eventDispacher/ActionManager";
 import type { IEventManager } from "./eventDispacher/IGameEvents";
 import type { ICollisionService } from "./ports/ICollisionService";
+import type { IBdiGateway } from "./ports/IBdiGateway";
 
 /** Define a estrutura de dados para a configuração inicial do domínio. */
 interface DomainConfig {
@@ -34,13 +35,29 @@ export default class DomainFacade implements IGameDomain {
   private cachedPlayerState: any = null;
 
   /** @constructor @param config O objeto de configuração com os dados iniciais para a criação das entidades do jogo. @param logger Uma instância de um logger que implementa a interface `ILogger`. */
-  constructor(config: DomainConfig, logger: ILogger, private eventManager: IEventManager, private collisionService: ICollisionService) {
+  constructor(
+    config: DomainConfig, 
+    logger: ILogger, 
+    private eventManager: IEventManager, 
+    private collisionService: ICollisionService,
+    private bdiGateway?: IBdiGateway
+  ) {
     this.config = config;
     this.logger = logger;
     this.logger.log('init', 'DomainFacade instantiated.');
 
     this.objectManager = new ObjectElementManager(this.eventManager, this.collisionService);
 
+    if (this.bdiGateway) {
+        this.bdiGateway.onIntentionReceived((intention) => {
+            if (intention.targetId) {
+                const element = this.objectManager.getElementById(intention.targetId);
+                if (element && typeof (element as any).setIntention === 'function') {
+                    (element as any).setIntention(intention);
+                }
+            }
+        });
+    }
   }
 
 
@@ -154,7 +171,6 @@ export default class DomainFacade implements IGameDomain {
     ps.size.height = this.player.size.height;
     ps.state = this.player.state;
     ps.rotation = this.player.rotation;
-    ps.hitboxes = this.player.hitboxes?.map(hb => hb.getDebugShape()) ?? [];
     ps.hasBeard = this.player.hasBeard;
     ps.facingDirection = this.player.facingDirection;
     
@@ -167,11 +183,26 @@ export default class DomainFacade implements IGameDomain {
     ps.maxMana = this.player.attributes.maxMana;
     ps.coins = this.player.coins;
     
-    // Repassa os status ativos do Jogador (Veneno, Fogo, etc) para a UI desenhar os ícones
-    ps.activeStatuses = Array.from(this.player.activeStatuses.values()).map(s => ({
-      id: s.id,
-      remaining: Math.max(0, s.duration - s.elapsed)
-    }));
+    // Object Pooling para Hitboxes do Player
+    if (!ps.hitboxes) ps.hitboxes = [];
+    const playerHitboxes = this.player.hitboxes || [];
+    for (let i = 0; i < playerHitboxes.length; i++) {
+        ps.hitboxes[i] = playerHitboxes[i]!.getDebugShape();
+    }
+    ps.hitboxes.length = playerHitboxes.length;
+
+    // Object Pooling para Status Ativos (Sem instanciar novos objetos por frame)
+    if (!ps.activeStatuses) ps.activeStatuses = [];
+    let statusIndex = 0;
+    for (const s of this.player.activeStatuses.values()) {
+        if (!ps.activeStatuses[statusIndex]) ps.activeStatuses[statusIndex] = { id: '', description: '', remaining: 0 };
+        const uiStatus = ps.activeStatuses[statusIndex];
+        uiStatus.id = s.id;
+        uiStatus.description = s.description;
+        uiStatus.remaining = Math.max(0, s.duration - s.elapsed);
+        statusIndex++;
+    }
+    ps.activeStatuses.length = statusIndex;
     
     ps.attributes.strength = this.player.attributes.strength;
     ps.attributes.constitution = this.player.attributes.constitution;
@@ -186,11 +217,18 @@ export default class DomainFacade implements IGameDomain {
 
     ps.activeClass = this.player.activeClass;
     ps.unlockedClasses = this.player.unlockedClasses;
-    ps.classes = this.player.classes.map(c => ({
-        name: c.name,
-        isUnlocked: this.player.unlockedClasses.includes(c.name),
-        isActive: this.player.activeClass === c.name
-    }));
+    
+    // Object Pooling para Classes
+    if (!ps.classes) ps.classes = [];
+    for (let i = 0; i < this.player.classes.length; i++) {
+        const c = this.player.classes[i]!;
+        if (!ps.classes[i]) ps.classes[i] = { name: '', isUnlocked: false, isActive: false };
+        const uiClass = ps.classes[i];
+        uiClass.name = c.name;
+        uiClass.isUnlocked = this.player.unlockedClasses.includes(c.name);
+        uiClass.isActive = this.player.activeClass === c.name;
+    }
+    ps.classes.length = this.player.classes.length;
     
     // Skills de Classe (In-Game) NÃO vão para a árvore da Meta-Progressão
     // O SkillTreeGui ficará vazio até implementarmos os Nodos Globais da conta
