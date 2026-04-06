@@ -261,6 +261,11 @@
 	* [x] Compositor de Camadas (Layered Renderer) para sprites do player e equipamentos.
 	* [x] Seleção de Mapas: Classes estendidas de `World` enviadas do domínio para o adaptador web.
 	* [ ] Eventos Mundiais: Buffs/Debuffs de run (ex: dano de espada aumentado para todos).
+
+### Épico 11: A Oficina do Gepeto (Integração 3D)
+	* [ ] **Ponte de Renderização Externa:** Utilizar a mesma arquitetura de Sockets para transmitir o estado (DTOs) do Domínio para um motor 3D externo (Unity/Unreal/Godot).
+	* [ ] **Cenário Híbrido:** Modelar a "Oficina do Gepeto" inteiramente em 3D. A lógica de negócio, movimentação e crafting continuam no TypeScript, mas o visual roda na engine 3D.
+	* [ ] **Transição Fluida 2D -> 3D:** Criar a lógica onde o jogador entra na porta da Oficina no mapa pixel art 2D e o controle visual é assumido instantaneamente pelo cliente 3D conectado.
     
 
 ### Épico Extra: Dívida Técnica & Refatoração (Camada Web)
