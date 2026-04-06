@@ -2,6 +2,7 @@ import type { EntityRenderableState } from "../../../../../domain/ports/domain-c
 import type IRenderableObject from "../visuals/IRenderable";
 import { RenderableFactory } from "./RenderableFactory";
 import DebugCircle from "../customRenderables/DebugCircle";
+import DebugPolygon from "../customRenderables/DebugPolygon";
 import DebugRectangle from "../customRenderables/DebugRectangle";
 import { AnimationManager } from "../visuals/AnimationManager";
 import WebGPURenderer from "../engine/WebGPURenderer";
@@ -235,6 +236,8 @@ export default class SceneManager {
           } else {
             if (hitboxState.type === 'circle') {
               this.debugRenderables.set(debugId, new DebugCircle(state.id, hitboxState));
+            } else if (hitboxState.type === 'polygon') {
+              this.debugRenderables.set(debugId, new DebugPolygon(state.id, hitboxState));
             }
           }
         });

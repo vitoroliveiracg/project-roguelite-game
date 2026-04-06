@@ -11,7 +11,7 @@ import type { IEventManager } from "../eventDispacher/IGameEvents";
 import DroppedItem from "./Items/DroppedItem";
 import Gun from "./Items/Weapons/RangedWeapons/Gun";
 import type { ICollisionService } from "../ports/ICollisionService";
-import Scythe from "./Items/Weapons/RangedWeapons/Scythe";
+import Scythe from "./Items/Weapons/MeleeWeapons/Scythe"; // Movido para MeleeWeapon!
 import SimpleStaff from "./Items/Weapons/RangedWeapons/Staffs/SimpleStaff";
 import IronHelmet from "./Items/Armors/helmet/IronHelmet";
 import IronChestplate from "./Items/Armors/chestplates/IronChestplate";
@@ -125,17 +125,13 @@ export default class ObjectElementManager {
     // O timer de spawn agora respeita o deltaTime. Se o jogo pausar, o deltaTime para de somar aqui.
     this.waveTimer += deltaTime;
     if (this.waveTimer >= this.WAVE_INTERVAL) {
-      // this.spawnWave();
+      this.spawnWave();
       this.waveTimer = 0;
     }
 
     // Em seguida, atualizamos cada elemento. Durante seu update, ele pode pedir vizinhos.
     for (const element of this.elements.values()) {
-      if (
-        element instanceof Entity || element instanceof CircleForm || element instanceof Projectile || element instanceof DroppedItem
-      ) {
-        element.update(deltaTime, player);
-      }
+      element.update(deltaTime, player);
     }
 
     // Após todas as atualizações, garante que ninguém saiu dos limites do mapa.
@@ -276,6 +272,14 @@ export default class ObjectElementManager {
       this.isCheckingCollisions = true;
 
       let offset = 0;
+      const ensureBuffer = (size: number) => {
+          if (offset + size > this.collisionBuffer.length) {
+              const newBuffer = new Float32Array(this.collisionBuffer.length * 2 + size);
+              newBuffer.set(this.collisionBuffer);
+              this.collisionBuffer = newBuffer;
+          }
+      };
+
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i];
         if (!element || !element.hitboxes) continue;
@@ -286,24 +290,29 @@ export default class ObjectElementManager {
 
           const shape = hitbox.getDebugShape();
           if (shape.type === 'circle') {
-            if (offset + 4 > this.collisionBuffer.length) {
-              const newBuffer = new Float32Array(this.collisionBuffer.length * 2);
-              newBuffer.set(this.collisionBuffer);
-              this.collisionBuffer = newBuffer;
-            }
+            ensureBuffer(5);
             this.collisionBuffer[offset++] = element.id;
+            this.collisionBuffer[offset++] = 0; // Type 0 = Circle
             this.collisionBuffer[offset++] = shape.coordinates.x;
             this.collisionBuffer[offset++] = shape.coordinates.y;
             this.collisionBuffer[offset++] = shape.radius || 0;
+          } else if (shape.type === 'polygon' && shape.points) {
+            ensureBuffer(3 + shape.points.length * 2);
+            this.collisionBuffer[offset++] = element.id;
+            this.collisionBuffer[offset++] = 1; // Type 1 = Polygon
+            this.collisionBuffer[offset++] = shape.points.length;
+            for (const p of shape.points) {
+                this.collisionBuffer[offset++] = p.x;
+                this.collisionBuffer[offset++] = p.y;
+            }
           }
         }
       }
 
-      const hitboxCount = offset / 4;
       const dataToSend = this.collisionBuffer.subarray(0, offset); // Cria uma View sem clonar a memória
 
       // Envia (Fire and Forget)
-      this.collisionService.checkCollisions(dataToSend, hitboxCount, this.worldBounds).then((pairs) => {
+      this.collisionService.checkCollisions(dataToSend, offset, this.worldBounds).then((pairs) => {
         this.pendingCollisions = pairs;
         this.isCheckingCollisions = false; // Libera a trava para enviar o próximo frame
       }).catch((err) => {

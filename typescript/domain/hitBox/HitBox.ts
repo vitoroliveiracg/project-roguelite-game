@@ -7,6 +7,8 @@ export interface HitboxDebugShape {
     type: 'circle' | 'polygon';
     coordinates: { x: number; y: number };
     radius?: number; // Apenas para círculos
+    points?: { x: number; y: number }[]; // Apenas para polígonos
+    rotation?: number;
 }
 /**
  * Define as propriedades básicas comuns a todas as HitBoxes.

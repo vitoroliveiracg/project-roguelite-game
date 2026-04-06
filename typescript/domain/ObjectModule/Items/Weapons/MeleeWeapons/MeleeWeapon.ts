@@ -1,6 +1,6 @@
 import type { IEventManager } from "../../../../eventDispacher/IGameEvents";
 import type { baseAttributes } from "../../../Entities/Attributes";
-import Item, { type ItemRarity } from "../../Item";
+import { type ItemRarity } from "../../Item";
 import Weapon from "../Weapon";
 import Attack from "../../Attack";
 import type Vector2D from "../../../../shared/Vector2D";
@@ -71,10 +71,11 @@ export default abstract class MeleeWeapon extends Weapon {
         const visualY = attacker.coordinates.y + attacker.size.height / 2 + attackDir.y * visualDistance;
 
         eventManager.dispatch('spawnVisual', {
-            type: 'slash', // Necessita existir no VisualConfigMap na camada de Apresentação
-            coordinates: { x: visualX - 16, y: visualY - 16 }, // Offset para centralizar 32x32
-            duration: 0.15, // Efeito some em 150ms
-            size: { width: 32, height: 32 }
+            type: 'slash',
+            coordinates: { x: visualX - 16, y: visualY - 16 }, // Centralizando o tamanho 32x32
+            duration: 0.15,
+            size: { width: 32, height: 32 },
+            rotation: Math.atan2(attackDir.y, attackDir.x) + Math.PI / 4 // Rotação dinâmica
         });
     }
 }

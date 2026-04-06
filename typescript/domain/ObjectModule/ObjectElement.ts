@@ -19,6 +19,9 @@ export default class ObjectElement {
   protected destroy():void {
     this.eventManager.dispatch('despawn', {objectId:this.id})
   }
+  
+  /** Método virtual de atualização. Pode ser sobrescrito por subclasses (Entidades, Projéteis, Efeitos). */
+  public update(deltaTime: number, player?: any): void {}
 
   //? ----------- Getters and Setters -----------
   

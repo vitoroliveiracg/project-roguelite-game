@@ -210,8 +210,19 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
                 frameCount: 6, animationSpeed: 3,
                 frameWidth: 64, frameHeight: 64,
                 atlasOffset: { x: 0, y: 0 },
-                spriteSize: { width: 70, height: 70 },
-                rotationOffset: Math.PI / 4,
+                spriteSize: { width: 64, height: 64 },
+            }
+        }
+    },
+    'scythe-slash' :{
+        category: 'vfx',
+        animations: {
+            'active': { 
+                imageSrc: new URL('../assets/entities/sword-atack-spritesheet.png', import.meta.url).href, 
+                frameCount: 6, animationSpeed: 3,
+                frameWidth: 64, frameHeight: 64,
+                atlasOffset: { x: 0, y: 0 },
+                spriteSize: { width: 64, height: 64 },
                 anchor: 'bottom-left'
             }
         }

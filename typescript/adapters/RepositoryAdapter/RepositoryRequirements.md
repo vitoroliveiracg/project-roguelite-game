@@ -1,0 +1,1 @@
+ Seria bom uma mecânica de encriptação com uma palavra chave encriptada para encriptar o save do jogo e que é salva encriptada no aquivo de encriptação assim não conseguem "hackear" o jogo editando o save
