@@ -21,7 +21,23 @@ export interface ProjectileVisualConfig extends BaseVisualConfig {
 export interface VFXVisualConfig extends BaseVisualConfig {
     category: 'vfx';
 }
-export type AnyVisualConfig = EntityVisualConfig | ItemVisualConfig | ProjectileVisualConfig | VFXVisualConfig;
+export interface MapChunkVisualConfig {
+    category: 'map-chunk';
+    imageSrc: string;
+}
+export type AnyVisualConfig = EntityVisualConfig | ItemVisualConfig | ProjectileVisualConfig | VFXVisualConfig | MapChunkVisualConfig;
+
+// Gerador dinâmico de Chunks pro mapa de Vilgem (Mock de fallback)
+// Eles todos usarão a mesma imagem pro chão até você desenhar e trocar os links!
+const mapChunks: Record<string, MapChunkVisualConfig> = {};
+for (let y = 0; y < 10; y++) {
+    for (let x = 0; x < 10; x++) {
+        mapChunks[`vilgem-${x}-${y}`] = {
+            category: 'map-chunk',
+            imageSrc: new URL('../assets/maps/map.jpeg', import.meta.url).href
+        };
+    }
+}
 
 export const VisualConfigMap: Record<string, AnyVisualConfig> = {
    
@@ -294,5 +310,8 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
                 anchor: 'bottom-left'
             }
         }
-    }
+    },
+    
+    // Mescla os chunks que acabamos de gerar
+    ...mapChunks
 };

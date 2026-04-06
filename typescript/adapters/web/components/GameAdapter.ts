@@ -107,14 +107,7 @@ export default class GameAdapter {
         
         // 3. Se estivermos no Canvas2D, carregamos a imagem física correspondente ao mapId
         if (this.renderer instanceof Renderer) {
-            const fallbackMap = new URL('../assets/maps/map.jpeg', import.meta.url).href;
-            const mapUrls: Record<string, string> = {
-                'vilgem': new URL('../assets/maps/map.jpeg', import.meta.url).href,
-            };
-            
-            const mapBgUrl = mapUrls[world.mapId] || fallbackMap;
-            this.map = new GameMap(mapBgUrl);
-            await this.map.waitUntilLoaded();
+            this.map = new GameMap(world.chunks, world.chunkSize);
         }
 
         this.isPaused = false; // Descongela a lógica

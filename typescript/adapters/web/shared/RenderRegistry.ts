@@ -12,8 +12,10 @@ export class RenderRegistry {
 
     static {
         for (const [objectId, config] of Object.entries(VisualConfigMap)) {
-            for (const [state, spriteConfig] of Object.entries(config.animations)) {
-                RenderRegistry.spriteConfigs.set(`${objectId}-${state}`, spriteConfig);
+            if ('animations' in config && config.animations) {
+                for (const [state, spriteConfig] of Object.entries(config.animations)) {
+                    RenderRegistry.spriteConfigs.set(`${objectId}-${state}`, spriteConfig);
+                }
             }
             if (config.category === 'equipment' || config.category === 'weapon') {
                 const itemConfig = config as ItemVisualConfig;

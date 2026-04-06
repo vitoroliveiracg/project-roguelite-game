@@ -39,8 +39,15 @@ export default class Renderer implements IRenderer<IRenderableObject> {
 
     ctx.save();
     this.camera.applyTransform(ctx, world);
-    // Desenha o mapa se ele foi fornecido (no modo Canvas 2D)
-    map?.draw(ctx);
+    
+    // Desenha a matriz dinâmica de 9 chunks em volta do jogador
+    let targetX = 0; let targetY = 0;
+    if (cameraTarget) {
+        targetX = cameraTarget.coordinates.x + cameraTarget.size.width / 2;
+        targetY = cameraTarget.coordinates.y + cameraTarget.size.height / 2;
+    }
+    map?.draw(ctx, targetX, targetY);
+    
     renderables.forEach(renderable => renderable.draw(ctx));
     ctx.restore();
   }
