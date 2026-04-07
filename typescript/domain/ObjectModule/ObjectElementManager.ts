@@ -24,6 +24,7 @@ import MegaMushroom from "./Items/Consumables/MegaMushroom";
 import AdrenalineFlask from "./Items/Consumables/Potions/AdrenalineFlask";
 import DemonBlood from "./Items/Consumables/DemonBlood";
 import ShadowMob from "./Entities/Enemies/ShadowMob";
+import FishingRod from "./Items/Weapons/RangedWeapons/FishingRod";
 
 // Auto-carrega todas as entidades e itens do domínio para engatilhar os decorators @RegisterSpawner
 import.meta.glob('./Entities/**/*.ts', { eager: true });
@@ -203,12 +204,15 @@ export default class ObjectElementManager {
     this.spawn(id => new DroppedItem(id, { x: 330, y: 520 }, new IronGloves(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 380, y: 520 }, new SimpleAmulet(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 400, y: 520 }, new SimpleRing(), this.eventManager));
+    this.spawn(id => new DroppedItem(id, { x: 500, y: 550 }, new FishingRod(), this.eventManager));
 
     // Teste dos Efeitos Classic Survivor/Megabonk
     this.spawn(id => new DroppedItem(id, { x: 500, y: 480 }, new VampireFang(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 530, y: 480 }, new MegaMushroom(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 560, y: 480 }, new AdrenalineFlask(), this.eventManager));
     this.spawn(id => new DroppedItem(id, { x: 590, y: 480 }, new DemonBlood(), this.eventManager));
+
+
   }
 
   /** * Instancia uma onda de inimigos atrelada ao loop de atualização do domínio. */

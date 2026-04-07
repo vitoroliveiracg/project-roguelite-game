@@ -193,6 +193,12 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
         droppedConfig: { imageSrc: new URL('../assets/itens/simple-sword.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
         animations: {}
     },
+    'fishing-rod': {
+        category: 'weapon', iconId: 5,
+        uiIconUrl: new URL('../assets/itens/vara-de-pesca.png', import.meta.url).href,
+        droppedConfig: { imageSrc: new URL('../assets/itens/vara-de-pesca.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
+        animations: {}
+    },
     'health-potion': {
         category: 'equipment', iconId: 30,
         uiIconUrl: new URL('../assets/itens/life-potion.png', import.meta.url).href,
@@ -258,6 +264,18 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
     'simpleBullet': {
         category: 'projectile',
         animations: { 'travelling': { imageSrc: new URL('../assets/entities/simple-bullet.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 } } }
+    },
+    'fishingHook': {
+        category: 'projectile',
+        animations: { 
+            'travelling': { 
+                imageSrc: new URL('../assets/entities/fishing-hook.png', import.meta.url).href, 
+                frameCount: 1, animationSpeed: 10, 
+                frameWidth: 16, frameHeight: 16, 
+                atlasOffset: { x: 0, y: 32 }, 
+                spriteSize: { width: 16, height: 16 }
+             } 
+        }
     },
     'magicMissile': {
         category: 'projectile',
