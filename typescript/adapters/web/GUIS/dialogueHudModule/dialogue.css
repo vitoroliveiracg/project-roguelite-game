@@ -1,0 +1,66 @@
+#dialogue-container {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    min-width: 600px;
+    background-color: rgba(10, 10, 20, 0.95);
+    border: 3px solid #FFD700;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+    padding: 20px;
+    color: white;
+    font-family: 'Minecraft', 'Courier New', Courier, monospace;
+    z-index: 500;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#dialogue-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+}
+
+#dialogue-close-btn:hover {
+    color: #FFF;
+}
+
+#dialogue-name {
+    font-size: 24px;
+    color: #55aaff;
+    font-weight: bold;
+    text-shadow: 2px 2px 0 #000;
+    margin-bottom: 5px;
+}
+
+#dialogue-text {
+    font-size: 18px;
+    line-height: 1.5;
+    min-height: 60px;
+    color: #eee;
+    white-space: pre-wrap;
+}
+
+#dialogue-input {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #FFD700;
+    font-family: inherit;
+    font-size: 16px;
+    padding: 10px;
+    outline: none;
+}
+
+#dialogue-input:focus {
+    border-color: #FFD700;
+}

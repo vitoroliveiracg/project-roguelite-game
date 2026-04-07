@@ -11,6 +11,7 @@ export type LogChannel =
   | 'factory'   //? Para a criação de objetos na RenderableFactory
   | 'error'     //? Para erros e avisos importantes
   | 'hitbox'    //? Para eventos de hitbox
+  | 'npc'       //? Para comportamento e IA de NPCs
 ;    
 
 

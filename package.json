@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,7 @@
     "@tauri-apps/cli": "^2.0.0",
     "@webgpu/types": "^0.1.66",
     "typescript": "^5.9.3",
-    "vite": "^7.1.12"
+    "vite": "^7.1.12",
+    "ws": "^8.20.0"
   }
 }

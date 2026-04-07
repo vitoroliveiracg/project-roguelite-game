@@ -293,8 +293,8 @@
 ## 🧠 SISTEMA DE NPCs COGNITIVOS (BDI + LLM)
 	* [x] **Ponte de Baixa Latência (Sockets):** Implementar comunicação via TCP/UDP entre o Motor TS (Domínio) e o Athena (Java).
 	* [x] **InteractiveEntity (Domínio):** Criar classe base para NPCs que recebem comandos diretos de movimento e animação via socket.
-	* [ ] **Integração Athena-Ollama:** Configurar o Athena para despachar intenções de fala para a porta local do Ollama.
-	* [ ] **Interface de Diálogo (DialogueGui):** Criar UI modular para exibição de textos da LLM e captação de input (texto/voz) do jogador.
+	* [x] **Integração Athena-Ollama:** Configurar o Athena para despachar intenções de fala para a porta local do Ollama.
+	* [x] **Interface de Diálogo (DialogueGui):** Criar UI modular para exibição de textos da LLM e captação de input (texto/voz) do jogador.
 
 ## ⚔️ PROGRESSO ATUAL E REVISÕES
 	* [x] HUD Modular: HP, Mana e Status.

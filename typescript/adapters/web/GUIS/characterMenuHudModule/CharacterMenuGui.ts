@@ -232,46 +232,64 @@ export default class CharacterMenuGui {
         if (data.backpack) {
             this.bpSlots?.forEach((slot, index) => {
                 const item = data.backpack![index];
-                if (item) {
-                    const itemConfig = Object.values(VisualConfigMap).find(c => (c.category === 'equipment' || c.category === 'weapon') && (c as ItemVisualConfig).iconId === item.iconId) as ItemVisualConfig;
-                    if (itemConfig) {
-                        slot.innerHTML = `<img src="${itemConfig.uiIconUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
-                    } else { slot.innerHTML = '📦'; }
-                    
-                    slot.setAttribute('data-tooltip', buildTooltip(item));
-                    slot.style.borderColor = '#FFD700';
-                } else { slot.innerHTML = ''; slot.removeAttribute('data-tooltip'); slot.style.borderColor = '#444'; }
+                const currentIconId = slot.getAttribute('data-current-icon');
+                const newIconId = item ? item.iconId.toString() : 'none';
+
+                if (currentIconId !== newIconId) {
+                    slot.setAttribute('data-current-icon', newIconId);
+                    if (item) {
+                        const itemConfig = Object.values(VisualConfigMap).find(c => (c.category === 'equipment' || c.category === 'weapon') && (c as ItemVisualConfig).iconId === item.iconId) as ItemVisualConfig;
+                        if (itemConfig) {
+                            slot.innerHTML = `<img src="${itemConfig.uiIconUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
+                        } else { slot.innerHTML = '📦'; }
+                        
+                        slot.setAttribute('data-tooltip', buildTooltip(item));
+                        slot.style.borderColor = '#FFD700';
+                    } else { slot.innerHTML = ''; slot.removeAttribute('data-tooltip'); slot.style.borderColor = '#444'; }
+                }
             });
         }
         if (data.equipment) {
             // Helper inteligente para atualizar slots no DOM de forma limpa!
             const updateSlot = (element: HTMLElement, itemData: any, defaultIcon: string, defaultTitle: string) => {
-                if (itemData) {
-                    const itemConfig = Object.values(VisualConfigMap).find(c => (c.category === 'equipment' || c.category === 'weapon') && (c as ItemVisualConfig).iconId === itemData.iconId) as ItemVisualConfig;
-                    if (itemConfig) {
-                        element.innerHTML = `<img src="${itemConfig.uiIconUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
-                    } else { element.textContent = defaultIcon; }
-                    element.setAttribute('data-tooltip', buildTooltip(itemData));
-                    element.style.borderColor = '#FFD700';
-                } else {
-                    element.innerHTML = defaultIcon;
-                    element.removeAttribute('data-tooltip');
-                    element.style.borderColor = '#555';
+                const currentIconId = element.getAttribute('data-current-icon');
+                const newIconId = itemData ? itemData.iconId.toString() : 'none';
+                
+                if (currentIconId !== newIconId) {
+                    element.setAttribute('data-current-icon', newIconId);
+                    if (itemData) {
+                        const itemConfig = Object.values(VisualConfigMap).find(c => (c.category === 'equipment' || c.category === 'weapon') && (c as ItemVisualConfig).iconId === itemData.iconId) as ItemVisualConfig;
+                        if (itemConfig) {
+                            element.innerHTML = `<img src="${itemConfig.uiIconUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">`;
+                        } else { element.textContent = defaultIcon; }
+                        element.setAttribute('data-tooltip', buildTooltip(itemData));
+                        element.style.borderColor = '#FFD700';
+                    } else {
+                        element.innerHTML = defaultIcon;
+                        element.removeAttribute('data-tooltip');
+                        element.style.borderColor = '#555';
+                    }
                 }
             };
 
             const updateRings = (slotId: string, rings: any[]) => {
                 this.container.querySelectorAll(`.ring-sub-slot[data-slot="${slotId}"]`).forEach((slotElement, index) => {
                     const ring = rings[index];
-                    if (ring) {
-                        const itemConfig = Object.values(VisualConfigMap).find(c => (c.category === 'equipment') && (c as ItemVisualConfig).iconId === ring.iconId) as ItemVisualConfig;
-                        slotElement.innerHTML = itemConfig ? `<img src="${itemConfig.uiIconUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">` : '💍';
-                        slotElement.setAttribute('data-tooltip', buildTooltip(ring));
-                        (slotElement as HTMLElement).style.borderColor = '#FFD700';
-                    } else {
-                        slotElement.innerHTML = '';
-                        slotElement.removeAttribute('data-tooltip');
-                        (slotElement as HTMLElement).style.borderColor = '#555';
+                    const currentIconId = slotElement.getAttribute('data-current-icon');
+                    const newIconId = ring ? ring.iconId.toString() : 'none';
+
+                    if (currentIconId !== newIconId) {
+                        slotElement.setAttribute('data-current-icon', newIconId);
+                        if (ring) {
+                            const itemConfig = Object.values(VisualConfigMap).find(c => (c.category === 'equipment') && (c as ItemVisualConfig).iconId === ring.iconId) as ItemVisualConfig;
+                            slotElement.innerHTML = itemConfig ? `<img src="${itemConfig.uiIconUrl}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">` : '💍';
+                            slotElement.setAttribute('data-tooltip', buildTooltip(ring));
+                            (slotElement as HTMLElement).style.borderColor = '#FFD700';
+                        } else {
+                            slotElement.innerHTML = '';
+                            slotElement.removeAttribute('data-tooltip');
+                            (slotElement as HTMLElement).style.borderColor = '#555';
+                        }
                     }
                 });
             };

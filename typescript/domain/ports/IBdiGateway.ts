@@ -8,6 +8,7 @@ export interface BdiPerception {
     playerPosition?: { x: number, y: number };
     nearestItemPos?: { x: number, y: number };
     isColliding: boolean;
+    playerMessage?: string; // A fala que o jogador digitou
 }
 
 /**
@@ -15,9 +16,10 @@ export interface BdiPerception {
  * O motor BDI envia isso de volta para o Domínio executar.
  */
 export interface BdiIntention {
-    action: 'idle' | 'move_to' | 'attack' | 'flee';
+    action: 'idle' | 'move_to' | 'attack' | 'flee' | 'speak';
     targetPos?: { x: number, y: number };
     targetId?: number;
+    message?: string; // A fala que a LLM gerou
 }
 
 /**

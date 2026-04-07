@@ -50,6 +50,14 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
             'dead': { imageSrc: new URL('../assets/entities/player/player-idle.png', import.meta.url).href, frameCount: 2, animationSpeed: 20, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } }
         }
     },
+    'molor': {
+        category: 'entity',
+        animations: {
+            // Assumimos frameCount 1 por segurança (sprite estático), mas você pode aumentar se o MolorWaiting for um spritesheet!
+            'idle': { imageSrc: new URL('../assets/entities/npc/Molor/Molor.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } },
+            'walking': { imageSrc: new URL('../assets/entities/npc/Molor/MolorWaiting.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 } },
+        }
+    },
     'slime': {
         category: 'entity',
         animations: {

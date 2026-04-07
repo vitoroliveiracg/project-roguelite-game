@@ -50,7 +50,12 @@ export default class DomainFacade implements IGameDomain {
 
     if (this.bdiGateway) {
         this.bdiGateway.onIntentionReceived((intention) => {
+            if (intention.action === 'speak' && intention.message) {
+                this.eventManager.dispatch('npcSpoke', { npcId: intention.targetId || 0, message: intention.message });
+            }
+            
             if (intention.targetId) {
+                this.logger.log('npc', `[BDI Gateway] Enviou intenção '${intention.action}' para o NPC ${intention.targetId}`);
                 const element = this.objectManager.getElementById(intention.targetId);
                 if (element && typeof (element as any).setIntention === 'function') {
                     (element as any).setIntention(intention);
@@ -144,6 +149,19 @@ export default class DomainFacade implements IGameDomain {
     this.player.allocateAttribute(attribute as any);
   }
 
+  public sendDialogue(message: string, targetNpcId?: number): void {
+    this.logger.log('input', `Player says: "${message}" to NPC ${targetNpcId}`);
+    if (this.bdiGateway) {
+        this.bdiGateway.sendPerceptions({
+            agentId: targetNpcId || 0,
+            hpPercentage: this.player.attributes.hp / this.player.attributes.maxHp,
+            playerPosition: { x: this.player.coordinates.x, y: this.player.coordinates.y },
+            isColliding: false,
+            playerMessage: message
+        });
+    }
+  }
+
   /** Fase de Desenho (Coleta de Dados): Constrói e retorna uma representação em DTOs do estado atual do jogo para a camada de renderização. @throws {Error} Se o mundo não foi inicializado. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   public getRenderState(): { world: WorldState; renderables: readonly RenderableState[] } {
     this.logger.log('sync', 'DomainFacade getting render state...');
@@ -235,6 +253,31 @@ export default class DomainFacade implements IGameDomain {
     ps.skillTree = [];
 
     const otherStates = this.objectManager.getAllRenderableStates();
+    
+    // Lógica de Proximidade (Interação com NPCs)
+    let nearestDist = 50; // Range máximo para interação (em pixels)
+    let nearestNpc = null;
+    const px = ps.coordinates.x + ps.size.width / 2;
+    const py = ps.coordinates.y + ps.size.height / 2;
+
+    for (const st of otherStates) {
+        if (st.entityTypeId === 'molor' || st.entityTypeId === 'interactiveNpc') {
+            const ex = st.coordinates.x + st.size.width / 2;
+            const ey = st.coordinates.y + st.size.height / 2;
+            const dist = Math.hypot(px - ex, py - ey);
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearestNpc = st;
+            }
+        }
+    }
+
+    if (nearestNpc) {
+        const npcName = nearestNpc.entityTypeId === 'molor' ? 'Diretor Molor' : 'NPC';
+        ps.interactablePrompt = { npcId: nearestNpc.id, text: `[Z] Falar`, npcName };
+    } else {
+        ps.interactablePrompt = undefined;
+    }
     
     this.cachedRenderState.renderables = [ps, ...otherStates];
     return this.cachedRenderState;

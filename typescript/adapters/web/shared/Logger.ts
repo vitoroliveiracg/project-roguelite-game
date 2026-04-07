@@ -10,7 +10,7 @@ import type { ILogger, LogChannel } from "../../../domain/ports/ILogger";
  */
 class Logger implements ILogger {
   /** @private Um Set contendo os canais de log que estão atualmente ativos. */
-  private activeChannels: Set<LogChannel> = new Set(['init', 'error']); // Ativa 'init' e 'error' por padrão.
+  private activeChannels: Set<LogChannel> = new Set(['init', 'error', 'npc']); // Ativa 'init', 'error' e 'npc' por padrão.
   /** @private Um Set contendo os canais que devem exibir um stack trace completo. */
   private traceEnabledChannels: Set<LogChannel> = new Set();
 

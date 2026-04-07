@@ -30,6 +30,12 @@ export default class VilgemWorld extends GameWorld {
             hitboxes: [houseCollider]
         });
 
+        // Spawna Molor, o Diretor da Academia de Magia, perto da área inicial do jogador!
+        this.eventManager.dispatch('spawn', {
+            type: 'molor',
+            coordinates: { x: 450, y: 480 } 
+        });
+
         // Exemplo: Aqui você vai tirar os spawns de teste que estão grudados no ObjectElementManager
         // this.eventManager.dispatch('spawn', { type: 'slime', coordinates: { x: 800, y: 800 } });
 

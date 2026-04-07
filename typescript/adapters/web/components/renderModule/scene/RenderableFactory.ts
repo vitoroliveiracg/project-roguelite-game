@@ -66,13 +66,16 @@ export class RenderableFactory {
       if (!src) continue; // Ignora o carregamento caso uma Config possua uma url vazia (ex: CircleForm)
       if (this.imageCache.has(src)) continue;
 
-      const promise = new Promise<void>((resolve, reject) => {
+      const promise = new Promise<void>((resolve) => {
         const image = new Image();
         image.onload = () => {
           this.imageCache.set(src, image);
           resolve();
         };
-        image.onerror = () => reject(new Error(`(Rendable Factory) Failed to preload asset: ${src}`));
+        image.onerror = () => {
+            logger.log('error', `(Rendable Factory) Failed to preload asset: ${src}`);
+            resolve(); // Resolve em vez de rejeitar para não quebrar o boot do jogo! O fallback (caixa preta) será usado.
+        };
         image.src = src;
       });
       promises.push(promise);

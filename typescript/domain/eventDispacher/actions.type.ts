@@ -18,4 +18,5 @@ export type action =
   | 'spell_8'
   | 'spell_9'
   | 'castSpell'
+  | 'interact'
 ;

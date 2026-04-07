@@ -8,11 +8,12 @@ import { RegisterSpawner, type SpawnPayload } from "../../SpawnRegistry";
 export default class InteractiveEntity extends Entity {
     private currentIntention: BdiIntention | null = null;
 
-    constructor(id: number, coordinates: { x: number, y: number }, attributes: Attributes, eventManager: IEventManager) {
-        super(id, coordinates, { width: 32, height: 32 }, 'interactiveNpc', attributes, eventManager);
+    constructor(id: number, coordinates: { x: number, y: number }, attributes: Attributes, eventManager: IEventManager, objectId: string = 'interactiveNpc') {
+        super(id, coordinates, { width: 32, height: 32 }, objectId as any, attributes, eventManager);
     }
 
     public setIntention(intention: BdiIntention): void {
+        this.eventManager.dispatch('log', { channel: 'npc', message: `[NPC ${this.id}] Mente conectada! Nova intenção registrada:`, params: [intention] });
         this.currentIntention = intention;
     }
 
@@ -43,7 +44,21 @@ export default class InteractiveEntity extends Entity {
             const speed = this.attributes.speed * deltaTime;
             this.coordinates.x += (dx / dist) * speed;
             this.coordinates.y += (dy / dist) * speed;
+            
+            // Vira o rosto do sprite para a direção que ele está andando
+            (this as any).facingDirection = dx < 0 ? 'left' : 'right';
+            
+            // Arrasta a hitbox fisicamente com ele para não bugar colisões futuras
+            if (this.hitboxes) {
+                this.hitboxes.forEach(hb => hb.updatePosition({ 
+                    x: this.coordinates.x + this.size.width / 2, 
+                    y: this.coordinates.y + this.size.height / 2 
+                }));
+            }
         } else {
+            if (this.state !== 'idle') {
+                this.eventManager.dispatch('log', { channel: 'npc', message: `[NPC ${this.id}] Chegou ao destino físico!`, params: [target] });
+            }
             this.state = 'idle';
         }
     }

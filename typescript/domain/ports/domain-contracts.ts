@@ -89,6 +89,8 @@ export interface EntityRenderableState extends BaseRenderableState {
   spellElements?: string[];
   /** Lista de buffs e debuffs ativos atualmente na entidade. */
   activeStatuses?: ActiveStatusDTO[];
+  /** Prompt de UI caso o jogador esteja perto de um NPC interativo. */
+  interactablePrompt?: { npcId: number; text: string; npcName: string };
 }
 
 /** Tipo união para todos os possíveis estados de objetos renderizáveis, permitindo que o sistema seja estendido com outros tipos (ex: partículas) no futuro. */
@@ -110,4 +112,6 @@ export interface IGameDomain {
   allocateAttribute(attribute: string): void;
   /** Solicita ao domínio uma "fotografia" do estado atual de todos os objetos visíveis, formatada como DTOs puros para a renderização. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */
   getRenderState(): { world: WorldState; renderables: readonly RenderableState[] };
+  /** Envia uma mensagem de texto digitada pelo jogador para a Inteligência Artificial processar. */
+  sendDialogue(message: string, targetNpcId?: number): void;
 }

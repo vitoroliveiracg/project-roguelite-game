@@ -27,7 +27,8 @@ export type GameAction =
   | 'spell_9'
   | 'cast_spell'
   | 'toggle_attributes'
-  | 'toggle_skill_tree';
+  | 'toggle_skill_tree'
+  | 'interact';
 
 /**  @class InputManager Gerencia todos os inputs do usuário, mapeando eventos brutos de teclado para ações de jogo específicas. Esta classe centraliza a lógica de input, permitindo bindings complexos, combos e remapeamento de teclas. */
 export class InputManager {
@@ -89,6 +90,11 @@ export class InputManager {
         this.setKeyForAction(action as GameAction, (keyOrKeys as string).toLowerCase());
       }
     });
+    
+    // Fallback de Segurança: Garante que o Z funcione para interação mesmo se o keymap.json estiver desatualizado ou com erro.
+    if (!this.actionMap.has('interact')) {
+        this.setKeyForAction('interact', 'z');
+    }
   }
 
   /** Anexa os listeners de evento de teclado à janela do navegador. @private */

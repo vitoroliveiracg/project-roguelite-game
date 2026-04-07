@@ -29,6 +29,8 @@ export default class GameAdapter {
   private uiManager!: UIManager;
   private inputGateway!: InputGateway;
   
+  private isGameStarted: boolean = false;
+
   /** @constructor @param domain Uma instância que implementa a interface do domínio. A injeção de dependência via interface permite que o Adapter seja agnóstico à implementação do domínio. */
   constructor(private domain: IGameDomain, private eventManager: IEventManager) {
     logger.log('init', 'GameAdapter instantiated.');
@@ -50,7 +52,8 @@ export default class GameAdapter {
 
   private isPaused: boolean = true; // Inicia pausado aguardando o Menu Principal
   public togglePauseGame = (): void => {
-    this.isPaused = !this.isPaused;
+    if (!this.isGameStarted || !this.uiManager) return;
+    this.isPaused = this.uiManager.isAnyMenuOpen(); // O jogo pausa rigidamente baseado no estado real das UIs
     logger.log('init', `Game paused state: ${this.isPaused}`);
   };
 
@@ -69,7 +72,8 @@ export default class GameAdapter {
         logger.log('domain', 'Restarting game via UI command...');
         window.location.href = window.location.pathname; // Força recarregamento limpo escapando do Vite
       },
-      (index: number) => this.domain.manageInventory('delete', { index })
+      (index: number) => this.domain.manageInventory('delete', { index }),
+      (message: string, npcId?: number) => this.domain.sendDialogue(message, npcId)
     );
     this.inputGateway = new InputGateway(this.domain);
     this.setupEventListeners();
@@ -110,7 +114,8 @@ export default class GameAdapter {
             this.map = new GameMap(world.mapId);
         }
 
-        this.isPaused = false; // Descongela a lógica
+        this.isGameStarted = true;
+        this.togglePauseGame(); // Descongela a lógica com segurança
         initializeGame(this.update.bind(this), this.draw.bind(this));
     });
     window.dispatchEvent(new Event('resize'));
@@ -118,6 +123,17 @@ export default class GameAdapter {
 
   /** Fase de Update (Lógica do Adapter): Função principal do ciclo de vida, chamada a cada frame para processar inputs, delegar a atualização de lógica para o domínio, sincronizar o estado visual e atualizar a câmera. @private @param deltaTime O tempo em segundos desde o último frame. */
   private update(deltaTime: number): void {
+    
+    if (this.inputGateway.inputManager.consumeAction('interact')) {
+      const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
+      if (playerState?.interactablePrompt) {
+        const prompt = playerState.interactablePrompt;
+        // Abre a interface visualmente como "Aguardando" e manda um "Oi" invisível para despertar a LLM do NPC
+        this.uiManager.dialogueGui.show(prompt.npcName, "...", prompt.npcId);
+        this.domain.sendDialogue("[Aproximou-se para conversar]", prompt.npcId);
+      }
+    }
+
     if (this.inputGateway.inputManager.consumeAction('toggle_attributes')) {
       this.uiManager.toggleCharacterMenu();
     }
@@ -211,6 +227,16 @@ export default class GameAdapter {
           window.addEventListener('mousedown', forceRestart, { once: true });
         }, 1500);
       }
+    });
+
+    // Escuta quando a LLM gera uma fala para os NPCs e ativa a janela de diálogo
+    this.eventManager.on('npcSpoke', (payload) => {
+      if (!this.isGameStarted) return; // Previne que a IA fale enquanto o Menu Principal estiver aberto
+
+      // Uma feature futura interessante seria ler a entidade pelo ID e descobrir o nome dela
+      // Como instanciamos o Molor, daremos o título oficial dele:
+      const npcName = "Diretor Molor"; 
+      this.uiManager.dialogueGui.show(npcName, payload.message, payload.npcId);
     });
 
     this.eventManager.on('spawnVisual', (payload) => {
