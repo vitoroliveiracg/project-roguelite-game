@@ -141,8 +141,24 @@ export default class ObjectElementManager {
     }
 
     // Em seguida, atualizamos cada elemento. Durante seu update, ele pode pedir vizinhos.
+    const stunnedPositions = new Map<number, {x: number, y: number}>();
+
     for (const element of this.elements.values()) {
+      if ('activeStatuses' in element && (element as any).activeStatuses?.has('stun')) {
+          // Salva a posição exata imposta pelo controle de grupo (ex: Pescador arrastando)
+          stunnedPositions.set(element.id, { x: element.coordinates.x, y: element.coordinates.y });
+      }
       element.update(deltaTime, player);
+    }
+
+    // Anula qualquer movimento físico que a IA tentou fazer enquanto estava atordoada (Stunned)
+    for (const [id, pos] of stunnedPositions) {
+        const el = this.elements.get(id);
+        if (el) {
+            el.coordinates.x = pos.x;
+            el.coordinates.y = pos.y;
+            el.hitboxes?.forEach(hb => hb.updatePosition({ x: pos.x + el.size.width / 2, y: pos.y + el.size.height / 2 }));
+        }
     }
 
     // Após todas as atualizações, garante que ninguém saiu dos limites do mapa.
@@ -301,6 +317,12 @@ export default class ObjectElementManager {
         state.activeStatuses.length = statusIndex;
       } else {
         if (state.activeStatuses) state.activeStatuses.length = 0;
+      }
+
+      if ('connectedTo' in element && (element as any).connectedTo) {
+        state.connectedTo = (element as any).connectedTo;
+      } else {
+        delete state.connectedTo; // Remove a chave para respeitar o 'exactOptionalPropertyTypes'
       }
 
       // Reciclando o Array de Hitboxes (Livre do Garbage Collector)

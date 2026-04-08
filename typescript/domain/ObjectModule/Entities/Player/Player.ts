@@ -16,6 +16,7 @@ import Warrior from "./Classes/Warrior";
 import Mage from "./Classes/Mage";
 import Gunslinger from "./Classes/Gunslinger";
 import Necromancer from "./Classes/Necromancer";
+import Pescador from "./Classes/Pescador";
 import { BindAction } from "../../../eventDispacher/ActionBindings";
 
 import type Armor from "../../Items/Armors/Armor";
@@ -80,6 +81,7 @@ export default class Player extends Entity {
       new Mage(defaultXpTable, this, eventManager),
       new Gunslinger(defaultXpTable, this, eventManager),
       new Necromancer(defaultXpTable, this, eventManager),
+      new Pescador(defaultXpTable, this, eventManager),
     ];
 
     this.hitboxes = [ ...this.setHitboxes() ];
@@ -190,7 +192,7 @@ export default class Player extends Entity {
       { x: this.coordinates.x + this.size.width / 2, y: this.coordinates.y + this.size.height / 2 }, this.rotation
     ));
 
-    this.eventManager.dispatch('log', { channel: 'domain', message: "(Entity) player moved", params: [] });
+    this.eventManager.dispatch('log', { channel: 'domain-entity-move', message: "(Entity) player moved", params: [] });
   }
 
   //? ----------- Main actions -----------

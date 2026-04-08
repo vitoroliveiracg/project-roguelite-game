@@ -145,6 +145,10 @@ export class InputManager {
 
   private handleMouseDown(e: MouseEvent) {
     
+    // Força a atualização imediata da mira na hora do clique
+    this.mouseLastCoordinates.x = e.clientX;
+    this.mouseLastCoordinates.y = e.clientY;
+    
     // Previne comportamentos padrão (seleção de texto no canvas, auto-scroll do middle click)
     if (e.target instanceof HTMLCanvasElement || e.button === 1 || e.button === 2) {
       e.preventDefault();

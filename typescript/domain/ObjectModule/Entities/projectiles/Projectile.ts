@@ -22,7 +22,7 @@ export default abstract class Projectile extends ObjectElement {
 
     public move(deltaTime: number): void {
         this.velocity.multiplyMut(deltaTime);
-        this.eventManager.dispatch('log', { channel: 'domain', message: `(Projectile) ${this.id}-${this.objectId} moved`, params: [] });
+        this.eventManager.dispatch('log', { channel: 'domain-entity-move', message: `(Projectile) ${this.id}-${this.objectId} moved`, params: [] });
         this.updatePosition();
     }
 

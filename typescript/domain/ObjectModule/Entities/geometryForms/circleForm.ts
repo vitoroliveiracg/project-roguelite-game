@@ -27,7 +27,7 @@ export default class CircleForm extends ObjectElement {
         //? Calcula o deslocamento para este frame (velocidade * tempo) e o aplica.
         this.velocity.multiplyMut(deltaTime)
 
-        this.eventManager.dispatch('log', { channel: 'domain', message: `(CircleForm) ${this.id}-${this.objectId} moved`, params: [] });
+        this.eventManager.dispatch('log', { channel: 'domain-entity-move', message: `(CircleForm) ${this.id}-${this.objectId} moved`, params: [] });
 
         this.updatePosition()
     }
@@ -41,7 +41,7 @@ export default class CircleForm extends ObjectElement {
      * Avança o estado interno da entidade. Pode ser sobrescrito por subclasses.
      * @param deltaTime O tempo em segundos decorrido desde o último frame.
      */
-    public update(deltaTime: number): void {
+    public override update(deltaTime: number): void {
         this.move(deltaTime)
     }
 

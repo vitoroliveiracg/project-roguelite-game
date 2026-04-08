@@ -7,25 +7,38 @@ import { BindAction } from "../../../../eventDispacher/ActionBindings";
 import type { action } from "../../../../eventDispacher/actions.type";
 import Vector2D from "../../../../shared/Vector2D";
 import Attack from "../../../Items/Attack";
-import Enemy from "../../Enemies/Enemy";
+import type { HitBox } from "../../../../hitBox/HitBox"; 
+import StunStatus from "../../Status/StunStatus";
 
 export default class Pescador extends Class {
     private skillsByLevel: Map<number, Skill> = new Map();
     
     // Estado da mecânica de pesca
-    private hookedEnemy: Enemy | null = null;
+    private hookedEnemy: any | null = null;
     private accumulatedDamage: number = 0;
     private hookTimeout: ReturnType<typeof setTimeout> | null = null;
+    private hookDeployed: boolean = false;
     
     // Cooldowns
     private lastDamageTick: number = 0;
     private lastHookTime: number = 0;
     private readonly hookCooldown: number = 1000;
+    private readonly hookDurationSeconds: number = 0.7;
 
     constructor(xpTable: IXPTable, player: Player, eventManager: IEventManager) {
         super('Pescador', xpTable, player, eventManager);
         // Exemplo de uma passiva inicial temática
         this.skillsByLevel.set(2, new Skill('pesc_t1_fisgada', 'Fisgada Perfeita', 'passive', 1));
+
+        this.eventManager.on('hookDestroyed', (payload) => {
+            if (payload.playerId === this.player.id) {
+                this.hookDeployed = false;
+                this.lastHookTime = Date.now(); // Impede o Chain-Hooking recomeçando o Cooldown apenas quando a habilidade acaba!
+                if (this.hookedEnemy) {
+                    this.releaseEnemy();
+                }
+            }
+        });
     }
 
     /**
@@ -33,10 +46,12 @@ export default class Pescador extends Class {
      */
     @BindAction('leftClick')
     public onLeftClick(mouseCoordinates: {x: number, y: number}, action: action) {
+        this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] onLeftClick disparado! hookDeployed=${this.hookDeployed} hookedEnemy=${!!this.hookedEnemy}`, params: [] });
+
         if (this.hookedEnemy) {
             // Se já pescou alguém, o clique esquerdo serve para arrastar
             this.controlHookedEnemy(mouseCoordinates);
-        } else {
+        } else if (!this.hookDeployed) {
             // Se não tem ninguém pescado, o clique esquerdo joga o anzol
             const now = Date.now();
             if (now - this.lastHookTime < this.hookCooldown) return;
@@ -49,13 +64,18 @@ export default class Pescador extends Class {
             // O Ataque carregado pelo anzol
             const hookAttack = new Attack(this.player, 5, 'physical', [
                 (context) => {
-                    const target = context.target;
-                    // Verifica se é Enemy (ignora NPCs) e possui HP
-                    if (target instanceof Enemy && target.attributes.hp > 0) {
+                    const target = context.target as any;
+                    this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Anzol bateu no ID: ${target?.id}`, params: [] });
+                    // Duck Typing: Verifica se o alvo é uma entidade atacável, possui HP e não é o próprio jogador
+                    if ('takeDamage' in target && target.attributes && target.attributes.hp > 0 && target.id !== this.player.id) {
                         // Ignora Bosses
                         if (!target.objectId.toString().toLowerCase().includes('boss')) {
                             this.hookEnemy(target);
+                        } else {
+                            this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Alvo ignorado (é um Boss)`, params: [] });
                         }
+                    } else {
+                        this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Alvo ignorado (Faltam atributos, está morto ou é o player)`, params: [] });
                     }
                 }
             ]);
@@ -68,28 +88,48 @@ export default class Pescador extends Class {
                 attack: hookAttack
             });
             
-            this.eventManager.dispatch('log', { channel: 'domain', message: 'Anzol lançado!', params: [] });
+            this.hookDeployed = true;
+            this.eventManager.dispatch('log', { channel: 'classes:pescador', message: 'Anzol lançado!', params: [] });
         }
     }
 
-    private hookEnemy(target: Enemy) {
+    private hookEnemy(target: any) {
         if (this.hookedEnemy) return; 
         
+        this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] hookEnemy: Inimigo ${target.id} fisgado e atordoado!`, params: [] });
+
         this.hookedEnemy = target;
         this.accumulatedDamage = 0;
 
-        this.eventManager.dispatch('log', { channel: 'domain', message: 'Inimigo pescado!', params: [] });
+        // Stun no inimigo para a IA parar de lutar contra o arrasto
+        if (typeof target.applyStatus === 'function') {
+            // Instancia o Status real do seu domínio com a duração configurada!
+            target.applyStatus(new StunStatus(this.hookDurationSeconds));
+        } else {
+            // Fallback de segurança se o inimigo for um objeto customizado
+            if (!('activeStatuses' in target) || !target.activeStatuses) {
+                target.activeStatuses = new Map<string, any>();
+            }
+            target.activeStatuses.set('stun', { 
+                id: 'stun', description: 'Pescado', duration: this.hookDurationSeconds, elapsed: 0, 
+                update: function(dt: number) { this.elapsed += dt; return this.elapsed >= this.duration; }, 
+                apply: () => {} 
+            });
+        }
+
+        this.eventManager.dispatch('log', { channel: 'classes:pescador', message: 'Inimigo pescado!', params: [] });
         // Um feedback visual para mostrar quem foi pescado
         this.eventManager.dispatch('particle', { effect: 'magicAura', x: target.coordinates.x, y: target.coordinates.y, color: '#00aaff' });
 
-        // A duração de 3 segundos sob controle
+        // A duração sob controle
         this.hookTimeout = setTimeout(() => {
             this.releaseEnemy();
-        }, 3000);
+        }, this.hookDurationSeconds * 1000);
     }
 
     private controlHookedEnemy(mouseCoordinates: {x: number, y: number}) {
         if (!this.hookedEnemy || this.hookedEnemy.attributes.hp <= 0) {
+            this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] controlHookedEnemy: Abortando (Sem alvo ou HP <= 0)`, params: [] });
             this.releaseEnemy();
             return;
         }
@@ -101,14 +141,18 @@ export default class Pescador extends Class {
         const dy = mouseCoordinates.y - cy;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
+        this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Arrastando... Distância=${Math.floor(dist)}. Mouse: ${Math.floor(mouseCoordinates.x)},${Math.floor(mouseCoordinates.y)}`, params: [] });
+
         if (dist > 10) {
             const dir = new Vector2D(dx, dy).normalizeMut();
             const pullSpeed = 12; // Velocidade de arrasto
             this.hookedEnemy.coordinates.x += dir.x * pullSpeed;
             this.hookedEnemy.coordinates.y += dir.y * pullSpeed;
             
+            this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Inimigo forçado para as cordenadas: X=${Math.floor(this.hookedEnemy.coordinates.x)}, Y=${Math.floor(this.hookedEnemy.coordinates.y)}`, params: [] });
+            
             // Sincroniza a hitbox do inimigo forçadamente para o loop do ObjectElementManager não errar
-            this.hookedEnemy.hitboxes?.forEach(hb => hb.updatePosition({ 
+            this.hookedEnemy.hitboxes?.forEach((hb: HitBox) => hb.updatePosition({ 
                 x: this.hookedEnemy!.coordinates.x + this.hookedEnemy!.size.width / 2, 
                 y: this.hookedEnemy!.coordinates.y + this.hookedEnemy!.size.height / 2 
             }));
@@ -127,7 +171,8 @@ export default class Pescador extends Class {
                 radius: this.hookedEnemy.size.width + 16, // Raio de colisão estendido
                 callback: (neighbors) => {
                     neighbors.forEach(neighbor => {
-                        if (neighbor.id !== this.hookedEnemy!.id && neighbor instanceof Enemy) {
+                        // Duck Typing seguro no lugar do instanceof!
+                        if (neighbor.id !== this.hookedEnemy!.id && 'takeDamage' in neighbor && (neighbor as any).attributes && neighbor.id !== this.player.id) {
                             
                             // Causa dano no vizinho atropelado
                             const damage = 20 + Math.floor(this.player.attributes.strength * 1.5);
@@ -138,7 +183,7 @@ export default class Pescador extends Class {
                                 neighbor.coordinates.y - this.hookedEnemy!.coordinates.y
                             ).normalizeMut();
                             
-                            attack.execute(neighbor, knockbackDir);
+                            attack.execute(neighbor as any, knockbackDir);
                             
                             // Acumula o dano para ser descontado no final!
                             this.accumulatedDamage += damage; 
@@ -153,26 +198,38 @@ export default class Pescador extends Class {
     private releaseEnemy() {
         if (!this.hookedEnemy) return;
 
-        // 3. Ao final dos 3 segundos, o pescado toma todo o dano que ele causou (Retribuição!)
-        if (this.hookedEnemy.attributes.hp > 0 && this.accumulatedDamage > 0) {
-            // True damage para ignorar a defesa
-            const finalAttack = new Attack(this.player, this.accumulatedDamage, 'true', []);
-            finalAttack.execute(this.hookedEnemy, new Vector2D(0, 0));
-            
-            this.eventManager.dispatch('log', { channel: 'domain', message: `O pescado sofreu ${this.accumulatedDamage} de retribuição!`, params: [] });
-            
-            const cx = this.hookedEnemy.coordinates.x + this.hookedEnemy.size.width / 2;
-            const cy = this.hookedEnemy.coordinates.y + this.hookedEnemy.size.height / 2;
-            this.eventManager.dispatch('particle', { effect: 'criticalStrike', x: cx, y: cy });
-        }
+        this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] releaseEnemy acionado.`, params: [] });
 
-        // Limpa os estados
+        // Salva referências e limpa o estado ANTES de despachar os eventos
+        // Isso blinda a engine contra um Event Loop Infinito (Stack Overflow) síncrono!
+        const target = this.hookedEnemy;
+        const damage = this.accumulatedDamage;
+
         this.hookedEnemy = null;
         this.accumulatedDamage = 0;
         if (this.hookTimeout) {
             clearTimeout(this.hookTimeout);
             this.hookTimeout = null;
         }
+        
+        if ('activeStatuses' in target && target.activeStatuses) {
+            (target.activeStatuses as Map<string, any>).delete('stun');
+        }
+
+        // 3. Ao final dos 3 segundos, o pescado toma todo o dano que ele causou (Retribuição!)
+        if (target.attributes.hp > 0 && damage > 0) {
+            const finalAttack = new Attack(this.player, damage, 'true', []);
+            finalAttack.execute(target, new Vector2D(0, 0));
+            
+            this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `O pescado sofreu ${damage} de retribuição!`, params: [] });
+            
+            const cx = target.coordinates.x + target.size.width / 2;
+            const cy = target.coordinates.y + target.size.height / 2;
+            this.eventManager.dispatch('particle', { effect: 'criticalStrike', x: cx, y: cy });
+        }
+        
+        // Avisa à linha de pesca que acabou a brincadeira
+        this.eventManager.dispatch('releaseFishingHook', { playerId: this.player.id });
     }
 
     //? ----------- Skills -----------

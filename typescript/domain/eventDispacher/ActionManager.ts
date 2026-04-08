@@ -14,41 +14,46 @@ export default class ActionManager {
       this.logger.log(channel as any, message, ...params);
     });
 
-    // Registra os comandos básicos do Player (movimentação, tiro normal)
-    this.registerInstance(this.player);
+    this.rebuildBindings();
 
-    const activeClassInstance = this.player.classes.find(c => c.name === this.player.activeClass);
-    if (activeClassInstance) this.registerInstance(activeClassInstance);
-
-    // Escuta a troca de classes para desplugar a classe antiga e plugar os inputs da nova
-    this.eventManager.on('classChanged', (payload) => {
-        if (payload.oldClassInstance) this.unregisterInstance(payload.oldClassInstance);
-        if (payload.newClassInstance) this.registerInstance(payload.newClassInstance);
+    // Escuta a troca de classes para reconstruir a árvore de inputs
+    this.eventManager.on('classChanged', () => {
+        this.rebuildBindings();
     });
   }
 
   //? ----------- Methods -----------
 
-  public registerInstance(instance: any): void {
-      const bindings = ClassActionBindings.get(instance.constructor);
-      if (bindings) {
-          bindings.forEach((methodName, actionName) => {
-              if (this.activeHandlers.has(actionName)) {
-                  throw new Error(`[ActionManager] CONFLITO CRÍTICO: A ação '${actionName}' não pode ser registrada por ${instance.constructor.name} pois já está em uso!`);
-              }
-              this.activeHandlers.set(actionName, instance[methodName].bind(instance));
-              this.logger.log('input', `Bound action '${actionName}' to ${instance.constructor.name}.${methodName}`);
+  private rebuildBindings(): void {
+      this.activeHandlers.clear();
+      
+      // 1. Registra os comandos básicos do Player
+      const playerBindings = ClassActionBindings.get(this.player.constructor.name);
+      if (playerBindings) {
+          playerBindings.forEach((methodName, actionName) => {
+              this.activeHandlers.set(actionName, (this.player as any)[methodName].bind(this.player));
           });
       }
-  }
 
-  public unregisterInstance(instance: any): void {
-      const bindings = ClassActionBindings.get(instance.constructor);
-      if (bindings) {
-          bindings.forEach((methodName, actionName) => {
-              this.activeHandlers.delete(actionName);
-              this.logger.log('input', `Unbound action '${actionName}' from ${instance.constructor.name}`);
-          });
+      this.logger.log('actions', `[ActionManager] Reconstruindo atalhos. Classe ativa do Player: '${this.player.activeClass}'`);
+
+      // 2. Registra e sobrescreve com a Classe Ativa (se houver)
+      const activeClassInstance = this.player.classes.find(c => c.name === this.player.activeClass);
+      if (activeClassInstance) {
+          const className = activeClassInstance.constructor.name;
+          this.logger.log('actions', `[ActionManager] Instância da Classe Ativa encontrada! Nome na memória: '${className}'`);
+          
+          const classBindings = ClassActionBindings.get(className);
+          if (classBindings) {
+              classBindings.forEach((methodName, actionName) => {
+                  this.activeHandlers.set(actionName, (activeClassInstance as any)[methodName].bind(activeClassInstance));
+                  this.logger.log('actions', `[ActionManager] SUCESSO: Ação '${actionName}' roubada pela Classe ${className}`);
+              });
+          } else {
+              this.logger.log('error', `[ActionManager] FALHA: Nenhum atalho achado para '${className}'. Chaves disponíveis: ${Array.from(ClassActionBindings.keys()).join(', ')}`);
+          }
+      } else {
+          this.logger.log('error', `[ActionManager] FALHA: Instância da Classe Ativa '${this.player.activeClass}' NÃO existe dentro de player.classes!`);
       }
   }
 
@@ -59,7 +64,7 @@ export default class ActionManager {
         if (handler) {
             handler(this.mouseLastCoordinates, action);
         } else {
-            this.eventManager.dispatch('log', { channel: 'input', message: `(ActionManager) event not managed: ${action}`, params: [] });
+            this.eventManager.dispatch('log', { channel: 'actions', message: `(ActionManager) event not managed: ${action}`, params: [] });
         }
     });
   }

@@ -91,6 +91,8 @@ export interface EntityRenderableState extends BaseRenderableState {
   activeStatuses?: ActiveStatusDTO[];
   /** Prompt de UI caso o jogador esteja perto de um NPC interativo. */
   interactablePrompt?: { npcId: number; text: string; npcName: string };
+  /** Referência visual para desenhar cordas/conexões entre entidades (Canvas 2D) */
+  connectedTo?: { x: number, y: number };
 }
 
 /** Tipo união para todos os possíveis estados de objetos renderizáveis, permitindo que o sistema seja estendido com outros tipos (ex: partículas) no futuro. */

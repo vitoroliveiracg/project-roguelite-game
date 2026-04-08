@@ -67,7 +67,7 @@ export default abstract class Entity extends ObjectElement {
     this.coordinates.x += this.velocity.x;
     this.coordinates.y += this.velocity.y;
     
-    this.eventManager.dispatch('log', { channel: 'domain', message: `(Entity) ${this.id}-${this.objectId} moved`, params: [] });
+    this.eventManager.dispatch('log', { channel: 'domain-entity-move', message: `(Entity) ${this.id}-${this.objectId} moved`, params: [] });
   }
 
   /** Aplica dano à entidade e retorna se ela foi derrotada. * @param damageInfo DTO contendo as informações do dano a ser aplicado - objeto simplificado do ataque. * @returns O dano real causado após a aplicação das defesas. */

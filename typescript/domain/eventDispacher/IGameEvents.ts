@@ -14,6 +14,8 @@ export interface GameEventMap {
   classChanged: { oldClassInstance: any, newClassInstance: any };
   particle: { effect: string, x: number, y: number, color?: string, angle?: number };
   npcSpoke: { npcId: number, message: string };
+  releaseFishingHook: { playerId: number };
+  hookDestroyed: { playerId: number };
 }
 export type EventKey = keyof GameEventMap;
 

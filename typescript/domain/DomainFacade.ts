@@ -72,7 +72,7 @@ export default class DomainFacade implements IGameDomain {
     // para evitar "saltos" de física se o jogo engasgar.
     const clampedDeltaTime = Math.min(deltaTime, 1 / 30);
 
-    this.logger.log('domain', `Update cycle started (deltaTime: ${clampedDeltaTime})`);
+    this.logger.log('update-cycles', `Update cycle started (deltaTime: ${clampedDeltaTime})`);
 
     this.player.update(clampedDeltaTime);
     
@@ -118,13 +118,28 @@ export default class DomainFacade implements IGameDomain {
 
   /** Interface de comunicação que passa a responsabilidade para o domínio. @param command O objeto de comando vindo da camada de apresentação. @param deltaTime O tempo desde o último frame, usado para calcular o movimento. */
   public handlePlayerInteractions(command: { actions: Array<action> }, mouseLastCoordinates: {x:number,y:number}): void {
-    this.logger.log('input', 'Handling input in domain:', command);
+    this.logger.log('actions', 'Handling actions in domain:', command);
     this.actionManager.checkEvent(command.actions, mouseLastCoordinates)
   }
 
   public manageInventory(action: 'equip' | 'unequip' | 'consume' | 'delete', payload: { index?: number; slot?: string }): void {
     if (action === 'equip' && payload.index !== undefined) {
       this.player.equipItem(payload.index);
+      
+      // Game Feel (UX): Auto-equipa a classe associada à arma para poupar cliques na UI!
+      const equipment = (this.player as any).equipment;
+      const handItem = equipment?.mainHand || equipment?.hand || equipment?.weapon; // O slot real no Player.ts é 'mainHand'!
+      
+      this.logger.log('actions', `[DomainFacade] Item equipado. Arma atual: ${handItem?.name} | Desbloqueia: ${handItem?.unlocksClass}`);
+
+      if (handItem && 'unlocksClass' in handItem && handItem.unlocksClass) {
+          if (!this.player.unlockedClasses.includes(handItem.unlocksClass)) {
+              this.player.unlockedClasses.push(handItem.unlocksClass);
+          }
+          this.player.setActiveClass(handItem.unlocksClass);
+          this.logger.log('actions', `[DomainFacade] Forçando classe do jogador para: ${handItem.unlocksClass}`);
+                  this.eventManager.dispatch('classChanged', { oldClassInstance: null, newClassInstance: null });
+      }
     }
     if (action === 'unequip' && payload.slot !== undefined) {
       this.player.unequipItem(payload.slot as string);
@@ -140,6 +155,8 @@ export default class DomainFacade implements IGameDomain {
   public manageSkillTree(action: 'unlock' | 'changeClass', payload: { className?: string; skillId?: string }): void {
     if (action === 'changeClass' && payload.className) {
        this.player.setActiveClass(payload.className as string);
+       this.logger.log('actions', `[DomainFacade] UI trocou a classe manualmente para: ${payload.className}`);
+       this.eventManager.dispatch('classChanged', { oldClassInstance: null, newClassInstance: null });
     } else if (action === 'unlock' && payload.skillId) {
        this.player.unlockSkill(payload.skillId as string);
     }

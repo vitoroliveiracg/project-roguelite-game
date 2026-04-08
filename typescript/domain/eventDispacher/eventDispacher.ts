@@ -22,6 +22,13 @@ export class EventHandler implements IEventManager {
    * @param payload Os dados a serem enviados para os ouvintes.
    */
   dispatch<K extends EventKey>(key: K, payload: GameEventMap[K]): void {
+    // Loga o disparo do evento na nova channel 'events', filtrando os que rodam a 60fps para não floodar o console
+    if (key !== 'log' && key !== 'playerMoved' && key !== 'requestNeighbors') {
+        // Envia direto para a lista de listeners de 'log' para evitar loop recursivo no dispatch
+        const logPayload = { channel: 'events', message: `[EventDispatcher] Disparado: ${key}`, params: [payload] };
+        this.listeners['log']?.forEach(listener => listener(logPayload as any));
+    }
+
     this.listeners[key]?.forEach(listener => listener(payload));
   }
 }
