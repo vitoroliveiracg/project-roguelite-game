@@ -324,6 +324,14 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
             }
         }
     },
+    'fishPet': {
+        category: 'entity',
+        animations: {
+            // Usando o slime como placeholder enquanto você não desenha o peixinho!
+            'idle': { imageSrc: new URL('../assets/entities/pet-fish.png', import.meta.url).href, frameCount: 3, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } },
+            'walking': { imageSrc: new URL('../assets/entities/pet-fish.png', import.meta.url).href, frameCount: 3, animationSpeed: 1, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }
+        }
+    },
     'scythe-slash' :{
         category: 'vfx',
         animations: {

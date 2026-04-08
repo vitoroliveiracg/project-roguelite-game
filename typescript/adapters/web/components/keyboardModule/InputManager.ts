@@ -25,6 +25,7 @@ export type GameAction =
   | 'spell_7'
   | 'spell_8'
   | 'spell_9'
+  | 'spell_f'
   | 'cast_spell'
   | 'toggle_attributes'
   | 'toggle_skill_tree'
@@ -90,6 +91,11 @@ export class InputManager {
         this.setKeyForAction(action as GameAction, (keyOrKeys as string).toLowerCase());
       }
     });
+    
+    // Fallback de Segurança: Garante que a tecla F invoque a magia F se não estiver no JSON
+    if (!this.actionMap.has('spell_f')) {
+        this.setKeyForAction('spell_f', 'f');
+    }
     
     // Fallback de Segurança: Garante que o Z funcione para interação mesmo se o keymap.json estiver desatualizado ou com erro.
     if (!this.actionMap.has('interact')) {

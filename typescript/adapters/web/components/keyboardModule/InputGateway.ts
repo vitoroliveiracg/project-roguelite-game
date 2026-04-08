@@ -40,7 +40,7 @@ export default class InputGateway {
       actions.push("rightClick");
     }
 
-    const spellActions: GameAction[] = ['spell_0', 'spell_1', 'spell_2', 'spell_3', 'spell_4', 'spell_5', 'spell_6', 'spell_7', 'spell_8', 'spell_9'];
+    const spellActions: GameAction[] = ['spell_0', 'spell_1', 'spell_2', 'spell_3', 'spell_4', 'spell_5', 'spell_6', 'spell_7', 'spell_8', 'spell_9', 'spell_f'];
     spellActions.forEach(spell => {
       if (this.inputManager.consumeAction(spell)) {
         logger.log("input", `(Input Gateway) handled ${spell} to player`);

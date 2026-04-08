@@ -158,7 +158,26 @@ export default class DomainFacade implements IGameDomain {
        this.logger.log('actions', `[DomainFacade] UI trocou a classe manualmente para: ${payload.className}`);
        this.eventManager.dispatch('classChanged', { oldClassInstance: null, newClassInstance: null });
     } else if (action === 'unlock' && payload.skillId) {
-       this.player.unlockSkill(payload.skillId as string);
+       const activeClassInstance = this.player.classes.find(c => c.name === this.player.activeClass);
+       let requiredLevel = 1;
+       
+       if (activeClassInstance) {
+           const skillsMap = (activeClassInstance as any).skillsByLevel as Map<number, any>;
+           if (skillsMap) {
+               for (const [lvl, skill] of skillsMap.entries()) {
+                   if (skill.id === payload.skillId) {
+                       requiredLevel = lvl;
+                       break;
+                   }
+               }
+           }
+       }
+       
+       if (this.player.attributes.level >= requiredLevel) {
+           this.player.unlockSkill(payload.skillId as string);
+       } else {
+           this.logger.log('error', `Acesso negado: Nível insuficiente para destravar a skill. (Nível atual: ${this.player.attributes.level}, Necessário: ${requiredLevel})`);
+       }
     }
   }
 
@@ -265,9 +284,34 @@ export default class DomainFacade implements IGameDomain {
     }
     ps.classes.length = this.player.classes.length;
     
-    // Skills de Classe (In-Game) NÃO vão para a árvore da Meta-Progressão
-    // O SkillTreeGui ficará vazio até implementarmos os Nodos Globais da conta
-    ps.skillTree = [];
+    // Mapeia as skills da Classe Ativa para a interface da Árvore
+    const activeClassInstance = this.player.classes.find(c => c.name === this.player.activeClass);
+    if (activeClassInstance) {
+        const skillsMap = (activeClassInstance as any).skillsByLevel as Map<number, any>;
+        
+        ps.skillTree = activeClassInstance.allSkills.map(skill => {
+            let requiredLevel = 1;
+            if (skillsMap) {
+                for (const [lvl, s] of skillsMap.entries()) {
+                    if (s.id === (skill as any).id) {
+                        requiredLevel = lvl;
+                        break;
+                    }
+                }
+            }
+            
+            return {
+                id: (skill as any).id,
+                name: (skill as any).name,
+                type: (skill as any).type,
+                tier: (skill as any).tier || 1,
+                unlocked: this.player.unlockedSkills.has((skill as any).id),
+                canUnlock: !this.player.unlockedSkills.has((skill as any).id) && this.player.attributes.level >= requiredLevel
+            };
+        });
+    } else {
+        ps.skillTree = [];
+    }
 
     const otherStates = this.objectManager.getAllRenderableStates();
     

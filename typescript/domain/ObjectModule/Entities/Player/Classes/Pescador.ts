@@ -24,11 +24,14 @@ export default class Pescador extends Class {
     private lastHookTime: number = 0;
     private readonly hookCooldown: number = 1000;
     private readonly hookDurationSeconds: number = 0.7;
+    private lastPetTime: number = 0;
+    private readonly petCooldown: number = 10000; // 10s cooldown
 
     constructor(xpTable: IXPTable, player: Player, eventManager: IEventManager) {
         super('Pescador', xpTable, player, eventManager);
         // Exemplo de uma passiva inicial temática
         this.skillsByLevel.set(2, new Skill('pesc_t1_fisgada', 'Fisgada Perfeita', 'passive', 1));
+        this.skillsByLevel.set(16, new Skill('pesc_t4_fishpet', 'Peixinho de Combate', 'active', 4));
 
         this.eventManager.on('hookDestroyed', (payload) => {
             if (payload.playerId === this.player.id) {
@@ -39,6 +42,25 @@ export default class Pescador extends Class {
                 }
             }
         });
+    }
+
+    /**
+     * Invoca o peixinho de combate usando a tecla F
+     */
+    @BindAction('spell_f')
+    public onSummonPet() {
+        if (!this.player.unlockedSkills.has('pesc_t4_fishpet')) return;
+        
+        const now = Date.now();
+        if (now - this.lastPetTime < this.petCooldown) return;
+        this.lastPetTime = now;
+
+        this.eventManager.dispatch('spawn', {
+            type: 'fishPet',
+            coordinates: { x: this.player.coordinates.x, y: this.player.coordinates.y }
+        });
+
+        this.eventManager.dispatch('log', { channel: 'classes:pescador', message: 'Peixinho de Combate invocado!', params: [] });
     }
 
     /**
