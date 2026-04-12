@@ -6,6 +6,7 @@ import SkillTreeGui from "../../GUIS/skillTreeHudModule/SkillTreeGUI";
 import GameOverGui from "../../GUIS/gameoverHudModule/GameOverGui";
 import WeaponHudGui from "../../GUIS/weaponHudModule/WeaponHudGui";
 import DialogueGui from "../../GUIS/dialogueHudModule/DialogueGui";
+import WindowHudGui from "../../GUIS/windowHudModule/WindowHudGui";
 
 /** @class UIManager Gerencia todas as interfaces de usuário baseadas em DOM do jogo. */
 export default class UIManager {
@@ -16,13 +17,14 @@ export default class UIManager {
   private gameOverGui: GameOverGui;
   private weaponHudGui: WeaponHudGui;
   public dialogueGui: DialogueGui;
+  private windowHudGui = new WindowHudGui();
   private promptEl: HTMLElement;
 
   constructor(
     togglePauseCallback: () => void, 
     equipItemCallback: (index: number) => void,
     unequipItemCallback: (slot: string, index?: number) => void,
-    skillActionCallback: (action: 'unlock' | 'changeClass', payload: any) => void,
+    skillActionCallback: (action: 'unlock' | 'changeClass' | 'equip', payload: any) => void,
     allocateAttributeCallback: (attribute: string) => void,
     restartCallback: () => void,
     deleteItemCallback: (index: number) => void = () => {},

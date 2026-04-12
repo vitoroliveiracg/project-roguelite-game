@@ -326,5 +326,36 @@
     * **NPC Mentor:** Tutorial inicial explicando as classes base no Hub.
     * **Axiomante (Academia):** Torre de desafios para estabilizar magias via puzzle de conexão elementar.
 
+### 🌳 Épico 12: Nova Árvore de Habilidades e Loadout (Wireframe Deck Building)
+    *Refatoração da UI/UX e Domínio baseada no novo design de topologia semântica, escolhas limitadas e Deck Building.*
+
+    Tarefa: [ ] Topologia e Semântica da Árvore (Viewport)
+    > "A árvore deve permitir rolagem para cima e para baixo, além de zoom in e out, todos os elementos devem possuir uma linha para mostrar caminhos de ir de um para o outro"
+    [ ] Sub-tarefa: Transformar a área central em um Canvas/Viewport interativo com Pan e Zoom.
+    [ ] Sub-tarefa: Nós **Retangulares** para Habilidades Ativas comuns.
+    > "Quero adicionar também a estrela que será habilidades ativas essenciais, que vão ser sobre outras teclas, mas a classe vai se basear nelas, tipo as skills do mago, o peixinho do pescador"
+    [ ] Sub-tarefa: Nós em **Estrela** para Habilidades Ativas Essenciais (Core skills com atalho próprio fixo).
+    [ ] Sub-tarefa: Nós em **Triângulo** para Habilidades Passivas (Buffs permanentes).
+    > "Faltou o círculo também que é ponto(s) de aumento de atributos. Somente em alguns níveis que você vai poder aumentar os atributos, e será determinado"
+    [ ] Sub-tarefa: Nós em **Círculo** para aumentos de Atributos predeterminados da árvore.
+    > "Esse tal de raro (lozangulo) na realidade é escolha de subclasse... esse tal de raro só é raro na árvore global"
+    [ ] Sub-tarefa: Nós em **Losango** para as escolhas de Subclasse (Bifurcações críticas de caminho).
+
+    Tarefa: [ ] Sistema de Loadout Dinâmico (Dynamic Keybinding)
+    > "...o player só vai poder ter 4 habilidades e escolher conforme"
+    [x] Sub-tarefa: Implementar a matriz `activeLoadout: [null, null, null, null]` no Domínio (`Player`).
+    [x] Sub-tarefa: Atualizar o `ActionManager` para rotear os atalhos 1, 2, 3 e 4 para as magias equipadas no Loadout.
+    [x] Sub-tarefa: Criar o painel lateral esquerdo da UI com os 4 slots numéricos.
+    [x] Sub-tarefa: Implementar mecânica de arrastar/clicar para equipar uma magia da árvore/mochila no slot.
+    > "Esquece esse botão passivas, o unico elemento flutuante é o lozangulo mistico/mágico amarelado/dourado com o número de pontos nele, o unico botão que tem é o de abrir e fechar os slots de habilidade"
+    [ ] Sub-tarefa: Adicionar o botão retrátil para abrir/fechar o painel lateral de slots de habilidade.
+
+    Tarefa: [ ] Mochila de Magias (Pool de Escolhas)
+    > "Detalhe importante, a lista das quatro habilidades de slot podem ser da futura árvore global também. O player vai ter que escolher. O que me leva a pensar que ele vai poder reescolher essa habilidade que ele tirou, então vai precisar de uma listagem de habilidades ativas globais que ele tem"
+    [x] Sub-tarefa: Mesclar Habilidades Ativas da Árvore Global com as da Classe Atual no DTO (`unlockedActiveSkills`).
+    [ ] Sub-tarefa: Criar interface tipo "Mochila de Magias" para o jogador visualizar, filtrar e selecionar entre todas as magias ativas já adquiridas na conta/run.
+    [ ] Sub-tarefa: Cabeçalho superior com ícones (Cajado, Espada, Arco) e setas para transição dinâmica das árvores de classes.
+    [ ] Sub-tarefa: Adicionar o Losango Místico Dourado flutuante exibindo os Pontos de Habilidade disponíveis para gasto.
+
 ---
 **Nota de Arquitetura:** Mantenha o `DomainFacade` como o único ponto de entrada para o `SocketGateway` repassar os comandos da IA para o jogo.

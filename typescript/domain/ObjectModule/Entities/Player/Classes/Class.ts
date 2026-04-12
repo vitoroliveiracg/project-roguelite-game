@@ -1,7 +1,6 @@
 import type IXPTable from "../../IXPTable";
 import type Skill from "../../../../Skills/Skill";
 import type Player from "../Player";
-import type Vector2D from "../../../../shared/Vector2D";
 import type { IEventManager } from "../../../../eventDispacher/IGameEvents"; 
 
 export default abstract class Class {

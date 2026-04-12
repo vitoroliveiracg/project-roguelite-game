@@ -1,0 +1,80 @@
+#custom-titlebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 46px;
+    background: linear-gradient(to bottom, #0e0e0e 0%, #3a3a3a 100%);
+    border-radius: 0 0 4px 4px;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 999999; /* Fica acima de Absolutamente TUDO */
+    user-select: none;
+    font-family: 'Minecraft', 'Courier New', Courier, monospace;
+}
+
+.titlebar-title {
+    color: #ddd;
+    margin-left: 15px;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 2px 2px 0px #000;
+    flex-grow: 1; /* Faz a área de drag ocupar o centro todo */
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+#titlebar-app-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    image-rendering: pixelated;
+    pointer-events: none; /* Impede que o ícone bloqueie o drag da janela */
+}
+
+.titlebar-controls {
+    display: flex;
+    height: 100%;
+}
+
+.titlebar-button {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    width: 64px;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.titlebar-button img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    opacity: 0.85;
+    transition: opacity 0.1s, transform 0.1s;
+}
+
+#titlebar-fullscreen:hover,
+#titlebar-minimize:hover,
+#titlebar-maximize:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#titlebar-close:hover {
+    background-color: #8a1c1c;
+}
+
+.titlebar-button:hover img {
+    opacity: 1;
+    transform: scale(1.4);
+}

@@ -19,6 +19,8 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
   private device!: GPUDevice;
   private context!: GPUCanvasContext;
   private presentationFormat!: GPUTextureFormat;
+  private canvasWidth: number = 0;
+  private canvasHeight: number = 0;
   private renderPipeline!: GPURenderPipeline;
   private vertexBuffer!: GPUBuffer;
   private cameraMatrix!: Float32Array;
@@ -67,6 +69,8 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
       device: this.device,
       format: this.presentationFormat,
     });
+    this.canvasWidth = this.canvas.element.width;
+    this.canvasHeight = this.canvas.element.height;
 
     this.loadSpriteConfigs();
 
@@ -85,6 +89,19 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
    * Por enquanto, apenas limpa a tela com uma cor sólida.
    */
   public async drawFrame(domainState: { world: any, renderables: readonly (EntityRenderableState & { currentFrame: number; })[] }, cameraTarget: EntityRenderableState | undefined): Promise<void> {
+    // Previne crash fatal do WebGPU quando a janela do Tauri é minimizada (tamanho 0x0)
+    if (this.canvas.element.width === 0 || this.canvas.element.height === 0) return;
+
+    // Previne o pânico do WebGPU reconfigurando o SwapChain se a janela foi maximizada/redimensionada
+    if (this.canvas.element.width !== this.canvasWidth || this.canvas.element.height !== this.canvasHeight) {
+      this.context.configure({
+        device: this.device,
+        format: this.presentationFormat,
+      });
+      this.canvasWidth = this.canvas.element.width;
+      this.canvasHeight = this.canvas.element.height;
+    }
+
     const { renderables } = domainState;
     const commandEncoder = this.device.createCommandEncoder();
     const textureView = this.context.getCurrentTexture().createView();

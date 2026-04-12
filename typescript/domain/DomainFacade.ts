@@ -152,7 +152,7 @@ export default class DomainFacade implements IGameDomain {
     }
   }
 
-  public manageSkillTree(action: 'unlock' | 'changeClass', payload: { className?: string; skillId?: string }): void {
+  public manageSkillTree(action: 'unlock' | 'changeClass' | 'equip', payload: { className?: string; skillId?: string; slotIndex?: number }): void {
     if (action === 'changeClass' && payload.className) {
        this.player.setActiveClass(payload.className as string);
        this.logger.log('actions', `[DomainFacade] UI trocou a classe manualmente para: ${payload.className}`);
@@ -174,10 +174,17 @@ export default class DomainFacade implements IGameDomain {
        }
        
        if (this.player.attributes.level >= requiredLevel) {
-           this.player.unlockSkill(payload.skillId as string);
+           if (this.player.attributes.availablePoints > 0) {
+               (this.player.attributes as any)._availablePoints--; // Gasta o ponto de habilidade!
+               this.player.unlockSkill(payload.skillId as string);
+           } else {
+               this.logger.log('error', `Acesso negado: Pontos de habilidade insuficientes para a skill ${payload.skillId}.`);
+           }
        } else {
            this.logger.log('error', `Acesso negado: Nível insuficiente para destravar a skill. (Nível atual: ${this.player.attributes.level}, Necessário: ${requiredLevel})`);
        }
+    } else if (action === 'equip' && payload.skillId && payload.slotIndex !== undefined) {
+       this.player.equipSkillInLoadout(payload.skillId, payload.slotIndex);
     }
   }
 
@@ -303,6 +310,7 @@ export default class DomainFacade implements IGameDomain {
             return {
                 id: (skill as any).id,
                 name: (skill as any).name,
+                description: (skill as any).description || '',
                 type: (skill as any).type,
                 tier: (skill as any).tier || 1,
                 unlocked: this.player.unlockedSkills.has((skill as any).id),
@@ -312,6 +320,22 @@ export default class DomainFacade implements IGameDomain {
     } else {
         ps.skillTree = [];
     }
+
+    // Preenche o Loadout Ativo e a "Mochila de Magias" para o Deck Building
+    ps.activeLoadout = [...this.player.activeLoadout];
+    const allUnlockedActives: any[] = [];
+    for (const cls of this.player.classes) {
+        for (const skill of cls.allSkills) {
+            if (skill.type === 'active' && this.player.unlockedSkills.has(skill.id)) {
+                allUnlockedActives.push({
+                    id: skill.id, name: skill.name, description: skill.description || '',
+                    type: skill.type, tier: skill.tier || 1,
+                    unlocked: true, canUnlock: false
+                });
+            }
+        }
+    }
+    ps.unlockedActiveSkills = allUnlockedActives;
 
     const otherStates = this.objectManager.getAllRenderableStates();
     

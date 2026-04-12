@@ -16,9 +16,10 @@ export default class Mage extends Class {
 
     constructor(xpTable: IXPTable, player: Player, eventManager: IEventManager) {
         super('Mago', xpTable, player, eventManager);
-        this.skillsByLevel.set(2, new Skill('m_t1_fireball', 'Axioma Inicial', 'active', 1));
-        this.skillsByLevel.set(4, new Skill('m_t2_burn', 'Sobrecarga de Mana', 'passive', 2, 'm_t1_fireball'));
-        this.skillsByLevel.set(6, new Skill('m_t3_knowledge', 'Conhecimento Profundo', 'passive', 3, 'm_t1_fireball'));
+        this.skillsByLevel.set(2, new Skill('m_t1_fireball', 'Axioma Inicial', 'A fundação do Axiomante. Dispara um projétil puro usando as teclas de feitiço.', 'essential', 1));
+        this.skillsByLevel.set(4, new Skill('m_t2_burn', 'Sobrecarga de Mana', 'Aumenta passivamente a regeneração de mana no calor da batalha.', 'passive', 2, 'm_t1_fireball'));
+        this.skillsByLevel.set(6, new Skill('m_t3_knowledge', 'Erudição', 'Concede um aumento formidável em Inteligência Máxima.', 'attribute', 3, 'm_t2_burn'));
+        this.skillsByLevel.set(8, new Skill('m_t4_teleport', 'Translocação (Blink)', 'Teletransporta o corpo pelo tecido da realidade numa curta distância.', 'active', 4, 'm_t3_knowledge'));
     }
 
     @BindAction('spell_0')
@@ -31,7 +32,7 @@ export default class Mage extends Class {
     @BindAction('spell_7')
     @BindAction('spell_8')
     @BindAction('spell_9')
-    public onSpellInput(mouseCoordinates: any, action: action) {
+    public onSpellInput(_mouseCoordinates: any, action: action) {
         if (this.player.activeStatuses.has('stun') || this.player.activeStatuses.has('paralyze')) return; // Concentração quebrada!
         this.spellBuffer.push(action);
         
@@ -130,6 +131,10 @@ export default class Mage extends Class {
             }
         }
         return false;
+    }
+
+    public executeSkill(skillId: string, _mouseCoordinates: {x: number, y: number}): void {
+        this.eventManager.dispatch('log', { channel: 'domain', message: `[Mago] Tentando usar a skill ${skillId} via Loadout (Axiomante geralmente usa digitação!)`, params: [] });
     }
 
     //? ----------- Skills -----------

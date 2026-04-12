@@ -57,6 +57,9 @@ export default class Player extends Entity {
   private _classes: Class[] = [];
   private _unlockedSkills: Set<string> = new Set();
   // -----------------------------------
+  
+  /** Matriz de 4 posições contendo os IDs das habilidades ativas equipadas */
+  public activeLoadout: (string | null)[] = [null, null, null, null];
 
   public facingDirection: Vector2D = new Vector2D(1, 0); // Direção para onde o mago atira
 
@@ -520,6 +523,30 @@ export default class Player extends Entity {
         skill.effect.apply(this);
       }
     }
+  }
+
+  public equipSkillInLoadout(skillId: string, slotIndex: number): void {
+    if (slotIndex < 0 || slotIndex > 3) return;
+    if (!this._unlockedSkills.has(skillId)) {
+        this.eventManager.dispatch('log', { channel: 'error', message: `Não é possível equipar uma habilidade bloqueada: ${skillId}`, params: [] });
+        return;
+    }
+    
+    // Evita duplicatas removendo a skill do slot anterior se ela já estiver equipada
+    const existingIndex = this.activeLoadout.indexOf(skillId);
+    if (existingIndex !== -1) this.activeLoadout[existingIndex] = null;
+    
+    this.activeLoadout[slotIndex] = skillId;
+    this.eventManager.dispatch('log', { channel: 'domain', message: `Habilidade ${skillId} equipada no slot ${slotIndex + 1}`, params: [] });
+  }
+
+  public executeActiveSkill(skillId: string, mouseCoordinates: {x: number, y: number}): void {
+      const activeClassInstance = this._classes.find(c => c.name === this._activeClass);
+      if (activeClassInstance && typeof (activeClassInstance as any).executeSkill === 'function') {
+          (activeClassInstance as any).executeSkill(skillId, mouseCoordinates);
+      } else {
+          this.eventManager.dispatch('log', { channel: 'error', message: `Skill ${skillId} falhou: A classe ${this._activeClass} não implementa executeSkill.`, params: [] });
+      }
   }
 
   public get activeClass(): string | null { return this._activeClass; }

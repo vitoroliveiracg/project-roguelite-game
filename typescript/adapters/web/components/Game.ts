@@ -19,10 +19,15 @@ export function initializeGame(
 /** A função interna que é executada a cada frame pelo navegador. Calcula o deltaTime e chama os callbacks de update e draw. @private @param currentTime O timestamp atual fornecido pelo navegador. */
 async function gameLoop(currentTime: number) {
   // debugger; // Descomente esta linha para pausar a execução a cada frame e inspecionar o estado.
-  const deltaTime = (currentTime - lastTime) / 1000; // Calcula o tempo decorrido desde o último frame em segundos.
+  let deltaTime = (currentTime - lastTime) / 1000; // Calcula o tempo decorrido desde o último frame em segundos.
+  if (deltaTime > 0.1) deltaTime = 0.1; // Trava de segurança (10 FPS) para evitar explosão da física se a janela do SO travar
   lastTime = currentTime; // Atualiza o timestamp do último frame.
   logger.log('loop', `New frame. DeltaTime: ${deltaTime.toFixed(4)}`);
-  updateCallback(deltaTime); // Chama a função de atualização da lógica do jogo.
-  await drawCallback(); // Chama a função de desenho do estado do jogo.
+  try {
+    updateCallback(deltaTime); // Chama a função de atualização da lógica do jogo.
+    await drawCallback(); // Chama a função de desenho do estado do jogo.
+  } catch (error) {
+    console.error("[Game Loop Panic Recuperado]:", error);
+  }
   window.requestAnimationFrame(gameLoop); // Solicita o próximo frame de animação.
 }

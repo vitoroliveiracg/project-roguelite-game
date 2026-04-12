@@ -28,7 +28,7 @@ export default class Particles {
      */
     private activeCount: number = 0;
 
-    constructor(maxParticles: number = 2000) {
+    constructor(maxParticles: number = 1000) {
         this.maxParticles = maxParticles;
         this.pool = new Array(maxParticles);
         
@@ -43,7 +43,8 @@ export default class Particles {
      * Operação extremamente barata `O(1)` por partícula emitida.
      */
     public emit(config: ParticleEmitterConfig): void {
-        for (let i = 0; i < config.count; i++) {
+        const safeCount = Math.ceil(config.count * 0.35); // Reduz a emissão bruta em 65% para não estourar a GPU
+        for (let i = 0; i < safeCount; i++) {
             if (this.activeCount >= this.maxParticles) break; // Proteção: Pool lotado
 
             // Resgata uma partícula "Morta" do final do array

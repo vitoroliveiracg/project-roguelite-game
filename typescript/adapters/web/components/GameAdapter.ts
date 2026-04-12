@@ -66,7 +66,7 @@ export default class GameAdapter {
       this.togglePauseGame,
       (index: number) => this.domain.manageInventory('equip', { index }),
       (slot: string, index?: number) => this.domain.manageInventory('unequip', index !== undefined ? { slot, index } : { slot }),
-      (action: 'unlock' | 'changeClass', payload: any) => this.domain.manageSkillTree(action, payload),
+      (action: 'unlock' | 'changeClass' | 'equip', payload: any) => this.domain.manageSkillTree(action, payload),
       (attribute: string) => this.domain.allocateAttribute(attribute),
       () => {
         logger.log('domain', 'Restarting game via UI command...');
@@ -185,6 +185,9 @@ export default class GameAdapter {
           currentFrame: animManager ? animManager.currentFrame : 0
         });
       }
+      
+      // Aplica ordenação espacial (Y-Sorting) para criar ilusão de profundidade (pseudo-3D)
+      renderablesWithAnimation.sort((a, b) => (a.coordinates.y + a.size.height) - (b.coordinates.y + b.size.height));
 
       const webGpuDomainState = { world: domainState.world, renderables: renderablesWithAnimation };
       await this.renderer.drawFrame(webGpuDomainState, cameraTarget);
@@ -199,7 +202,12 @@ export default class GameAdapter {
         .map(v => v.renderable)
         .filter((r): r is IRenderable => r !== undefined);
 
-      const allRenderables = [...this.sceneManager.renderables.values(), ...transientRenderables, this.sceneManager.particleOrchestrator];
+      // Aplica ordenação espacial (Y-Sorting) para criar ilusão de profundidade (pseudo-3D)
+      const sortedEntities = [...this.sceneManager.renderables.values(), ...transientRenderables];
+      sortedEntities.sort((a, b) => (a.coordinates.y + a.size.height) - (b.coordinates.y + b.size.height));
+
+      // Adiciona elementos que devem estar sempre no topo (Partículas e Debug)
+      const allRenderables = [...sortedEntities, this.sceneManager.particleOrchestrator];
       if (this.isDebugMode) allRenderables.push(...this.sceneManager.debugRenderables.values());
 
       // Passa a lista de objetos visuais (IRenderableObject) para o renderer antigo.
@@ -292,7 +300,11 @@ export default class GameAdapter {
     canvasElement.style.display = 'block';
     document.body.style.margin = '0';
     document.body.style.overflow = 'hidden';
-    window.addEventListener('resize', () => { canvasElement.width = window.innerWidth; canvasElement.height = window.innerHeight; }); // Adiciona um listener para redimensionar o canvas quando a janela é redimensionada.
+    window.addEventListener('resize', () => { 
+      if (window.innerWidth === 0 || window.innerHeight === 0) return;
+      canvasElement.width = window.innerWidth; 
+      canvasElement.height = window.innerHeight; 
+    }); 
   }
   /** * Converte as coordenadas de clique da tela (pixels do canvas) para as coordenadas do mundo do jogo. * @param screenX Coordenada X do clique (e.g., event.clientX). * @param screenY Coordenada Y do clique (e.g., event.clientY). * @returns Um objeto com as coordenadas do mundo { worldX, worldY }. */
   private screenToWorld(screenX: number, screenY: number): { x: number, y: number } {

@@ -6,8 +6,10 @@ import css from './playerStatus.css?raw';
 /** @class PlayerStatusGui Controla a interface das barras de HP e Mana do jogador, aplicando alterações de tamanho via porcentagem calculada a partir dos dados do Domínio. */
 export default class PlayerStatusGui {
     private hpBarFill!: HTMLElement;
+    private hpBarTrail!: HTMLElement;
     private hpText!: HTMLElement;
     private manaBarFill!: HTMLElement;
+    private manaBarTrail!: HTMLElement;
     private manaText!: HTMLElement;
     private statusContainer!: HTMLElement;
 
@@ -34,8 +36,10 @@ export default class PlayerStatusGui {
 
     private setupElements(): void {
         this.hpBarFill = document.getElementById('hp-bar-fill') as HTMLElement;
+        this.hpBarTrail = document.getElementById('hp-bar-trail') as HTMLElement;
         this.hpText = document.getElementById('hp-text') as HTMLElement;
         this.manaBarFill = document.getElementById('mana-bar-fill') as HTMLElement;
+        this.manaBarTrail = document.getElementById('mana-bar-trail') as HTMLElement;
         this.manaText = document.getElementById('mana-text') as HTMLElement;
         this.statusContainer = document.getElementById('status-effects-container') as HTMLElement;
     }
@@ -46,23 +50,57 @@ export default class PlayerStatusGui {
         const hpPercentage = data.maxHp > 0 ? Math.max(0, Math.min(100, (data.hp / data.maxHp) * 100)) : 0;
         const manaPercentage = data.maxMana > 0 ? Math.max(0, Math.min(100, (data.mana / data.maxMana) * 100)) : 0;
 
-        if (hpPercentage !== this.lastHpPercentage) {
-            this.hpBarFill.style.width = `${hpPercentage}%`;
-            this.lastHpPercentage = hpPercentage;
-        }
-        if (manaPercentage !== this.lastManaPercentage) {
-            this.manaBarFill.style.width = `${manaPercentage}%`;
-            this.lastManaPercentage = manaPercentage;
-        }
-
+        let isPoisoned = false;
+        let isBurning = false;
         // Reação Visual da Barra de HP aos Status Elementais
         if (data.activeStatuses) {
-            const isPoisoned = data.activeStatuses.some(s => s.id === 'poison');
-            const isBurning = data.activeStatuses.some(s => s.id === 'burn');
+            isPoisoned = data.activeStatuses.some(s => s.id === 'poison');
+            isBurning = data.activeStatuses.some(s => s.id === 'burn');
             
             this.hpBarFill.className = 'status-bar-fill hp-fill'; // Reseta as classes base
             if (isPoisoned) this.hpBarFill.classList.add('poisoned');
             else if (isBurning) this.hpBarFill.classList.add('burning');
+        }
+
+        if (hpPercentage !== this.lastHpPercentage) {
+            if (this.lastHpPercentage !== -1) {
+                const isDamage = hpPercentage < this.lastHpPercentage;
+                const diff = Math.abs(hpPercentage - this.lastHpPercentage);
+                
+                // Otimização de CPU: Só aplica as transições caras se for um chunk de dano (> 1%).
+                // Se for dano/cura contínua (ex: Veneno) a cada frame, desliga a transição.
+                if (diff > 1.0) {
+                    if (isDamage) {
+                        this.hpBarFill.style.transition = 'width 0.1s ease-out';
+                        this.hpBarTrail.style.transition = 'width 0.4s ease-out 0.15s';
+                    } else {
+                        this.hpBarFill.style.transition = 'width 0.3s ease-out';
+                        this.hpBarTrail.style.transition = 'none';
+                    }
+                } else {
+                    this.hpBarFill.style.transition = 'none';
+                    this.hpBarTrail.style.transition = 'none';
+                }
+            }
+            this.hpBarFill.style.width = `${hpPercentage}%`;
+            this.hpBarTrail.style.width = `${hpPercentage}%`;
+            this.lastHpPercentage = hpPercentage;
+        }
+        if (manaPercentage !== this.lastManaPercentage) {
+            if (this.lastManaPercentage !== -1) {
+                const isDamage = manaPercentage < this.lastManaPercentage;
+                const diff = Math.abs(manaPercentage - this.lastManaPercentage);
+                if (diff > 1.0) {
+                    this.manaBarFill.style.transition = isDamage ? 'width 0.1s ease-out' : 'width 0.3s ease-out';
+                    this.manaBarTrail.style.transition = isDamage ? 'width 0.4s ease-out 0.15s' : 'none';
+                } else {
+                    this.manaBarFill.style.transition = 'none';
+                    this.manaBarTrail.style.transition = 'none';
+                }
+            }
+            this.manaBarFill.style.width = `${manaPercentage}%`;
+            this.manaBarTrail.style.width = `${manaPercentage}%`;
+            this.lastManaPercentage = manaPercentage;
         }
 
         const hpStr = `${Math.ceil(data.hp)}/${data.maxHp}`;
@@ -105,8 +143,11 @@ export default class PlayerStatusGui {
                     this.statusContainer.appendChild(div);
                 }
                 
-                // Atualiza o tempo restante dinamicamente no atributo de dados (lido pelo CSS)
-                div.setAttribute('data-tooltip', `${status.id.toUpperCase()} - ${status.remaining.toFixed(1)}s\n${status.description}`);
+                // Otimização: Só interage com o DOM se o texto (arredondado) mudar de fato
+                const tooltipText = `${status.id.toUpperCase()} - ${Math.ceil(status.remaining)}s\n${status.description}`;
+                if (div.getAttribute('data-tooltip') !== tooltipText) {
+                    div.setAttribute('data-tooltip', tooltipText);
+                }
             });
         }
     }

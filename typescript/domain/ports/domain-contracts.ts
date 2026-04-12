@@ -7,7 +7,8 @@ import type { objectTypeId } from "../ObjectModule/objectType.type";
 export interface SkillNodeDTO {
   id: string;
   name: string;
-  type: 'active' | 'passive' | 'rare';
+  description: string;
+  type: 'active' | 'passive' | 'rare' | 'essential' | 'attribute';
   tier: number;
   unlocked: boolean;
   canUnlock: boolean;
@@ -84,6 +85,8 @@ export interface EntityRenderableState extends BaseRenderableState {
   unlockedClasses?: string[];
   classes?: ClassDTO[];
   skillTree?: SkillNodeDTO[];
+  activeLoadout?: (string | null)[];
+  unlockedActiveSkills?: SkillNodeDTO[];
   
   /** Elementos mágicos embutidos na entidade para guiar o Motor de Partículas (O Lego Visual) */
   spellElements?: string[];
@@ -109,7 +112,7 @@ export interface IGameDomain {
   /** Executa um comando de inventário, como equipar ou desequipar um item. */
   manageInventory(action: 'equip' | 'unequip' | 'consume' | 'delete', payload: { index?: number; slot?: string }): void;
   /** Executa um comando relacionado à árvore de habilidades, como trocar de classe selecionada ou comprar um nó. */
-  manageSkillTree(action: 'unlock' | 'changeClass', payload: { className?: string; skillId?: string }): void;
+  manageSkillTree(action: 'unlock' | 'changeClass' | 'equip', payload: { className?: string; skillId?: string; slotIndex?: number }): void;
   /** Solicita o gasto de um ponto de habilidade em um atributo primário. */
   allocateAttribute(attribute: string): void;
   /** Solicita ao domínio uma "fotografia" do estado atual de todos os objetos visíveis, formatada como DTOs puros para a renderização. @returns Um objeto com o estado do mundo e uma lista de DTOs renderizáveis. */

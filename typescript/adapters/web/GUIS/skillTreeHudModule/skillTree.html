@@ -1,11 +1,24 @@
 <div id="skill-tree-container">
     <div class="skill-header">
-        <h2>Árvore de Habilidades</h2>
     </div>
-    <div class="skill-tree-panel">
-        <div class="class-selector">
+    <div class="skill-body">
+        <!-- Painel de Loadout (Esquerda) -->
+        <div class="loadout-panel">
+            <div class="panel-toggle-tab" id="st-toggle-loadout">☰</div>
+            <div class="loadout-slot" data-slot="1"><span class="slot-num">1</span></div>
+            <div class="loadout-slot locked" data-slot="2"><span class="slot-num">2</span><span class="slot-req">L10</span></div>
+            <div class="loadout-slot locked" data-slot="3"><span class="slot-num">3</span><span class="slot-req">L30</span></div>
+            <div class="loadout-slot locked" data-slot="4"><span class="slot-num">4</span></div>
         </div>
-        <div class="skill-tree-area">
+        <!-- Viewport da Árvore (Centro - Pan & Zoom) -->
+        <div class="skill-tree-viewport">
+            <div class="skill-tree-canvas"></div>
+        </div>
+        <!-- Elementos Flutuantes (Direita) -->
+        <div class="floating-points">
+            <div class="points-diamond">
+                <span id="st-available-points">0</span>
+            </div>
         </div>
     </div>
 </div>

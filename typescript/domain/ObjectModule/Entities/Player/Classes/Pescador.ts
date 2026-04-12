@@ -30,8 +30,9 @@ export default class Pescador extends Class {
     constructor(xpTable: IXPTable, player: Player, eventManager: IEventManager) {
         super('Pescador', xpTable, player, eventManager);
         // Exemplo de uma passiva inicial temática
-        this.skillsByLevel.set(2, new Skill('pesc_t1_fisgada', 'Fisgada Perfeita', 'passive', 1));
-        this.skillsByLevel.set(16, new Skill('pesc_t4_fishpet', 'Peixinho de Combate', 'active', 4));
+        this.skillsByLevel.set(2, new Skill('pesc_t1_fisgada', 'Fisgada Perfeita', 'O seu puxão se torna mais rápido e pesado.', 'passive', 1));
+        this.skillsByLevel.set(4, new Skill('pesc_t2_net', 'Rede Pesada', 'Joga uma rede mágica que enraíza inimigos em área.', 'active', 2, 'pesc_t1_fisgada'));
+        this.skillsByLevel.set(16, new Skill('pesc_t4_fishpet', 'Peixinho de Combate', 'Invoca um peixinho lutador imortal da dimensão aquática.', 'essential', 4));
 
         this.eventManager.on('hookDestroyed', (payload) => {
             if (payload.playerId === this.player.id) {
@@ -67,7 +68,7 @@ export default class Pescador extends Class {
      * Joga o anzol ou move o pescado usando o clique esquerdo
      */
     @BindAction('leftClick')
-    public onLeftClick(mouseCoordinates: {x: number, y: number}, action: action) {
+    public onLeftClick(mouseCoordinates: {x: number, y: number}, _action: action) {
         this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] onLeftClick disparado! hookDeployed=${this.hookDeployed} hookedEnemy=${!!this.hookedEnemy}`, params: [] });
 
         if (this.hookedEnemy) {
@@ -124,12 +125,16 @@ export default class Pescador extends Class {
         this.accumulatedDamage = 0;
 
         // Stun no inimigo para a IA parar de lutar contra o arrasto
-        if (typeof target.applyStatus === 'function') {
-            // Instancia o Status real do seu domínio com a duração configurada!
-            target.applyStatus(new StunStatus(this.hookDurationSeconds));
-        } else {
-            // Fallback de segurança se o inimigo for um objeto customizado
-            if (!('activeStatuses' in target) || !target.activeStatuses) {
+        try {
+            if (typeof target.applyStatus === 'function') {
+                // Instancia o Status real do seu domínio com a duração configurada!
+                target.applyStatus(new StunStatus(this.hookDurationSeconds));
+            } else {
+                throw new Error("No applyStatus method");
+            }
+        } catch (e) {
+            // Fallback de segurança extremo se o inimigo for um objeto customizado ou o Stun falhar
+            if (!target.activeStatuses || typeof target.activeStatuses.set !== 'function') {
                 target.activeStatuses = new Map<string, any>();
             }
             target.activeStatuses.set('stun', { 
@@ -150,7 +155,7 @@ export default class Pescador extends Class {
     }
 
     private controlHookedEnemy(mouseCoordinates: {x: number, y: number}) {
-        if (!this.hookedEnemy || this.hookedEnemy.attributes.hp <= 0) {
+        if (!this.hookedEnemy || !this.hookedEnemy.attributes || this.hookedEnemy.attributes.hp <= 0 || !mouseCoordinates) {
             this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] controlHookedEnemy: Abortando (Sem alvo ou HP <= 0)`, params: [] });
             this.releaseEnemy();
             return;
@@ -180,7 +185,9 @@ export default class Pescador extends Class {
             }));
             
             // Zera a velocidade física base para ele parar de seguir a IA própria enquanto pescado
-            this.hookedEnemy.velocity.resetMut();
+            if (this.hookedEnemy.velocity && typeof this.hookedEnemy.velocity.resetMut === 'function') {
+                this.hookedEnemy.velocity.resetMut();
+            }
         }
 
         // 2. Dano de colisão com outros inimigos (Bola de Demolição)
@@ -203,8 +210,11 @@ export default class Pescador extends Class {
                             const knockbackDir = new Vector2D(
                                 neighbor.coordinates.x - this.hookedEnemy!.coordinates.x, 
                                 neighbor.coordinates.y - this.hookedEnemy!.coordinates.y
-                            ).normalizeMut();
+                            );
                             
+                            if (knockbackDir.x === 0 && knockbackDir.y === 0) knockbackDir.x = 1; // Proteção contra NaN
+                            knockbackDir.normalizeMut();
+
                             attack.execute(neighbor as any, knockbackDir);
                             
                             // Acumula o dano para ser descontado no final!
@@ -234,8 +244,8 @@ export default class Pescador extends Class {
             this.hookTimeout = null;
         }
         
-        if ('activeStatuses' in target && target.activeStatuses) {
-            (target.activeStatuses as Map<string, any>).delete('stun');
+        if (target.activeStatuses && typeof target.activeStatuses.delete === 'function') {
+            target.activeStatuses.delete('stun');
         }
 
         // 3. Ao final dos 3 segundos, o pescado toma todo o dano que ele causou (Retribuição!)
@@ -252,6 +262,10 @@ export default class Pescador extends Class {
         
         // Avisa à linha de pesca que acabou a brincadeira
         this.eventManager.dispatch('releaseFishingHook', { playerId: this.player.id });
+    }
+
+    public executeSkill(skillId: string, _mouseCoordinates: {x: number, y: number}): void {
+        this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Skill ${skillId} executada no Loadout!`, params: [] });
     }
 
     //? ----------- Skills -----------
