@@ -44,7 +44,7 @@ export default class DialogueGui {
                     this.onPlayerReply(msg, this.currentNpcId);
                     this.inputEl.value = '';
                     this.inputEl.disabled = true; // Trava até a IA responder
-                    this.textEl.innerHTML = '<span style="color: #666;">(Aguardando resposta do Mestre...)</span>';
+                    this.textEl.innerHTML = '<div class="waiting-indicator"><div class="waiting-spinner"></div><span>Aguardando os pensamentos do Mestre... (Isso pode demorar um pouco)</span></div>';
                 }
             }
         });
@@ -75,7 +75,7 @@ export default class DialogueGui {
         
         if (text === "...") {
             this.inputEl.disabled = true;
-            this.textEl.innerHTML = '<span style="color: #888; font-style: italic;">(Aguardando resposta...)</span>';
+            this.textEl.innerHTML = '<div class="waiting-indicator"><div class="waiting-spinner"></div><span>Aguardando os pensamentos do Mestre... (Isso pode demorar um pouco)</span></div>';
         } else {
             this.inputEl.disabled = false;
             this.textEl.textContent = text;

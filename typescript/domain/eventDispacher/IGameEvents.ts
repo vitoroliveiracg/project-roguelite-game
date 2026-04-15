@@ -1,5 +1,6 @@
 import type ObjectElement from "../ObjectModule/ObjectElement";
 import type { objectTypeId } from "../ObjectModule/objectType.type";
+import type { DamageType } from "../ObjectModule/Items/IAtack";
 import type Vector2D from "../shared/Vector2D";
 
 export interface GameEventMap {
@@ -13,9 +14,12 @@ export interface GameEventMap {
   spawnVisual: { type: string, coordinates: { x: number, y: number }, duration: number, size: { width: number, height: number }, rotation?: number };
   classChanged: { oldClassInstance: any, newClassInstance: any };
   particle: { effect: string, x: number, y: number, color?: string, angle?: number };
-  npcSpoke: { npcId: number, message: string };
+  npcSpoke: { npcId: number; message: string; npcName?: string };
   releaseFishingHook: { playerId: number };
   hookDestroyed: { playerId: number };
+  entityDied: { entityId: number; isOverkill: boolean; coordinates: { x: number; y: number; }; };
+  entityDamaged: { entityId: number; damage: number; isCritical: boolean; damageType: DamageType; coordinates: { x: number; y: number; }; };
+
 }
 export type EventKey = keyof GameEventMap;
 

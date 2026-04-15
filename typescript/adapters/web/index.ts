@@ -4,7 +4,6 @@ import GameAdapter from "./components/GameAdapter";
 import { EventHandler } from "../../domain/eventDispacher/eventDispacher";
 import { logger } from "./shared/Logger";
 import { CollisionAdapter } from "../../domain/ports/CollisionAdapter";
-import { SocketAdapter } from "../SocketAdapter/SocketAdapter";
 // Auto-carrega todos os arquivos de representação visual para disparar os Decorators de Registro
 import.meta.glob('./components/gameObjectModule/**/*.ts', { eager: true });
 
@@ -18,10 +17,8 @@ const gameConfig = {
 async function main() {
   const eventManager = new EventHandler();
   const collisionAdapter = new CollisionAdapter();
-  // Inicializa o Gateway WebSocket apontando para o servidor do Athena!
-  const socketAdapter = new SocketAdapter("ws://localhost:8080"); 
   
-  const domain = new DomainFacade(gameConfig, logger, eventManager, collisionAdapter, socketAdapter);
+  const domain = new DomainFacade(gameConfig, logger, eventManager, collisionAdapter);
   const gameAdapter: GameAdapter = new GameAdapter(domain, eventManager);
 
   try {

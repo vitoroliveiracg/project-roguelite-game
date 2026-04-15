@@ -1,10 +1,10 @@
-# 🎯 Hitbox Editor — Documento de Requisitos
+# Hitbox Editor — Documento de Requisitos
 
-## 📌 Nome do Sistema
+## Nome do Sistema
 
 **Hitbox Editor Tool**
 
-## 📌 Objetivo
+## Objetivo
 
 Ferramenta visual para:
 
@@ -15,33 +15,33 @@ Ferramenta visual para:
 
 ---
 
-# 🧱 1. Escopo
+# 1. Escopo
 
 O sistema permitirá:
 
-✅ criação visual de hitboxes
-✅ edição em tempo real
-✅ visualização sobre o sprite
-✅ exportação estruturada
-✅ integração direta com a engine
+criação visual de hitboxes
+edição em tempo real
+visualização sobre o sprite
+exportação estruturada
+integração direta com a engine
 
 Não faz parte do escopo:
 
-❌ animação... Se quiser fazer animação de acordo com o polígono, faz para cada frame e pega os polígonos
-❌ física
-❌ colisão runtime
+animação... Se quiser fazer animação de acordo com o polígono, faz para cada frame e pega os polígonos
+física
+colisão runtime
 
 ---
 
-# 🧠 2. Usuário alvo
+# 2. Usuário alvo
 
 * Desenvolvedor da engine
 * Game designer
-* Você 😄
+* Você
 
 ---
 
-# 🏗️ 3. Arquitetura Geral
+# 3. Arquitetura Geral
 
 Será um adaptador do domínio já existente
 
@@ -65,7 +65,7 @@ polygonWebEditor
 
 ---
 
-# 🧩 4. Requisitos Funcionais
+# 4. Requisitos Funcionais
 
 ---
 
@@ -223,7 +223,7 @@ Editor deve abrir JSON salvo.
 
 ---
 
-# 🖱️ 5. Requisitos de Interação
+# 5. Requisitos de Interação
 
 | Ação         | Resultado   |
 | ------------ | ----------- |
@@ -237,7 +237,7 @@ Editor deve abrir JSON salvo.
 
 ---
 
-# 🎨 6. Renderização
+# 6. Renderização
 
 O editor deve desenhar:
 
@@ -255,7 +255,7 @@ UI overlays
 
 ---
 
-# ⚙️ 7. Requisitos Não Funcionais
+# 7. Requisitos Não Funcionais
 
 ---
 
@@ -292,7 +292,7 @@ Permitir novos tipos:
 
 ---
 
-# 🧱 8. Modelo de Dados
+# 8. Modelo de Dados
 
 ---
 
@@ -321,7 +321,7 @@ interface Point{
 
 ---
 
-# 🧰 9. Ferramentas (Tool System)
+# 9. Ferramentas (Tool System)
 
 Inspirado em engines reais:
 
@@ -340,7 +340,7 @@ Cada tool controla:
 
 ---
 
-# 🧠 10. Estados do Editor
+# 10. Estados do Editor
 
 ```
 Idle

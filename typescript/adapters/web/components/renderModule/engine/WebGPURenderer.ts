@@ -4,16 +4,19 @@ import type { objectTypeId } from "../../../../../domain/ObjectModule/objectType
 import type Canvas from "./Canvas";
 import type IRenderer from "./IRenderer";
 import type { SpriteConfig } from "../visuals/GameObjectElement";
+import type { AnimationManager } from "../visuals/AnimationManager";
 import { RenderRegistry } from "../../../shared/RenderRegistry";
 import VisualComposer from "../visuals/VisualComposer";
+import type Camera from "../scene/Camera";
 
 /**
  * Orquestra o processo de desenho usando a API WebGPU.
  * Esta classe é responsável por inicializar o dispositivo WebGPU,
  * configurar o canvas e executar os comandos de renderização a cada frame.
  */
-export default class WebGPURenderer implements IRenderer<EntityRenderableState & { currentFrame: number; }> {
+export default class WebGPURenderer implements IRenderer<EntityRenderableState> {
   public canvas: Canvas;
+  private camera: Camera;
 
   // Propriedades da WebGPU
   private device!: GPUDevice;
@@ -37,12 +40,15 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
   private sampler!: GPUSampler;
   private atlasSize = { width: 0, height: 0 };
 
+  // Cache memoizado para abolir as instâncias descartáveis do VisualComposer no GameLoop
+  private composedLayersCache = new Map<number, { hash: string, layers: { config: SpriteConfig, zIndex: number }[] }>();
 
   // Obtém as configurações dinâmicas geradas pelos Decorators
   private spriteConfigs: Map<string, SpriteConfig> = RenderRegistry.spriteConfigs;
 
-  constructor(canvas: Canvas) {
+  constructor(canvas: Canvas, camera: Camera) {
     this.canvas = canvas;
+    this.camera = camera;
   }
 
   /**
@@ -88,7 +94,7 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
    * Desenha um único frame.
    * Por enquanto, apenas limpa a tela com uma cor sólida.
    */
-  public async drawFrame(domainState: { world: any, renderables: readonly (EntityRenderableState & { currentFrame: number; })[] }, cameraTarget: EntityRenderableState | undefined): Promise<void> {
+  public async drawFrame(domainState: { world: any, renderables: readonly EntityRenderableState[] }, cameraTarget: EntityRenderableState | undefined, animationManagers?: Map<number, AnimationManager>): Promise<void> {
     // Previne crash fatal do WebGPU quando a janela do Tauri é minimizada (tamanho 0x0)
     if (this.canvas.element.width === 0 || this.canvas.element.height === 0) return;
 
@@ -124,7 +130,7 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
 
     if (renderables.length > 0) {
-      const instanceCount = this.updateInstanceBuffer(renderables);
+      const instanceCount = this.updateInstanceBuffer(renderables, animationManagers);
       if (instanceCount > 0) passEncoder.draw(6, instanceCount, 0, 0); // Desenha 6 vértices, N instâncias em camadas
     }
 
@@ -134,7 +140,7 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
 
   private updateCamera(target: EntityRenderableState | undefined): void {
     const { width, height } = this.canvas.element;
-    const zoom = 3; // TODO: Mover para a classe Camera
+    const zoom = this.camera.zoom;
 
     const viewWidth = width / zoom;
     const viewHeight = height / zoom;
@@ -172,26 +178,38 @@ export default class WebGPURenderer implements IRenderer<EntityRenderableState &
     return this.spriteConfigs.get(`${type}-${state}`);
   }
 
-  private updateInstanceBuffer(renderables: readonly (EntityRenderableState & { currentFrame: number })[]): number {
+  private updateInstanceBuffer(renderables: readonly EntityRenderableState[], animationManagers?: Map<number, AnimationManager>): number {
     let offset = 0;
     let instanceCount = 0;
 
     for (const state of renderables) {
       if (instanceCount >= this.MAX_INSTANCES) break;
-      const layers = VisualComposer.extractLayers(state);
-      const composed = VisualComposer.compose(layers, this.spriteConfigs, state.state || 'idle');
+      
+      const currentFrame = animationManagers?.get(state.id)?.currentFrame || 0;
       const baseConfig = this.getSpriteConfig(state.entityTypeId, state.state);
+      
+      // Cria um Hash simples e rápido em string baseado no estado mutável da entidade
+      const equipHash = state.equipment ? Object.values(state.equipment).map((e: any) => e?.iconId).join('-') : '';
+      const stateHash = `${state.state || 'idle'}-${equipHash}-${state.hasBeard}`;
+      
+      let cachedComposition = this.composedLayersCache.get(state.id);
+      if (!cachedComposition || cachedComposition.hash !== stateHash) {
+          const layers = VisualComposer.extractLayers(state);
+          const composed = VisualComposer.compose(layers, this.spriteConfigs, state.state || 'idle');
+          cachedComposition = { hash: stateHash, layers: composed };
+          this.composedLayersCache.set(state.id, cachedComposition);
+      }
 
-      if (composed.length > 0) {
-        for (const layer of composed) {
+      if (cachedComposition.layers.length > 0) {
+        for (const layer of cachedComposition.layers) {
           if (instanceCount >= this.MAX_INSTANCES) break;
-          this.writeInstanceData(offset, state, layer.config, state.currentFrame, baseConfig);
+          this.writeInstanceData(offset, state, layer.config, currentFrame, baseConfig);
           offset += 16;
           instanceCount++;
         }
       } else {
         if (instanceCount >= this.MAX_INSTANCES) break;
-        this.writeInstanceData(offset, state, baseConfig, state.currentFrame, baseConfig);
+        this.writeInstanceData(offset, state, baseConfig, currentFrame, baseConfig);
         offset += 16;
         instanceCount++;
       }

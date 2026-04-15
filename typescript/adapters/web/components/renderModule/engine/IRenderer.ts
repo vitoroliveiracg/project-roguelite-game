@@ -1,5 +1,6 @@
 import type { EntityRenderableState, WorldState } from "../../../../../domain/ports/domain-contracts";
 import type Canvas from "./Canvas";
+import type { AnimationManager } from "../visuals/AnimationManager";
 
 /**
  * Define o contrato para qualquer renderizador no jogo.
@@ -13,5 +14,5 @@ export default interface IRenderer<T> {
 
     clear(): void;
 
-    drawFrame(domainState: { world: WorldState; renderables: readonly T[] }, cameraTarget: EntityRenderableState | undefined): Promise<void>;
+    drawFrame(domainState: { world: WorldState; renderables: readonly T[] }, cameraTarget: EntityRenderableState | undefined, animationManagers?: Map<number, AnimationManager>, map?: any): Promise<void>;
 }

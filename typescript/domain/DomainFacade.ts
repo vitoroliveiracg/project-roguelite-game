@@ -11,7 +11,6 @@ import type { action } from "./eventDispacher/actions.type";
 import ActionManager from "./eventDispacher/ActionManager";
 import type { IEventManager } from "./eventDispacher/IGameEvents";
 import type { ICollisionService } from "./ports/ICollisionService";
-import type { IBdiGateway } from "./ports/IBdiGateway";
 
 /** Define a estrutura de dados para a configuração inicial do domínio. */
 interface DomainConfig {
@@ -39,30 +38,13 @@ export default class DomainFacade implements IGameDomain {
     config: DomainConfig, 
     logger: ILogger, 
     private eventManager: IEventManager, 
-    private collisionService: ICollisionService,
-    private bdiGateway?: IBdiGateway
+    private collisionService: ICollisionService
   ) {
     this.config = config;
     this.logger = logger;
     this.logger.log('init', 'DomainFacade instantiated.');
 
     this.objectManager = new ObjectElementManager(this.eventManager, this.collisionService);
-
-    if (this.bdiGateway) {
-        this.bdiGateway.onIntentionReceived((intention) => {
-            if (intention.action === 'speak' && intention.message) {
-                this.eventManager.dispatch('npcSpoke', { npcId: intention.targetId || 0, message: intention.message });
-            }
-            
-            if (intention.targetId) {
-                this.logger.log('npc', `[BDI Gateway] Enviou intenção '${intention.action}' para o NPC ${intention.targetId}`);
-                const element = this.objectManager.getElementById(intention.targetId);
-                if (element && typeof (element as any).setIntention === 'function') {
-                    (element as any).setIntention(intention);
-                }
-            }
-        });
-    }
   }
 
 
@@ -194,14 +176,11 @@ export default class DomainFacade implements IGameDomain {
 
   public sendDialogue(message: string, targetNpcId?: number): void {
     this.logger.log('input', `Player says: "${message}" to NPC ${targetNpcId}`);
-    if (this.bdiGateway) {
-        this.bdiGateway.sendPerceptions({
-            agentId: targetNpcId || 0,
-            hpPercentage: this.player.attributes.hp / this.player.attributes.maxHp,
-            playerPosition: { x: this.player.coordinates.x, y: this.player.coordinates.y },
-            isColliding: false,
-            playerMessage: message
-        });
+    if (targetNpcId) {
+        const npc = this.objectManager.getElementById(targetNpcId) as any;
+        if (npc && typeof npc.receiveMessage === 'function') {
+            npc.receiveMessage(message);
+        }
     }
   }
 

@@ -74,8 +74,8 @@ export default class Attack implements IAtack {
       }
     }
 
-    const context = { attacker: this._attacker, target, damageDealt };
-    this.onHitActions.forEach(action => action(context));
+    // Executa as ações de impacto sem instanciar literais (Zero-GC)
+    this.onHitActions.forEach(action => action(this._attacker, target, damageDealt));
 
     setTimeout(() => {
       this._attacker.resetAccelerator();

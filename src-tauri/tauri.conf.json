@@ -30,6 +30,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "externalBin": ["bin/ollama"],
     "icon": [
       "icons/game-icon.png",
       "icons/game-icon-128.png"

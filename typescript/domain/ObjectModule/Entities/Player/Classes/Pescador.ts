@@ -86,9 +86,8 @@ export default class Pescador extends Class {
 
             // O Ataque carregado pelo anzol
             const hookAttack = new Attack(this.player, 5, 'physical', [
-                (context) => {
-                    const target = context.target as any;
-                    this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Anzol bateu no ID: ${target?.id}`, params: [] });
+                (attacker, target, damageDealt) => {
+                    this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Anzol bateu no ID: ${(target as any)?.id}`, params: [] });
                     // Duck Typing: Verifica se o alvo é uma entidade atacável, possui HP e não é o próprio jogador
                     if ('takeDamage' in target && target.attributes && target.attributes.hp > 0 && target.id !== this.player.id) {
                         // Ignora Bosses

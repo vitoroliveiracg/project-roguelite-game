@@ -8,11 +8,13 @@ export default class LayeredGameObjectElement extends GameObjectElement {
     protected imageCache: Map<string, HTMLImageElement>;
     
     protected composedLayers: { config: SpriteConfig, image: HTMLImageElement, zIndex: number }[] = [];
+    private lastCompositionHash: string = '';
 
     constructor(params: GameObjectConstructorParams) {
         super(params.initialState, undefined, document.createElement('img'));
         this.allConfigs = params.configs;
         this.imageCache = params.imageCache;
+        this.lastCompositionHash = `${params.initialState.state || 'idle'}-${params.initialState.equipment ? Object.values(params.initialState.equipment).map((e: any) => e?.iconId).join('-') : ''}-${params.initialState.hasBeard}`;
         this.recompose(params.initialState);
     }
 
@@ -29,7 +31,12 @@ export default class LayeredGameObjectElement extends GameObjectElement {
 
     public override updateState(newState: EntityRenderableState): void {
         super.updateState(newState);
-        this.recompose(newState);
+        const equipHash = newState.equipment ? Object.values(newState.equipment).map((e: any) => e?.iconId).join('-') : '';
+        const stateHash = `${newState.state || 'idle'}-${equipHash}-${newState.hasBeard}`;
+        if (this.lastCompositionHash !== stateHash) {
+            this.lastCompositionHash = stateHash;
+            this.recompose(newState);
+        }
     }
 
     protected override updateAnimation(): void {

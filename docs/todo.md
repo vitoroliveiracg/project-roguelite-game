@@ -253,9 +253,9 @@
 	* [x] Spell Parser: Tradução de sequências (ex: 0-1-2) em ataques concretos.
 	* [ ] Visual Procedural: Empilhar partículas para magias não listadas no `VisualConfigMap`.
 
-### Épico 9: A Conexão BDI/TS (Túnel de Sockets)
-	* **Tarefa: Protocolo de Mensagens:** Definir estrutura JSON para comandos (ex: `{ "cmd": "move_to", "npcId": "mentor", "x": 150, "y": 200 }`).
-	* **Tarefa: Percepções de Mundo:** Enviar para o Athena dados de proximidade do player e obstáculos a cada N frames.
+### Épico 9: Sistema de NPCs Cognitivos (Ollama Local) [REVISADO]
+	* [x] Abandonar o uso de Sockets e Java/JaCaMo.
+	* [x] **CognitiveNpc:** Criar entidade base que se comunica via HTTP local com o Ollama (`fetch`) e compila código JS em tempo de execução.
 
 ### Épico 10: Customização e Gameplay Inicial
 	* [x] Compositor de Camadas (Layered Renderer) para sprites do player e equipamentos.
@@ -283,20 +283,20 @@
     Este documento mescla o progresso atual com os novos requisitos de infraestrutura desktop e IA.
 
 
-## 🏗️ INFRAESTRUTURA DESKTOP (TAURI)
+## INFRAESTRUTURA DESKTOP (TAURI)
 	* [ ] **Migração para Tauri:** Configurar o ambiente Rust e envelopar o diretório `adapters/web` atual.
 	* [ ] **Instalador Nativo (.exe):** Criar script de instalação que verifica/instala a JVM (Java) e o Ollama.
 	* [ ] **Gerenciador de Processos:** Implementar no backend do Tauri o "boot" silencioso do motor Athena (`.jar`) e do servidor Ollama.
 	* [ ] **Persistência Criptografada:** Implementar no Rust a lógica de save/load utilizando a palavra-chave encriptada para evitar edição externa do arquivo.
 	* [ ] **Tela de Loading (Handshake):** Criar tela de carregamento que aguarda a confirmação de conexão (handshake) dos processos Java e Ollama antes de liberar o menu.
 	
-## 🧠 SISTEMA DE NPCs COGNITIVOS (BDI + LLM)
+## SISTEMA DE NPCs COGNITIVOS (BDI + LLM)
 	* [x] **Ponte de Baixa Latência (Sockets):** Implementar comunicação via TCP/UDP entre o Motor TS (Domínio) e o Athena (Java).
 	* [x] **InteractiveEntity (Domínio):** Criar classe base para NPCs que recebem comandos diretos de movimento e animação via socket.
 	* [x] **Integração Athena-Ollama:** Configurar o Athena para despachar intenções de fala para a porta local do Ollama.
 	* [x] **Interface de Diálogo (DialogueGui):** Criar UI modular para exibição de textos da LLM e captação de input (texto/voz) do jogador.
 
-## ⚔️ PROGRESSO ATUAL E REVISÕES
+## PROGRESSO ATUAL E REVISÕES
 	* [x] HUD Modular: HP, Mana e Status.
 	* [x] Compositor Visual (O "Lego"): Sistema modular para armaduras e itens.
 	* [x] Sistema de Drops e Inventário: Coleta por proximidade e armazenamento.
@@ -306,27 +306,27 @@
 
 ## 📋 REQUISITOS GERAIS
 
-### 🌍 Mundo e Navegação
+### Mundo e Navegação
 
     * Mapa contínuo com Fast Travel entre regiões (Vilgem, Cemii, Alun).
     * O `World` no domínio define coordenadas, enquanto o adaptador desenha chunks conforme a posição.
 
-### 🎒 Itens e Classes
+### Itens e Classes
 
     * Armas desbloqueiam classes permanentemente no `Player`, mas passivas dependem da classe ativa.
     * Drops raros (3%) com ranges de atributos variáveis.
 
-### 🐾 Pets e Companheiros
+### Pets e Companheiros
 
     * Itens de Invocação: Equipar um item específico (ex: "Osso") em um slot do inventário invoca um Pet (ex: Cachorro).
     * O Pet atua como uma entidade aliada no Domínio, seguindo o jogador (IA de Flocking/Steering) e auxiliando-o. Desequipar o item causa o despawn imediato do Pet.
 
-### 🎭 NPC e Interação
+### NPC e Interação
 
     * **NPC Mentor:** Tutorial inicial explicando as classes base no Hub.
     * **Axiomante (Academia):** Torre de desafios para estabilizar magias via puzzle de conexão elementar.
 
-### 🌳 Épico 12: Nova Árvore de Habilidades e Loadout (Wireframe Deck Building)
+### Épico 12: Nova Árvore de Habilidades e Loadout (Wireframe Deck Building)
     *Refatoração da UI/UX e Domínio baseada no novo design de topologia semântica, escolhas limitadas e Deck Building.*
 
     Tarefa: [ ] Topologia e Semântica da Árvore (Viewport)

@@ -25,14 +25,14 @@ export default class ShadowMob extends Entity {
 
         // A Mágica acontece aqui: Um ataque mágico que aplica status aleatório OnHit!
         const shadowAttack = new Attack(this, 8, 'magical', [
-            (context) => {
+            (attacker, target, damageDealt) => {
                 const random = Math.random();
                 // 20% de chance para cada status negativo
-                if (random < 0.2) context.target.applyStatus(new BurnStatus(4, this));
-                else if (random < 0.4) context.target.applyStatus(new PoisonStatus(5, this));
-                else if (random < 0.6) context.target.applyStatus(new WetStatus(6));
-                else if (random < 0.8) context.target.applyStatus(new ParalyzeStatus(2));
-                else context.target.applyStatus(new StunStatus(1.5));
+                if (random < 0.2) target.applyStatus(new BurnStatus(4, this));
+                else if (random < 0.4) target.applyStatus(new PoisonStatus(5, this));
+                else if (random < 0.6) target.applyStatus(new WetStatus(6));
+                else if (random < 0.8) target.applyStatus(new ParalyzeStatus(2));
+                else target.applyStatus(new StunStatus(1.5));
             }
         ]);
 

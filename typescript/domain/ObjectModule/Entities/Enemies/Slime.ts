@@ -82,14 +82,19 @@ export default class Slime extends Enemy {
     //* 2. Verifica se vai colidir
     const willCollideInDirection = (direction: Vector2D): boolean => {
 
-      const displacement = direction.clone().multiplyMut(this.attributes.speed * this.speedModifier * deltaTime);
-      const nextPosition = { x: this.coordinates.x + displacement.x, y: this.coordinates.y + displacement.y };
-      const futureHitbox = new HitBoxCircle({ x: nextPosition.x + this.size.width / 2, y: nextPosition.y + this.size.height / 2 }, 0, 8, () => {});
+      const dx = direction.x * (this.attributes.speed * this.speedModifier * deltaTime);
+      const dy = direction.y * (this.attributes.speed * this.speedModifier * deltaTime);
+      const futureX = this.coordinates.x + this.size.width / 2 + dx;
+      const futureY = this.coordinates.y + this.size.height / 2 + dy;
   
-      for (const other of neighbors) {
+      for (let i = 0; i < neighbors.length; i++) {
+        const other = neighbors[i];
         if (other instanceof Slime && other.id !== this.id) {
-          const otherHitbox = other.hitboxes?.[0];
-          if (otherHitbox && futureHitbox.intersects(otherHitbox)) {
+          // Usa a matemática direta ao invés de instanciar novas Hitboxes de forma descartável
+          const otherX = other.coordinates.x + other.size.width / 2;
+          const otherY = other.coordinates.y + other.size.height / 2;
+          const distSq = (futureX - otherX) * (futureX - otherX) + (futureY - otherY) * (futureY - otherY);
+          if (distSq < 256) { // (8 + 8)^2 = 256. Assumindo raio de colisão de 8 para cada Slime
             return true;
           }
         }

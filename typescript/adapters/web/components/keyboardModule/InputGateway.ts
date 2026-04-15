@@ -6,6 +6,7 @@ import type { IGameDomain } from "../../../../domain/ports/domain-contracts";
 /** @class InputGateway Traduz os inputs brutos do InputManager em intenções lógicas (Actions) para o Domínio. */
 export default class InputGateway {
   public inputManager: InputManager;
+  private activeActions: Array<action> = []; // Pré-alocado para evitar Garbage Collection
 
   constructor(private domain: IGameDomain) {
     this.inputManager = new InputManager();
@@ -13,7 +14,8 @@ export default class InputGateway {
 
   /** Coleta as interações ativas e envia para o domínio. */
   public handleInteractions(screenToWorldFn: (x: number, y: number) => { x: number, y: number }): void {
-    let actions: Array<action> = [];
+    this.activeActions.length = 0; // Zera o array reaproveitando o espaço de memória já alocado
+    const actions = this.activeActions;
 
     if (this.inputManager.isActionActive('move_up')) {
       actions.push("up");

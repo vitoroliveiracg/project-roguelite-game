@@ -64,3 +64,27 @@
 #dialogue-input:focus {
     border-color: #FFD700;
 }
+
+/* --- Animação de Espera da IA --- */
+.waiting-indicator {
+    color: #888;
+    font-style: italic;
+    animation: pulse-text 1.5s infinite ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+@keyframes pulse-text {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+.waiting-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-top-color: #FFD700;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

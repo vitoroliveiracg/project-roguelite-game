@@ -65,13 +65,13 @@ export default abstract class Weapon extends Item {
       
       if (chosen === 'fire') {
         this.name = `Flamejante ${this.name}`;
-        this.onHitActions.push((context) => { if (Math.random() < 0.3) context.target.applyStatus(new BurnStatus(3, context.attacker)); });
+        this.onHitActions.push((attacker, target, damageDealt) => { if (Math.random() < 0.3) target.applyStatus(new BurnStatus(3, attacker)); });
       } else if (chosen === 'poison') {
         this.name = `Tóxica ${this.name}`;
-        this.onHitActions.push((context) => { if (Math.random() < 0.3) context.target.applyStatus(new PoisonStatus(4, context.attacker)); });
+        this.onHitActions.push((attacker, target, damageDealt) => { if (Math.random() < 0.3) target.applyStatus(new PoisonStatus(4, attacker)); });
       } else if (chosen === 'thunder') {
         this.name = `Chocante ${this.name}`;
-        this.onHitActions.push((context) => { if (Math.random() < 0.2) context.target.applyStatus(new ParalyzeStatus(1.5)); });
+        this.onHitActions.push((attacker, target, damageDealt) => { if (Math.random() < 0.2) target.applyStatus(new ParalyzeStatus(1.5)); });
       }
     }
   }

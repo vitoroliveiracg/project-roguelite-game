@@ -13,13 +13,13 @@ import ParticleOrchestrator from "../particlesModule/ParticleOrchestrator";
 /** @class SceneManager Gerencia as instâncias visuais e a sincronização entre o estado do Domínio e as entidades gráficas na tela. */
 export default class SceneManager {
   public renderables: Map<number, IRenderableObject> = new Map();
-  public debugRenderables: Map<string, IRenderableObject> = new Map();
+  public debugRenderables: Map<number, IRenderableObject> = new Map();
   public animationManagers: Map<number, AnimationManager> = new Map();
   private activeIds = new Set<number>();
-  private activeDebugIds = new Set<string>();
+  private activeDebugIds = new Set<number>();
   private renderableFactory: RenderableFactory;
   
-  public transientVisuals: Map<string, { state: EntityRenderableState, renderable?: IRenderableObject, animationManager?: AnimationManager, timeRemaining: number }> = new Map();
+  public transientVisuals: Map<number, { state: EntityRenderableState, renderable?: IRenderableObject, animationManager?: AnimationManager, timeRemaining: number }> = new Map();
   private nextTransientId: number = -1;
   
   public particleOrchestrator: ParticleOrchestrator;
@@ -54,7 +54,7 @@ export default class SceneManager {
       visual.timeRemaining -= deltaTime;
       if (visual.timeRemaining <= 0) {
         this.transientVisuals.delete(id);
-        if (this.debugRenderables.has(`${id}_debug`)) this.debugRenderables.delete(`${id}_debug`);
+        if (this.debugRenderables.has(id)) this.debugRenderables.delete(id); // Efeitos usam ID negativo como debug ID
       } else {
         if (visual.animationManager) {
             visual.animationManager.update(deltaTime);
@@ -89,8 +89,8 @@ export default class SceneManager {
             if (visual.renderable) {
                 visual.renderable.updateState(visual.state);
             }
-            if (this.isDebugMode && this.debugRenderables.has(`${id}_debug`)) {
-                this.debugRenderables.get(`${id}_debug`)!.updateState(visual.state);
+            if (this.isDebugMode && this.debugRenderables.has(id)) {
+                this.debugRenderables.get(id)!.updateState(visual.state);
             }
         }
       }
@@ -172,7 +172,7 @@ export default class SceneManager {
       }
     }
 
-    this.transientVisuals.set(`vfx_${state.id}`, transientData);
+    this.transientVisuals.set(state.id, transientData);
 
     if (this.isDebugMode) {
         let anchor: any = 'center';
@@ -184,7 +184,7 @@ export default class SceneManager {
             const config = (transientData.renderable as any).config;
             if (config) { anchor = config.anchor; rotationOffset = config.rotationOffset || 0; }
         }
-        this.debugRenderables.set(`vfx_${state.id}_debug`, new DebugRectangle(state.id, state, anchor, rotationOffset));
+        this.debugRenderables.set(state.id, new DebugRectangle(state.id, state, anchor, rotationOffset)); // O próprio ID negativo age como âncora
     }
   }
 
@@ -228,7 +228,8 @@ export default class SceneManager {
 
       if (this.isDebugMode) {
         state.hitboxes?.forEach((hitboxState, index) => {
-          const debugId = `${state.id}-hitbox-${index}`;
+          // Deslocamento de bits destrói o GC Thrashing da interpolação de strings
+          const debugId = (state.id << 4) | index;
           this.activeDebugIds.add(debugId);
 
           if (this.debugRenderables.has(debugId)) {
@@ -255,8 +256,8 @@ export default class SceneManager {
     }
     if (this.isDebugMode) {
       for (const id of this.debugRenderables.keys()) {
-        // Protege os nós de debug transitórios de serem coletados, já que não estão no `activeDebugIds`
-        if (!id.toString().startsWith('vfx_') && !this.activeDebugIds.has(id)) {
+        // IDs transitórios de VFX são nativamente negativos. Preservamos-os do apagão ativo.
+        if (id >= 0 && !this.activeDebugIds.has(id)) {
             this.debugRenderables.delete(id);
         }
       }

@@ -5,6 +5,7 @@ import type Canvas from "./Canvas";
 import type IRenderableObject from "../visuals/IRenderable";
 import type IRenderer from "./IRenderer";
 import type GameMap from "../scene/Map";
+import type { AnimationManager } from "../visuals/AnimationManager";
 
 /** @class Renderer Orquestra o processo de desenho no canvas 2D. Ele interage com a `Câmera` para aplicar transformações de viewport e itera sobre os objetos `IRenderable` para desenhar um frame completo. */
 export default class Renderer implements IRenderer<IRenderableObject> {
@@ -32,6 +33,7 @@ export default class Renderer implements IRenderer<IRenderableObject> {
   public async drawFrame(
     domainState: { world: WorldState; renderables: readonly IRenderableObject[] },
     cameraTarget: EntityRenderableState | undefined,
+    animationManagers?: Map<number, AnimationManager>,
     map?: GameMap
   ): Promise<void> {
     const { ctx } = this.canvas;

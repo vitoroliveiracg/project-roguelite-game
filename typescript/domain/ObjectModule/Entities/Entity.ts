@@ -107,23 +107,25 @@ export default abstract class Entity extends ObjectElement {
          RewardGenerator.generateDrop({ x: centerX, y: centerY }, this.eventManager);
       }
 
-      // A CATARSE: Limpeza cognitiva. Overkill vs Morte Comum
-      if (damageInfo.totalDamage >= this.attributes.maxHp * 1.5) {
-         this.eventManager.dispatch('particle', { effect: 'overkillShatter', x: centerX, y: centerY });
-      } else {
-         this.eventManager.dispatch('particle', { effect: 'enemyDeath', x: centerX, y: centerY });
-      }
+      // Despacha evento puro de negócio ao invés de acoplar as partículas visualmente
+      this.eventManager.dispatch('entityDied', { 
+         entityId: this.id, 
+         isOverkill: damageInfo.totalDamage >= this.attributes.maxHp * 1.5,
+         coordinates: { x: centerX, y: centerY } 
+      });
       
       super.destroy()
       return finalDamage;
     }
 
-    // O "ESTALO" E A RESPOSTA TÁTIL: Acertos Críticos e Dano Físico
-    if (damageInfo.isCritical) {
-      this.eventManager.dispatch('particle', { effect: 'criticalStrike', x: centerX, y: centerY });
-    } else if (damageInfo.damageType === 'physical') {
-      this.eventManager.dispatch('particle', { effect: 'bloodSplatter', x: centerX, y: centerY });
-    }
+    // Informa aos adaptadores sobre o dano recebido para tocarem sons e efeitos
+    this.eventManager.dispatch('entityDamaged', {
+      entityId: this.id,
+      damage: finalDamage,
+      isCritical: damageInfo.isCritical,
+      damageType: damageInfo.damageType,
+      coordinates: { x: centerX, y: centerY }
+    });
 
     // Calcula a força do knockback com base no fator de lançamento, não mais na vida do alvo.
     const safeDirection = damageInfo.direction instanceof Vector2D ? damageInfo.direction : new Vector2D((damageInfo.direction as any).x || 0, (damageInfo.direction as any).y || 0);

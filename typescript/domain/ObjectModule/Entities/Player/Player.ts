@@ -318,11 +318,6 @@ export default class Player extends Entity {
   private processLevelUp(level: number): void {
       this.eventManager.dispatch('levelUp', { newLevel: level });
       this.eventManager.dispatch('log', { channel: 'domain', message: `Player leveled up to ${level}!`, params: [] });
-      
-      // O ÁPICE VISUAL: Dispara o pilar de aura majestosa do "Level Up" no jogador!
-      const centerX = this.coordinates.x + this.size.width / 2;
-      const centerY = this.coordinates.y + this.size.height / 2;
-      this.eventManager.dispatch('particle', { effect: 'levelUp', x: centerX, y: centerY });
 
       const activeClass = this._classes.find(c => c.name === this._activeClass);
       const xpTable = activeClass ? activeClass.xpTable : defaultXpTable;

@@ -110,14 +110,18 @@ export default class PlayerStatusGui {
         if (manaStr !== this.lastManaText) { this.manaText.textContent = manaStr; this.lastManaText = manaStr; }
 
         if (this.statusContainer && data.activeStatuses) {
-            const currentStatusIds = new Set(data.activeStatuses.map(s => s.id));
-            
-            // Remove os ícones de status que já expiraram
-            Array.from(this.statusContainer.children).forEach(child => {
-                if (!currentStatusIds.has(child.id.replace('status-', ''))) {
-                    child.remove();
+            // Otimização Zero-GC: Evita criar novos Sets e Arrays a cada frame
+            const children = this.statusContainer.children;
+            for (let i = children.length - 1; i >= 0; i--) {
+                const child = children[i] as HTMLElement;
+                if (!child) continue;
+                const statusId = child.id.replace('status-', '');
+                let exists = false;
+                for (let j = 0; j < data.activeStatuses.length; j++) {
+                    if (data.activeStatuses[j]?.id === statusId) { exists = true; break; }
                 }
-            });
+                if (!exists) child.remove();
+            }
 
             data.activeStatuses.forEach(status => {
                 let div = document.getElementById(`status-${status.id}`) as HTMLElement;

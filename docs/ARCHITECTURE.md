@@ -12,139 +12,163 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
     - **Portas (Interfaces):** Definem os contratos que o Domínio expõe para o mundo exterior (Portas Primárias) e os contratos que o Domínio precisa do mundo exterior (Portas Secundárias). São interfaces TypeScript.
     - **Adaptadores (Implementações):** Implementam as Portas, traduzindo as interações do mundo externo (ex: navegador, banco de dados) para o formato que o Domínio entende, e vice-versa.
 
+  **Analogia Simples (O Cérebro no Pote):**
+  Pense no seu **Domínio** como um Cérebro brilhante preso dentro de um pote escuro. Ele sabe todas as regras matemáticas, sabe calcular dano crítico, e sabe que 1 + 1 é 2. Mas ele é cego e surdo (não sabe o que é uma Tela, um Mouse ou um Arquivo de Áudio).
+  Os **Adaptadores** são os olhos, ouvidos e músculos. Eles enxergam o clique do mouse e gritam pelo **Nervo (Porta)**: *"Chefe, o humano quer andar para cima!"*. O cérebro calcula a nova posição e avisa os músculos: *"Desenha o personagem na coordenada Y: 10"*.
+
   - **Benefícios:**
 
     - **Desacoplamento:** O Domínio não conhece os detalhes de implementação das tecnologias externas.
     - **Testabilidade:** A lógica de negócio pode ser testada isoladamente, sem a necessidade de um ambiente de UI ou banco de dados.
-    - **Manutenibilidade:** Mudanças em uma tecnologia externa (ex: trocar de Canvas para WebGL) não afetam o Domínio.
+    - **Manutenibilidade:** Mudanças em uma tecnologia externa (ex: trocar de Canvas 2D para WebGPU ou envelopar no Tauri) não afetam o Domínio. Uma linha de lógica não precisa ser reescrita.
     - **Flexibilidade:** Facilita a adaptação a novos requisitos ou tecnologias.
+
+  ### 1.1. Filosofia de Performance: Zero-GC e Data-Oriented Design (DOD)
+  
+  Em um jogo *Bullet Hell*, onde milhares de balas e inimigos ocupam a tela simultaneamente, a maior ameaça à performance não é o desenho, mas a memória (O "Lixeiro" do Navegador, ou *Garbage Collector*). Se instanciarmos milhares de novos objetos (`new Bullet()`) por segundo, o motor V8 congela o jogo para limpar o lixo da memória, causando quedas massivas de FPS (Stuttering).
+  
+  Para resolver isso, adotamos:
+  - **Object Pooling:** Quando uma bala "morre", ela não é deletada da memória. Ela é desligada e enviada para uma "piscina de reciclagem". Quando o jogador atira de novo, reutilizamos aquele mesmo espaço de memória, alterando apenas os dados internos.
+  - **Física Assíncrona e Fire-and-Forget:** Nunca bloqueamos o Cérebro (Game Loop) para calcular hitboxes complexas. O Domínio envia os dados brutos de colisão para uma outra aba invisível (Web Worker) e continua rodando liso. No frame seguinte, as colisões são processadas instantaneamente.
 
 ## 2. Módulos Atuais como Atores
 
   ### 2.1. Camada de Domínio (`typescript/domain`)
 
-  Contém a lógica de negócio pura do jogo, sendo totalmente agnóstica a tecnologias externas como renderização ou input.
+  Contém a lógica de negócio pura do jogo. É estritamente agnóstica a tecnologias externas (como telas, DOM, sons ou envelopamentos Tauri), guiando-se inteiramente por matemática, física 2D e regras de negócio complexas.
 
   #### Módulos Principais do Domínio
 
-  - **`DomainFacade.ts`:** O guardião e **único ponto de entrada** para a camada de domínio. Como **Porta Primária**, ele implementa a interface `IGameDomain`, expondo um conjunto limitado de operações de alto nível (`update`, `setWorld`, `getRenderState`). Sua principal responsabilidade é orquestrar as interações entre os principais componentes do domínio (como `Player` e `ObjectElementManager`) e proteger a integridade das regras de negócio, garantindo que nenhuma lógica externa possa manipular diretamente o estado interno do jogo.
+  - **`DomainFacade.ts`:** O guardião e **único ponto de entrada** (Porta Primária). Expõe a interface `IGameDomain` (`update`, `setWorld`, `getRenderState`). Sua responsabilidade é orquestrar a física, eventos globais e o `Player`, blindando o motor interno de mutações externas irregulares vindas da Web, Tauri ou Motores BDI/Socket.
 
   - **`ObjectModule/GameWorld.ts` e Mapas:** A classe abstrata que define as propriedades espaciais e a identidade do mapa (ex: `mapId: 'vilgem'`). Suas filhas (como `VilgemWorld`) possuem um método `generate()` que despacha as hitboxes estáticas de rios, montanhas e spawns de inimigos assim que o jogador entra no mapa. O Domínio é cego: não conhece as imagens do chão, apenas as metragens e limites físicos.
 
   - **`ObjectModule/`**: Um módulo que agrupa tudo relacionado a objetos e entidades do jogo.
-    - **`ObjectElement.ts`**: A classe base para qualquer objeto que existe no mundo (jogador, inimigo, item). Define propriedades essenciais como ID, coordenadas, tamanho e hitboxes.
-    - **`ObjectElementManager.ts`**: Um dos pilares da arquitetura do domínio. Este gerenciador é o coração pulsante do mundo do jogo, responsável pelo ciclo de vida completo de **todas** as entidades dinâmicas, com exceção do `Player` (que é gerenciado diretamente pela `DomainFacade`). Suas responsabilidades incluem:
-      - **Criação e Remoção (`spawn`/`despawn`):** Ouve eventos de domínio para criar e destruir dinamicamente inimigos, projéteis, itens, etc., usando um sistema de `factory`.
-      - **Criação e Remoção (`spawn`/`despawn`):** Ouve eventos de domínio para criar e destruir dinamicamente entidades. Utiliza o `SpawnRegistry` (via Decorators `@RegisterSpawner`) para instanciar objetos sem possuir lógica acoplada (if/else) sobre o que está nascendo.
+    - **`ObjectElement.ts`**: A classe base matemática para qualquer objeto no mundo. Define ID espacial, coordenadas, dimensões visíveis (`size`) e vetores.
+    - **`ObjectElementManager.ts`**: O coração pulsante da física do jogo. Gerencia o ciclo de vida completo de **todas** as entidades (exceto o `Player`). Responsabilidades:
+      - **Spawn Guiado a Dados:** Ouve eventos de `spawn` e utiliza o `SpawnRegistry` (povoado automaticamente via Decorators `@RegisterSpawner`) para instanciar classes concretas dinamicamente, sem nenhum acoplamento estrutural (If/Else).
       - **Atualização de Estado:** Itera sobre todos os elementos a cada frame, chamando seus respectivos métodos `update`.
-      - **Detecção de Colisão Otimizada e Zero-GC:** Delega a colisão para a Porta Secundária `ICollisionService` utilizando buffers contíguos de memória (`Float32Array`) dinâmicos, capazes de empacotar círculos e polígonos complexos simultaneamente. A resolução ocorre em um modelo de **Física Atrasada (Delayed Resolution)**: envia-se os dados em um frame e as reações são aplicadas no início do frame seguinte, impedindo gargalos assíncronos no Game Loop.
+      - **Detecção de Colisão Zero-GC:** Repassa buffers leves de dados primitivos (`plainElements`) para a Porta `ICollisionService`. A resolução adota o padrão de **Física Atrasada (Delayed Resolution)**: resolve impactos e gatilhos de `onColision` apenas no início do frame seguinte, garantindo fluidez do Event Loop síncrono.
       - **Query Espacial Otimizada (`requestNeighbors`):** Implementa busca de vizinhança usando Teorema de Pitágoras (Distância Euclidiana via `Math.hypot`), permitindo varreduras a partir de entidades ou de pontos arbitrários no espaço (útil para magias de área como meteoros e explosões procedurais).
-    - **`objectType.type.ts`**: Um arquivo de tipo (`type`) que define uma união de strings literais (`'player' | 'slime' | ...`). Ele fornece uma maneira centralizada e com segurança de tipo (type-safe) para identificar os diferentes tipos de `ObjectElement` no jogo. Isso é crucial para a `RenderableFactory` na camada de adaptação, que o utiliza para decidir qual sprite ou animação carregar para cada entidade.
-    - **`Entities/`**: Contém as classes que representam seres "vivos" ou com comportamento autônomo no jogo.
-      - **`Entity.ts`**: Uma classe abstrata fundamental que herda de `ObjectElement`. Ela adiciona o conceito de "vida" e "movimento" a um objeto. Suas responsabilidades incluem: gerenciar `velocity` e `direction` (usando `Vector2D`), aplicar dano (`takeDamage`), e definir um contrato `update(deltaTime)` que força subclasses (como `Player` e `Slime`) a implementar sua própria lógica de comportamento a cada frame.
-      - **`Attributes.ts`**: Uma classe complexa e central que encapsula **toda** a lógica de atributos de uma entidade. Ela gerencia os 6 atributos primários (força, destreza, etc.) e calcula uma vasta gama de atributos secundários derivados (dano crítico, velocidade, regeneração de HP/Mana, etc.). Também contém a lógica para ganho de experiência (`addXp`) e progressão de nível. É um componente puramente de dados e regras, sem conhecimento de sua posição no mundo.
-      - **`IXPTable.ts`**: Uma interface simples que define o contrato para uma "curva de experiência". Ao desacoplar a lógica de `addXp` da `Attributes` dos valores concretos, ela permite que diferentes tipos de entidades (ou o jogo em diferentes dificuldades) progridam em ritmos distintos, simplesmente fornecendo uma implementação diferente desta interface.
+    - **`Entities/`**: Representam seres "vivos" ou com comportamento autônomo.
+      - **`Entity.ts`**: Adiciona os conceitos de "Vida", "Movimento" e **"Status"**. Gerencia vetores cinemáticos e processa o intrincado pipeline de dano (`takeDamage`), que calcula esquiva, redução de dano, sinergias de vulnerabilidades elementais (ex: Água + Trovão) e emite eventos de *knockback*.
+      - **`Status/StatusEffect.ts`**: Sistema reativo de condições mutáveis (ex: `BurnStatus`, `StunStatus`, `PoisonStatus`). Eles são anexados à Entidade e processam "ticks" temporais autônomos para aplicar dano contínuo (DoT) ou congelar o motor cinemático.
+      - **`Attributes.ts`**: O complexo motor numérico do RPG. Gerencia os 6 atributos primários e calcula ativamente dezenas de Atributos Derivados (Tenacidade, Penetração, Velocidade) e Progressão (Level Up).
       - **`Player/`**: Contém a lógica específica da entidade do jogador.
-        - **`Player.ts`**: A implementação concreta do jogador. Graças às refatorações recentes, deixou de ser uma "God Class": agora delega o disparo de tiros diretamente para a `Weapon` equipada e a conjuração de magias para a `Class` ativa (ex: `Mage`). Gerencia sua própria mochila (`backpack`), se auto-inscreve nos eventos de input via Decorators e implementa lógicas de "Quality of Life" (QoL), como o bloqueio de auto-fire contínuo se a arma equipada for corpo-a-corpo (`melee`).
-        - **`Classes/Class.ts`**: Classe abstrata de Profissão/Classe. Gerencia habilidades (`Skill`) in-game (temporárias da run, aplicando Passivas instantaneamente ao liberar) e intercepta inputs (como atalhos de magias) graças ao sistema de rotas dinâmicas da sua filha.
-        - **`Classes/DefaultXPTable.ts`**: Implementa a interface `IXPTable`, gerenciando recompensas em determinados níveis (como ganho de atributos e espaços de habilidade).
+        - **`Player.ts`**: O avatar central. Orquestra a injeção do complexo Sistema de Inventário (uma intrincada `Bag` com limite de carga dinâmica e slots anatômicos rigorosos, até 10 anéis) e Delega execuções. A matriz `activeLoadout` implementa as restrições do design de **Deck Building** (Mochila de Magias).
+        - **`Classes/Class.ts` e Derivados:** Onde mora a identidade mutável do jogador. Classes como `Gunslinger`, `Warrior` ou `Necromancer` determinam as Curvas de XP e recompensas em Tiers de nível.
+        - **`Classes/Mage.ts` (O Axiomante e o Spell Parser):** Transforma o teclado num terminal de comandos. Possui um **Buffer Temporal FIFO**. O jogador "digita" os atalhos elementais em sequência rápida (ex: `0` para Projétil, `4` para Fogo). O *Parser* lê a receita "`04`", valida e "cospe" uma `Fireball`. Magia por digitação real, caos controlado.
+        - **`Classes/Pescador.ts`:** Classe altamente mecânica com atrelamento físico síncrono. Gerencia o comportamento do Anzol (`FishingHook`) que rastreia, atordoa, arrasta e colide inimigos como uma "Bola de Demolição".
       - **`Enemies/`**: Contém a hierarquia de classes para inimigos.
-        - **`Enemy.ts`**: Classe abstrata que herda de `Entity`. Define o contrato base para todos os inimigos, concedendo `xpGiven` e possuindo um ataque de contato (`onStrike`) com cooldown.
-        - **`Slime.ts`**: Implementa IA de movimento com "steering behaviors" baseada na visão da vizinhança real.
-        - **`BdiAgentEntity.ts`**: Entidade despida de IA hardcoded, projetada para ser uma "marionete". Ela envia o que "enxerga" para o `IBdiGateway` e age puramente baseada nas intenções (`Intentions`) devolvidas pelo Motor Cognitivo Athena.
+        - **`Enemy.ts`**: Contrato base, concedendo `xpGiven` e emitindo ataques de corpo-a-corpo de repulsão via `onStrike()`.
+        - **`Slime.ts`**: IA que utiliza Teoria de Rebanhos (*Steering/Flocking Behaviors*) e Raios de colisão futuros preventivos para não encavalar sobre outros inimigos.
+        - **`ShadowMob.ts`**: Usa ataques puramente procedurais com chances randomizadas de aplicar Debuffs Elementais ao toque.
+      - **`NPCs/CognitiveNpc.ts` (A Revolução de IA):** A ponte generativa. Captura percepções físicas do mundo, transmite por HTTP ao **Ollama Local (qwen2.5:0.5b)** formatando prompts em JSON rígido. O Ollama devolve um Plano e **Código JavaScript Puro**, que é sanitizado e dry-runned pelo **`PraxisValidator.ts` (Sandbox)** antes de ser compilado dinamicamente em uma função que toma conta do corpo do NPC.
       - **`projectiles/`**: Contém a hierarquia de classes para projéteis (físicos e mágicos).
-        - **`Projectile.ts`**: Classe abstrata genérica para objetos voadores e magias soltas pelo cenário.
-        - **`SimpleBullet.ts`**: Projétil balístico que aplica um `Attack` customizado ao colidir (podendo perfurar alvos).
-        - **`Fireball.ts`**: Projétil mágico ("Axioma") que, ao colidir, invoca de forma desacoplada Efeitos de Área e Efeitos Visuais transientes (VFX) sobre os inimigos.
-      - **`geometryForms/`**: Contém classes para formas geométricas simples que podem existir no mundo.
-        - **`circleForm.ts`**: Uma implementação concreta de `ObjectElement` que representa um círculo. É uma entidade simples com capacidade de movimento, servindo como um bom exemplo de um objeto de jogo básico, útil para testes de colisão, efeitos visuais ou como base para elementos de cenário mais complexos.
-    - **`Items/`**: Contém a hierarquia de classes para todos os itens.
-      - **`IAtack.ts`**: Uma interface que define o contrato para um objeto de ataque (`execute`) e seus tipos de dados relacionados, como `OnHitAction` e `AttackContext`.
-      - **`Attack.ts`**: A implementação concreta e central do sistema de combate. Esta classe encapsula toda a lógica de um ataque: recebe um dano base, adiciona bônus de atributos do atacante, calcula acertos críticos, aplica o dano ao alvo (via `takeDamage`) e executa uma lista de efeitos `OnHitAction` (como recuo ou roubo de vida).
-      - **`Item.ts`**: Classe base abstrata para todos os itens, definindo um contrato rico de propriedades (raridade, valor, etc.).
-      - **`Weapons/Weapon.ts`**: Classe abstrata para armas. Agora recebe a própria entidade do atacante (`Entity`) por injeção ao atacar, não limitando o uso de armas apenas ao `Player`.
-      - **`Weapons/RangedWeapons/RangedWeapon.ts`**: Armas de longo alcance. Absorveram a responsabilidade de calcular, disparar e instanciar os próprios projéteis via eventos (retirando esse engessamento do Player).
-      - **`Weapons/MeleeWeapons/AnimatedMeleeAttack.ts`**: Abstração poderosa (Data-Driven) para golpes corpo a corpo com hitboxes animadas. Ela isola o "inferno matemático" de offsets de spritesheet, âncoras de rotação e escalonamento, permitindo criar novas armas (como Foices e Machados) apenas injetando um JSON de hitboxes.
-      - **`Attributes.ts`**: Uma **interface** simples que define a estrutura para requisitos de atributos de itens.
-      - **`Effects/`**: Contém lógicas puras de domínios desencadeadas no impacto de armas e magias (ex: `AreaDamageEffect`, `VisualEffect`).
+        - **`SimpleBullet.ts`**: Projétil com balística perfurante e gerador de Ruído Randômico de trajeto.
+        - **`DynamicProjectile.ts` e `Fireball.ts`**: Projéteis baseados em Axioma. Ao colidirem, despacham arrays injetados de `Effect`s para garantir Dano em Área ou debuffs elementares sem acoplar matemática à bala.
+        - **`FishingHook.ts`**: Projétil persistente. "Ancora" no alvo, zera a própria velocidade cinemática e sincroniza violentamente suas coordenadas físicas com a da vítima algemada.
+    - **`Items/`**: Onde reside todo o conceito de *Loot*, Equipamento e Ações.
+      - **`Item.ts`**: Classe base abstrata de tudo que repousa no chão ou em mochilas, contendo categoria, valor, raridade e a capacidade de portar `Effect`s atreláveis.
+      - **`Attack.ts`**: Encapsulador mestre do Combate. Ele acopla atacante, cálculos críticos, dano base e executa em lote os `OnHitAction`s.
+      - **`Armors/`**: Coleção de peças anatômicas (`Helmet`, `Pants`, `Rings`). É daqui que o Compositor Visual (Tauri/Adapter) vai extrair o Z-Index para desenhar o Paper Doll do Jogador.
+      - **`Consumables/`**: Itens mutadores. Instâncias como `DemonBlood` rodam `PowerBoostEffect` no alvo modificando sua curva orgânica permanentemente.
+      - **`Weapons/`**:
+        - `MeleeWeapon.ts`: Usa varreduras de Query Espacial (Radianos e Produto Escalar de Cones de Visão) para fatiar múltiplos inimigos instantaneamente antes mesmo da física acontecer.
+        - `AnimatedMeleeAttack.ts` (Data-Driven Hitboxes): Abstração poderosíssima que desserializa JSONs oriundos do Editor Visual. Ele traduz Hitboxes arbitrárias moldando-as com base em escala, Offset de Frames de Animação e pivôs dinâmicos a cada tick do Frame, ideal para Foices Gigantes (`Scythe.ts`).
+      - **`Effects/`**: Subarquitetura polimórfica (Decorator Pattern em runtime) que permite acoplar passivas ou debuffs em Ataques ou Consumíveis (`AreaDamageEffect`, `LightEffect`, `VisualEffect`).
 
   - **`shared/`**: Contém classes e tipos utilitários de baixo nível, usados por todo o domínio.
-    - **`Vector2D.ts`**: Classe para matemática vetorial 2D (direção, velocidade).
-    - **`QuadTree.ts`**: Estrutura de dados para otimização de detecção de colisão.
-    - **`Dice.ts`**: Utilitário para geração de números aleatórios (RNG).
-    - **`Vertex2D.ts` e `Vertex2DMesh.ts`**: Classes para a definição de formas poligonais, usadas principalmente por `HitBox`.
+    - **`Vector2D.ts`**: Superclasse fluente mutável para Álgebra Linear.
+    - **`Dice.ts`**: O RPG de mesa (RNG puro) do qual provêm as definições base da vida das Entidades e raridade de Drops.
 
   - **`hitBox/`**: Módulo responsável pela lógica de colisão.
-    - **`HitBox.ts`**: Classe abstrata que serve como o contrato fundamental para todas as áreas de colisão. Sua responsabilidade é definir as propriedades essenciais (posição, rotação) e o comportamento esperado: um método `intersects(other)` para a lógica de detecção e um callback `onColision` que é invocado quando uma colisão ocorre, desacoplando a detecção do efeito.
-    - **`HitBoxCircle.ts`**: Uma implementação concreta de `HitBox` para formas circulares. Sua única responsabilidade é implementar a lógica matemática para verificar a intersecção com outras `HitBox`es (atualmente, outras `HitBoxCircle`), encapsulando completamente a geometria de colisão de um círculo.
-    - **`HitBoxPolygon.ts`**: Implementação baseada no **Teorema dos Eixos Separadores (SAT)**, permitindo colisões de altíssima precisão com formas arbitrárias (como a lâmina de uma foice) que rotacionam em tempo real.
-    - **`HitboxParser.ts`**: Utilitário que desserializa JSONs gerados pela ferramenta `PolygonWebEditor`, convertendo os pontos escalados em classes `HitBoxPolygon` ou `HitBoxCircle` ativas no Domínio.
+    - **`HitBox.ts`**: Contrato abstrato. Define geometria no espaço (`coordinates`, `rotation`) e o essencial `onColision()`, permitindo à entidade definir dinamicamente a reação a toque sem sobrecarregar a Engine.
+    - **`HitBoxCircle.ts`**: Colisão radial hiper-performática (Raio Quadrado) para disparos em massa.
+    - **`HitBoxPolygon.ts`**: Usada para armamentos de precisão. Rotaciona um array de pontos usando Seno/Cosseno a cada frame e delega o cálculo de Teorema de Eixos Separadores (SAT) para o *Worker* de física.
+    - **`HitboxParser.ts`**: A cola Data-Driven. Desserializa DTOs originários do `PolygonWebEditor` para injetar polígonos nativos direto nas habilidades do Domínio.
 
   - **`eventDispacher/`**: Implementa um sistema de eventos (Observer Pattern) para comunicação desacoplada dentro do Domínio.
-    - **`eventDispacher.ts`**: O coração do sistema de eventos global (Pub/Sub).
-    - **`ActionBindings.ts` (Decorators)**: Sistema de roteamento em tempo de compilação. Fornece o decorator `@BindAction('tecla')` para que as classes (Player, Mage, etc.) declarem proativamente quais inputs desejam ouvir. Dispara alertas de colisão em tempo de execução (Fail Fast) se duas classes quiserem a mesma tecla.
-    - **`ActionManager.ts`**: Um roteador de eventos de input puramente dinâmico. Foi expurgado do "Switch Case" gigante; agora ele apenas repassa os inputs brutos do Adaptador para os métodos mapeados via Decorators.
-    - **`IGameEvents.ts`**: Um arquivo de contrato de tipos. Define a `GameEventMap`, uma interface que mapeia cada nome de evento ao seu respectivo payload. Isso garante a segurança de tipo (type-safety) em todo o sistema de eventos, prevenindo erros em tempo de compilação.
-    - **`actions.type.ts`**: Outro arquivo de contrato de tipos, define a união de strings literais `action`. Ele serve como a "linguagem" compartilhada entre o `GameAdapter` e o `ActionManager` para descrever as ações do jogador.
+    - **`eventDispacher.ts`**: Orquestrador global e forte tipagem (TypeScript seguro). Filtra preventivamente canais volumosos (`playerMoved`, `log`) para prevenir loop recursivo.
+    - **`IGameEvents.ts` e `GameEventMap`:** O dicionário absoluto da comunicação do jogo (Ex: payloads de `spawnVisual`, `particle`, `npcSpoke`). Garante que UIs reativas (via Tauri) e lógicas puras possuam segurança na compilação.
+    - **`ActionBindings.ts` (Decorators):** O Roteamento de Entrada Zero-Overhead. Usa Metadata Reflection com o `@BindAction('tecla')` para declarar quais métodos das classes (ex: `Player`, `Mage`) interceptam inputs, criando o mapeamento na própria inicialização do código sem nenhum Switch-Case e disparando erros (Fail-Fast) no Boot.
+    - **`ActionManager.ts`:** Roteador dinâmico. Lê os Decorators e roteia intencionalidades primárias para a Classe Ativa e delega teclas soltas numéricas (1, 2, 3) para disparar Skills equipadas no painel de Loadout (`activeLoadout`) do jogador.
 
   - **`ports/`**: Define as fronteiras do domínio.
-    - **`domain-contracts.ts`**: Contém a **Porta Primária** `IGameDomain` e os DTOs (`RenderableState`) que o domínio usa para se comunicar com o exterior.
-    - **`ILogger.ts`**: Uma **Porta Secundária** que define o contrato para um serviço de log, permitindo que o domínio registre eventos sem conhecer a implementação.
-    - **`ICollisionService.ts`**: Uma **Porta Secundária** que define o contrato para cálculo pesado de colisões, deixando as otimizações de concorrência ou serialização delegadas para o Adaptador Web.
-    - **`IBdiGateway.ts`**: **Porta Secundária** que exporta as Percepções dos NPCs para a IA (Athena) e recebe as Intenções de volta.
+    - `domain-contracts.ts` (Porta Primária): Exporta os DTOs transitórios (`RenderableState`).
+    - `ILogger.ts` (Porta Secundária): Permite logs desacoplados e categorizados (`channels`).
+    - `ICollisionService.ts` (Porta Secundária): Contrato de submissão do array `plainElements` aguardando reposta da árvore Quádrupla Assíncrona no Adaptador.
 
 
 ### 2.2. Camada de Adaptação (`typescript/adapters/web`)
 
-  Implementa a interface de usuário e interage com as tecnologias web.
+  Implementa a interface de usuário, o pipeline de renderização visual (WebGPU/Canvas2D), a captura de hardware (Mouse/Teclado) e interage com o envelopamento desktop via **Tauri**.
 
-  - **`index.ts`:** O ponto de entrada da aplicação, responsável por instanciar e conectar as camadas e iniciar o jogo.
+  - **`index.ts`:** O ponto de entrada da aplicação. Instancia o EventManager, o Adaptador de Colisões em Worker, injeta-os na `DomainFacade` e dá o boot no `GameAdapter`.
 
-  - **`Diretórios`:**
-    - **`assets`:** define os assets do jogo
-      - **`entities`:** assets das entidades do jogo
-      - **`itens`:** assets dos itens do jogo
-      - **`maps`:** assets dos mapas do jogo
-    - **`GUIS`:** Arquitetura modular contendo as GUIS do jogo. Cada módulo possui um arquivo html, um ts e um css para definir as GUIS. Essas serão por cima do canvas do jogo
-    - **`shared`:** Contém utilitários vitais para a adaptação web, como o `Logger.ts`, e o **`VisualConfigMap.ts`** (O Banco de Dados Visual centralizado).
-  - **`polygonWebEditor/`:** Ferramenta visual autônoma (Hitbox Editor Tool). É um micro-app web que permite ao desenvolvedor carregar sprites, desenhar polígonos/círculos por cima deles (com câmera de zoom e pan) e exportar o JSON exato que o `HitboxParser` do Domínio consome.
+  - **Diretórios Principais:**
+    - **`assets/`:** Central de mídia (entidades, itens, mapas e metadados JSON como o keymap).
+    - **`GUIS/`:** Arquitetura modular contendo as interfaces DOM do jogo. Módulos avançados incluem o `MainMenuGui` (com SVG interativo e câmera 2D para seleção de mundos), `SkillTreeGui` (câmera viewport procedural), e `DialogueGui` (integração síncrona com LLM).
+    - **`shared/`:** Utilitários vitais, destacando-se o `VisualConfigMap.ts` (O Banco de Dados Visual) e o `RenderRegistry.ts` (sistema de injeção de dependência baseado em Decorators).
+  - **`polygonWebEditor/` (Hitbox Editor Tool):** Uma ferramenta visual autônoma separada do código de *runtime* do jogo (seguindo o Padrão de Motores Profissionais como Unity). O desenvolvedor carrega o PNG de um ataque, clica para desenhar a área de dano frame-a-frame, e exporta um arquivo `.json` limpo. A Engine depois apenas lê este arquivo, abolindo o *"achismo matemático"* de hitboxes no código.
 
   Tudo listado a seguir está no diretório `typescript/adapters/web/components/` e são componentes do jogo:
 
-  - **`GameAdapter.ts`:** O **Adaptador Primário** e o orquestrador central da camada de adaptação. Sua responsabilidade é ser a "cola" que une a lógica de negócio do domínio com as tecnologias da web. Ele gerencia o ciclo de vida de todos os outros adaptadores (`Renderer`, `Camera`, `InputManager`), traduz os DTOs do domínio em objetos visuais (`IRenderable`) e converte os inputs do usuário em ações que o domínio entende.
-    - **Coesão:** Atua como um *Bootstrapper* leve. Toda a lógica de renderização pesada foi movida para o `SceneManager`, a manipulação de UI para o `UIManager` e a captação de input para o `InputGateway`. Sua função é apenas conectar os fluxos de vida do jogo (`initialize`, `update`, `draw`).
+  - **`GameAdapter.ts`:** O **Adaptador Primário** e o orquestrador central. Age como um *Bootstrapper* rigoroso.
+    - **Coesão:** Gerencia a vida do jogo e atua como ponte. Transfere lógica de UI para o `UIManager`, input para o `InputGateway`, e visual para o `SceneManager`. Instancia o carregamento dinâmico de mapas (`GameMap`) delegando a autoridade de mundos para o Domínio.
+  - **`Game.ts`:** Utilitário puramente funcional (`requestAnimationFrame`) que dita o Game Loop, calculando o `deltaTime` e blindando o jogo contra travamentos severos de SO (trava de max 10 FPS).
 
-  - **`Game.ts`:** Um utilitário simples que abstrai a API `requestAnimationFrame` do navegador para criar um game loop clássico.
-    - **Coesão:** **Altíssima (Coesão Funcional)**. Sua única e exclusiva responsabilidade é executar um loop contínuo, calcular o `deltaTime` entre os frames e invocar os callbacks de `update` e `draw` que lhe foram fornecidos. Ele é completamente agnóstico ao que essas funções fazem, tornando-o um componente genérico, reutilizável e extremamente focado.
+  #### renderModule (A Engine Visual Data-Driven e Zero-GC)
 
-  - **`SceneManager.ts`:** Gerencia a sincronização entre DTOs e entidades gráficas na tela. Agora suporta perfeitamente os **Efeitos Visuais Transientes (VFX)**: instâncias gráficas (como explosões) desenhadas sem existir na árvore física do Domínio. Possui um sistema de **Snap Magnético** que atrela e rastreia a origem de golpes (ex: espadas e foices) diretamente no corpo de quem ataca e apontando para o mouse fluidamente, lidando com os diferenciais da álgebra linear do WebGPU e do Canvas 2D.
+    O módulo de renderização foi reestruturado para alto desempenho, abolindo a necessidade de classes repetitivas (Data-Driven) e garantindo preservação de memória.
 
-  - **`UIManager.ts` e `GUIS/`:** Gerencia todas as interfaces DOM (HTML/CSS) sobrepostas ao canvas. Atualmente orquestra de forma modular o `PlayerStatusGui` (HP/Mana), `XpBarGui`, `CharacterMenuGui` (Status e Inventário estilo "Paper Doll"), `SkillTreeGui`, `WeaponHudGui` (Rastreamento dinâmico da mira da arma em volta do jogador) e `GameOverGui`. Ouve o estado do jogador no domínio e sincroniza os dados visualmente a cada frame.
+    - **`engine/`**: O maquinário de baixo nível. Contém `Renderer.ts` (Canvas 2D) e o avançado `WebGPURenderer.ts` (Shaders WGSL, *Texture Atlas* global e *Instanced Rendering* para desenhar milhares de vértices em uma única chamada da GPU).
+    - **`scene/`**: Orquestração espacial. `SceneManager.ts` sincroniza os DTOs do Domínio com a tela e lida com **Efeitos Visuais Transientes (VFX)** (instâncias temporárias com "Snap Magnético" em atores). Inclui `Camera.ts` (Translação/Zoom restrito aos limites do mundo) e `Map.ts` (Renderização assíncrona de matriz de Chunks 3x3 na visão do jogador).
+    - **`visuals/`**: Blocos construtores. Contém a base `GameObjectElement.ts` e o motor `LayeredGameObjectElement.ts` integrado ao `VisualComposer.ts`, que aplica regras complexas de Z-Index anatômico (ex: "barbas ficam sobre o peitoral") para criar "Paper Dolls" (equipar roupas visivelmente).
+    - **`particlesModule/` (Zero-GC):** Subsistema assombroso de partículas (`ParticleOrchestrator` e `Particles`). Utiliza **Object Pooling com Swap-Based Recycle**, pré-alocando matrizes de memória na inicialização para emitir milhares de partículas simultâneas sem engatilhar o Garbage Collector do V8. Disponibiliza uma biblioteca de **VFX Semânticos** (`bloodSplatter`, `levelUp`, `criticalStrike`).
+    - **`customRenderables/`**: Exceções visuais procedimentais (`CircleForm`, `FishingHookVisual`) e injeções de Debug visual (`DebugPolygon`, `DebugRectangle`).
 
-  - **`InputGateway.ts` e `InputManager.ts`:** Gerenciam a entrada de hardware. Diferencia atalhos de Numpad dos atalhos numéricos comuns de teclado, suporta array de binds e executa conversão de mouse screen-to-world perfeitamente, deixando o GameAdapter enxuto.
+  #### UiManager e GUIS (Módulo de Interface DOM)
+    - **`UIManager.ts`:** Governa absolutamente o DOM e o estado de Pausa do Jogo. Ele atua como Hub central que escuta os DTOs e aciona as GUIs reativas.
+    - **Módulos Críticos:**
+      - `PlayerStatusGui`: Barras não-lineares responsivas a efeitos contínuos (veneno, queimadura).
+      - `CharacterMenuGui`: Interface rica com manipulação de status e slots de equipamentos.
+      - `SkillTreeGui`: Viewport (Pan & Zoom) para uma Árvore Topológica Semântica e painel dinâmico de Deck Building (Loadout) com *Drag and Drop*.
+      - `DialogueGui`: Interface de comunicação que congela o Game Loop e intercepta Inputs de texto puro a serem enviados para o motor de LLM Local (Athena/Ollama).
+      - `WindowHudGui`: Barra de título customizada nativa do envelopamento desktop no Tauri.
+      - `WeaponHudGui`: HUD translúcido rastreando dinamicamente a mira da arma fisicamente no Canvas (sobreposição sincronizada de Screen-to-World).
 
-  #### renderModule (A Nova Engine Visual Data-Driven)
+  #### keyboardModule (Entrada e Tradução)
+    - **`InputManager.ts`:** O adaptador de hardware de baixo nível. Governa `Set`s de teclas com detecção de *Just Pressed* (consumo único, excelente para skills) vs *Held*. Protege o jogo de ghosting com listeners de `blur` e gerencia bloqueio de reloads (`preventUnload`).
+    - **`InputGateway.ts`:** O Tradutor de Domínio. Diferencia-se do Manager por converter estado elétrico em **Intenções Semânticas** (ex: traduz o clique do mouse em coordenadas `ScreenToWorld` através do Zoom da Câmera) e as repassa limpamente ao `DomainFacade`.
 
-    O módulo de renderização foi reestruturado para suportar WebGPU nativamente e separar claramente a mecânica, a orquestração e a arte, abolindo a necessidade de criar classes repetitivas para cada entidade do jogo através de um sistema guiado a dados (Data-Driven).
-
-    - **`engine/`**: O maquinário de baixo nível que conversa com as APIs do navegador. Contém `Renderer.ts` (Canvas 2D) e o avançado `WebGPURenderer.ts` (que utiliza *Instanced Rendering*, shaders em WGSL e um *Texture Atlas* global para desenhar centenas de objetos em uma única chamada de vídeo, garantindo os 60 FPS no Bullet Hell).
-    - **`scene/`**: Os diretores e orquestradores do palco. Contém o `SceneManager.ts` (sincroniza os DTOs com a tela), a `RenderableFactory.ts` (fábrica inteligente), `Camera.ts` e `Map.ts` (gerencia a renderização assíncrona da matriz de Chunks do chão com base na posição da câmera).
-    - **`visuals/`**: Os blocos construtores de arte e animação. Contém `GameObjectElement.ts` (renderizador procedural Data-Driven), `LayeredGameObjectElement.ts` (desenha múltiplos sprites sobrepostos acompanhando os offsets de animação) e `VisualComposer.ts` (um poderoso motor de regras que calcula o Z-Index dinâmico de equipamentos, sabendo por exemplo que uma "barba" deve cobrir um "peitoral").
-    - **`customRenderables/`**: Exceções que possuem lógica de pintura exclusiva e manual. Contém `Player.ts` (que aplica a ordem Z-Index de equipamentos) e `CircleForm.ts` (desenha linhas vetoriais ao invés de texturas de imagem).
-
-  - **`shared/RenderRegistry.ts` (Decorators e Auto-Descoberta):** O sistema central que utiliza decoradores (`@RegisterRenderer`) para registrar automaticamente estratégias de instigação de classes e mapear animações. Isso permite plugar novas representações visuais na engine sem nunca alterar o código da `RenderableFactory`.
-  - **`shared/VisualConfigMap.ts` (O Coração Data-Driven):** Um dicionário estático imutável que mapeia identificadores do domínio (ex: `'slime'`, `'iron-helmet'`, `'vilgem'`) para configurações visuais exatas. Além de animações, **ele gerencia as matrizes de Chunks de todos os mapas**, delegando a arte inteiramente para a camada Web.
-
-  #### keyboardModule
-
-    - **`InputManager.ts`:** O adaptador de entrada do jogo. Sua responsabilidade é capturar todos os eventos brutos de hardware (teclado e mouse) e traduzi-los em um conjunto de `GameAction`s lógicas e abstratas (ex: 'move_up', 'mouse_left'). Ele carrega um mapa de teclas de um arquivo de configuração (`keymap.json`), permitindo fácil customização e remapeamento em tempo de execução.
-      Ele suporta a diferenciação vital entre ações contínuas (segurar o botão via `isActionActive`) e ações discretas (cliques de "consumo único" via `consumeAction`), garantindo um *Game Feel* responsivo para armas de fogo versus ataques pesados ou menus.
-    - **Coesão:** **Altíssima (Coesão Funcional).** A classe é um tradutor puro. Ela não sabe o que é um "jogador" ou o que acontece quando a ação 'move_up' é ativada. Sua única função é gerenciar o estado das teclas pressionadas e fornecer uma API simples (`isActionActive`) para o `GameAdapter` consultar. Isso desacopla completamente o resto da camada de adaptação dos detalhes específicos de hardware.
+  - **`shared/RenderRegistry.ts` e `VisualConfigMap.ts`:** O Coração Data-Driven. Dicionários e Decorators estáticos que resolvem instâncias visuais e animações no boot da aplicação. O Domínio trafega apenas chaves de identificação (ex: `iconId: 10`), e o Registrador fabrica o visual dinamicamente, mantendo o Desacoplamento.
 
 ### O Logger (Porta e Adaptador Secundário)
 
   - **`ports/ILogger.ts`**: Esta é a **Porta Secundária** para o logger. Define a interface `ILogger` que o domínio espera. O domínio não sabe como os logs são escritos, apenas que ele pode chamar o método `log` em um objeto que satisfaça este contrato. Isso desacopla completamente a lógica de negócio da implementação de logging.
   - **`adapters/web/shared/Logger.ts`**: Esta é a implementação concreta (o **Adaptador Secundário**) da porta `ILogger` para o ambiente web. Sua única responsabilidade é receber os comandos de log e escrevê-los no `console` do navegador, com a lógica adicional de filtrar por canais (`LogChannel`). Ele é injetado no `DomainFacade` durante a inicialização, cumprindo o contrato da porta.
+
+### 2.3. Adaptação de Conectividade Externa e IA (`typescript/adapters/SocketAdapter` e HTTP)
+
+  Esta camada é responsável por quebrar as fronteiras do jogo, permitindo que a Engine puramente matemática (Domínio) se comunique com motores gráficos 3D pesados (Unity/Unreal), motores lógicos baseados em Crenças (BDI Athena/Java) ou LLMs Locais (Ollama).
+
+  - **`SocketAdapter.ts` (A Ponte WebSocket):** Atua como uma **Porta Secundária Bidirecional**. 
+    - **Transmissão (Outbound):** Captura o estado visual atual (DTOs de renderização, vida, posições) da `DomainFacade` a cada frame e transmite via serialização JSON para um motor cliente conectado. Ideal para o "Épico 11: A Oficina do Gepeto", onde a lógica de colisão e combate roda no TypeScript, mas um motor 3D (Unity) escuta a porta para desenhar gráficos realistas.
+    - **Recepção (Inbound):** Escuta comandos deliberados de instâncias externas (como o plano de ação de um Agente BDI em Java) e as injeta diretamente nas Entidades Interativas do jogo, forçando-as a se mover ou interagir sem intervenção do jogador.
+    - **Resiliência:** Possui um sistema de *Retry* com recuo (backoff) inteligente, não quebrando (crashing) a Engine caso o servidor Unity/Java seja desligado abruptamente; ele apenas silencia os NPCs temporariamente.
+
+  - **A Ponte HTTP Generativa (Fetch Nativo):** Embutida na entidade `CognitiveNpc` (embora possa ser extraída para um adaptador puro no futuro), essa camada realiza requisições REST (HTTP POST) de baixíssima latência para o serviço local do **Ollama** (ex: porta `11434`).
+    - Transmite as *Percepções* da entidade (visão de raio, HP, falas do jogador) encadeadas em um *System Prompt* rígido que força a saída em JSON puro (sem formatação Markdown).
+
+### 2.4. Camada de Envelopamento Desktop (Tauri / Rust)
+
+  A infraestrutura que envelopa o Adaptador Web e o transforma em um executável nativo do Sistema Operacional (.exe / .AppImage).
+
+  - **Bootstrapper de Processos (Sidecars):** Substitui o backend Node/Electron. O Rust é utilizado para injetar comandos silenciosos no SO durante o *Loading Screen* do jogo, iniciando as instâncias de Banco de Dados local, o daemon do **Ollama** ou a Máquina Virtual Java (JVM) para o Athena, garantindo que o jogador não precise abrir vários terminais para jogar.
+  - **Sistema de Arquivos Nativo (FS):** Substitui o `localStorage` do navegador para prover uma persistência robusta (Save States). Os arquivos de progressão (Árvore Global, XP) são gravados diretamente no disco e criptografados pelo Rust para evitar modificações indevidas (cheats não autorizados).
+  - **Custom HUD:** Integração com a `WindowHudGui`, permitindo que bordas da janela do Windows/Linux sejam ocultadas, e a movimentação da janela seja controlada diretamente por elementos de "drag" renderizados no DOM do jogo.
+
 
 ## 3. Ciclos e Fluxos da Aplicação
 
@@ -490,3 +514,21 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
   2. **Visual (Arte e Chunks):** Abra o arquivo `VisualConfigMap.ts`. Crie uma nova configuração na categoria `'map'` sob a chave `'deserto'`. Defina o `chunkSize` (ex: `1024`) e passe a matriz bidimensional (`string[][]`) contendo as URLs exatas de cada pedaço de imagem que forma o chão do mapa.
   
   A câmera inteligente do `GameMap` só vai puxar a imagem do chunk X,Y quando o jogador estiver caminhando sobre ele!
+
+### 4.10. Como Integrar um Motor Externo (Unity/Godot) via Socket
+
+  O `SocketAdapter` permite usar a Engine TypeScript apenas como "Servidor Lógico/Matemático", delegando o visual 3D para um cliente externo (Épico 11 - A Oficina do Gepeto).
+
+  1. **Inicialize o Adaptador:** No arquivo `adapters/web/index.ts`, descomente e instancie o `SocketAdapter`, apontando para a porta desejada (`ws://localhost:8080`).
+  2. **O Cliente (Unity/Godot):** Crie um script no motor 3D que se conecte a este WebSocket local.
+  3. **Envio de DTOs:** No `GameAdapter.update()`, logo após o `domain.update(deltaTime)`, obtenha o `domain.getRenderState()` e empurre o JSON resultante no `SocketAdapter.sendState(dto)`.
+  4. **Instanciação 3D:** No Unity, crie um *Prefab* genérico. Ao receber um ID novo via Socket, instancie o *Prefab*. A cada frame recebido do TypeScript, aplique as propriedades de translação (X, Y) e rotação no objeto 3D!
+
+### 4.11. Como Ensinar uma Nova Habilidade de Código para a IA (Ollama)
+
+  Os NPCs Cognitivos geram código vivo, mas para evitar alucinações absurdas, você deve restringir as ferramentas matemáticas deles.
+
+  1. **Atualize o Contexto do Motor (Córtex):** Em `CognitiveNpc.ts`, na injeção do `new Function(...)`, a IA recebe objetos fixos (`npc`, `player`, `deltaTime`, `Math`).
+  2. **Adicione Permissões:** Se quiser que a IA consiga criar chamas no chão, você precisa passar uma referência de fábrica (Ex: `spawnFactory`).
+  3. **Validação do Praxis (Segurança):** Abra o `PraxisValidator.ts`. Se a IA for usar algum recurso global novo (como `Date.now()`), certifique-se de que a palavra não esteja na lista de bloqueios de segurança (`forbiddenTokens`), caso contrário, o "mini-antivírus" bloqueará o plano do NPC no frame seguinte e ele "esquecerá" a magia!
+  4. **Prompt Tuning:** Na string estática `systemPrompt` (em `askOllamaToCode`), escreva explicitamente o contrato que a IA tem nas mãos. Exemplo: *"Você tem acesso a 'npc.castFire(x, y)'. Use com sabedoria!"*.

@@ -29,6 +29,8 @@ export default class GameAdapter {
   private uiManager!: UIManager;
   private inputGateway!: InputGateway;
   
+  private currentFrameState: { world: any; renderables: readonly any[] } | null = null;
+  private canvasRenderBuffer: IRenderable[] = []; // Para Zero-GC no Canvas2D
   private isGameStarted: boolean = false;
 
   /** @constructor @param domain Uma instância que implementa a interface do domínio. A injeção de dependência via interface permite que o Adapter seja agnóstico à implementação do domínio. */
@@ -84,7 +86,7 @@ export default class GameAdapter {
     this.camera = new Camera(canvas, 3);
     
     try {
-      this.renderer = new WebGPURenderer(canvas);
+      this.renderer = new WebGPURenderer(canvas, this.camera);
       await this.renderer.initialize();
       logger.log('init', 'Successfully initialized WebGPU renderer.');
     } catch (error) {
@@ -151,9 +153,11 @@ export default class GameAdapter {
       this.sceneManager.updateAnimations(deltaTime, mouseWorldPos);
     }
 
-    this.syncScene();
+    // Requisita o DTO do domínio apenas UMA vez por frame para garantir Zero-GC e performance!
+    this.currentFrameState = this.domain.getRenderState();
+    this.syncScene(this.currentFrameState);
 
-    const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
+    const playerState = this.currentFrameState.renderables.find(r => r.id === 1);
     
     let playerScreenPos = { x: 0, y: 0 };
     if (playerState) {
@@ -164,55 +168,49 @@ export default class GameAdapter {
 
   /** Fase de Desenho: Função final do ciclo de vida, chamada a cada frame após o `update` para delegar a responsabilidade de desenhar o frame atual para o `Renderer`. */
   private async draw(): Promise<void> {
+    if (!this.currentFrameState) return;
     logger.log('render', 'Drawing frame...');
 
-    const domainState = this.domain.getRenderState();
-    const cameraTarget = domainState.renderables.find(r => r.id === 1); // ID 1 é o jogador
+    const domainState = this.currentFrameState;
+    const cameraTarget = domainState.renderables.find(r => r.id === 1); 
 
     if (this.renderer instanceof WebGPURenderer) {
       // Lógica para WebGPU
-      const renderablesWithAnimation = domainState.renderables.map(r => {
-        const animManager = this.sceneManager.animationManagers.get(r.id);
-        const animationData = animManager ? { currentFrame: animManager.currentFrame } : { currentFrame: 0 };
-        return { ...r, ...animationData };
-      });
+      // Evita o spread operator clonando superficialmente apenas o array base
+      const sortedRenderables = [...domainState.renderables];
 
       // Adiciona os efeitos transientes para WebGPU
       for (const visual of this.sceneManager.transientVisuals.values()) {
-        const animManager = visual.animationManager;
-        renderablesWithAnimation.push({
-          ...visual.state,
-          currentFrame: animManager ? animManager.currentFrame : 0
-        });
+        sortedRenderables.push(visual.state);
       }
       
       // Aplica ordenação espacial (Y-Sorting) para criar ilusão de profundidade (pseudo-3D)
-      renderablesWithAnimation.sort((a, b) => (a.coordinates.y + a.size.height) - (b.coordinates.y + b.size.height));
+      sortedRenderables.sort((a, b) => (a.coordinates.y + a.size.height) - (b.coordinates.y + b.size.height));
 
-      const webGpuDomainState = { world: domainState.world, renderables: renderablesWithAnimation };
-      await this.renderer.drawFrame(webGpuDomainState, cameraTarget);
+      const webGpuDomainState = { world: domainState.world, renderables: sortedRenderables };
+      await this.renderer.drawFrame(webGpuDomainState, cameraTarget, this.sceneManager.animationManagers);
     } else {
       // Lógica para Canvas 2D
       const cameraTargetRenderable = cameraTarget ? this.sceneManager.renderables.get(cameraTarget.id) : undefined;
       if (cameraTargetRenderable) this.camera.setTarget(cameraTargetRenderable);
 
       this.renderer.clear();
-      // Envia também os visuais transientes para a tela!
-      const transientRenderables = Array.from(this.sceneManager.transientVisuals.values())
-        .map(v => v.renderable)
-        .filter((r): r is IRenderable => r !== undefined);
+      
+      // Reutiliza o buffer pré-alocado para evitar GC Thrashing no fallback Canvas2D
+      this.canvasRenderBuffer.length = 0;
+      for (const r of this.sceneManager.renderables.values()) this.canvasRenderBuffer.push(r);
+      for (const v of this.sceneManager.transientVisuals.values()) if (v.renderable) this.canvasRenderBuffer.push(v.renderable);
 
       // Aplica ordenação espacial (Y-Sorting) para criar ilusão de profundidade (pseudo-3D)
-      const sortedEntities = [...this.sceneManager.renderables.values(), ...transientRenderables];
-      sortedEntities.sort((a, b) => (a.coordinates.y + a.size.height) - (b.coordinates.y + b.size.height));
+      this.canvasRenderBuffer.sort((a, b) => (a.coordinates.y + a.size.height) - (b.coordinates.y + b.size.height));
 
       // Adiciona elementos que devem estar sempre no topo (Partículas e Debug)
-      const allRenderables = [...sortedEntities, this.sceneManager.particleOrchestrator];
-      if (this.isDebugMode) allRenderables.push(...this.sceneManager.debugRenderables.values());
+      this.canvasRenderBuffer.push(this.sceneManager.particleOrchestrator);
+      if (this.isDebugMode) for (const d of this.sceneManager.debugRenderables.values()) this.canvasRenderBuffer.push(d);
 
       // Passa a lista de objetos visuais (IRenderableObject) para o renderer antigo.
-      const canvasDomainState = { world: domainState.world, renderables: allRenderables };
-      await (this.renderer as Renderer).drawFrame(canvasDomainState, cameraTarget, this.map);
+      const canvasDomainState = { world: domainState.world, renderables: this.canvasRenderBuffer };
+      await (this.renderer as Renderer).drawFrame(canvasDomainState, cameraTarget, undefined, this.map);
     }
   }
 
@@ -240,10 +238,8 @@ export default class GameAdapter {
     // Escuta quando a LLM gera uma fala para os NPCs e ativa a janela de diálogo
     this.eventManager.on('npcSpoke', (payload) => {
       if (!this.isGameStarted) return; // Previne que a IA fale enquanto o Menu Principal estiver aberto
-
-      // Uma feature futura interessante seria ler a entidade pelo ID e descobrir o nome dela
-      // Como instanciamos o Molor, daremos o título oficial dele:
-      const npcName = "Diretor Molor"; 
+      
+      const npcName = payload.npcName || "Desconhecido";
       this.uiManager.dialogueGui.show(npcName, payload.message, payload.npcId);
     });
 
@@ -279,10 +275,9 @@ export default class GameAdapter {
   }
 
   /** Fase de Update (Sincronização): Compara o estado do domínio com os objetos visuais (`IRenderable`), criando/atualizando-os para refletir o estado atual do jogo. @private @async */
-  private syncScene(): void {
+  private syncScene(domainState: { world: any; renderables: readonly any[] }): void {
     logger.log('sync', 'Syncing renderables...');
-    const { renderables: domainStates } = this.domain.getRenderState();
-    this.sceneManager.syncRenderables(domainStates);
+    this.sceneManager.syncRenderables(domainState.renderables);
   }
 
   /** Fase de Update (Input): Verifica as teclas atualmente pressionadas e traduz em chamadas para `domain.handlePlayerMovement`, passando o `deltaTime` para garantir um movimento consistente. @private @param deltaTime O tempo em segundos desde o último frame. */

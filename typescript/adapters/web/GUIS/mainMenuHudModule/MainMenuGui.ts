@@ -2,6 +2,7 @@ import { logger } from "../../shared/Logger";
 import html from './mainMenu.html?raw';
 import css from './mainMenu.css?raw';
 import { LocalStorageAdapter } from "../../../../domain/ports/LocalStorageAdapter";
+import { listen } from '@tauri-apps/api/event';
 
 export default class MainMenuGui {
     private container!: HTMLElement;
@@ -232,7 +233,56 @@ export default class MainMenuGui {
             });
         });
 
+        // =========================================================================
+        // TELA DE LOADING E INICIALIZAÇÃO DA IA
+        // =========================================================================
+        const loadingScreen = this.container.querySelector('#loading-screen-container') as HTMLElement;
+        const funnyText = this.container.querySelector('#loading-funny-text') as HTMLElement;
+        const techLog = this.container.querySelector('#loading-tech-log') as HTMLElement;
+        const loadingSprite = this.container.querySelector('#loading-sprite') as HTMLImageElement;
+
+        if (loadingSprite) {
+            // Usa o ícone do jogo nativo como sprite de loading animado
+            loadingSprite.src = new URL('../../../../../src-tauri/icons/game-icon-128.png', import.meta.url).href;
+        }
+
+        const funnyPhrases = [
+            "Escovando os dentes dos Goblins...",
+            "Polindo as Hitboxes...",
+            "O Diretor Molor está terminando o café...",
+            "Atores se posicionando no cenário...",
+            "Afiando as espadas...",
+            "Limpando o sangue do último aventureiro...",
+            "Verificando se o Slime está gelatinoso...",
+            "Os sonhos já vão começar..."
+        ];
+
+        let phraseIndex = 0;
+        const phraseInterval = setInterval(() => {
+            phraseIndex = (phraseIndex + 1) % funnyPhrases.length;
+            if (funnyText) funnyText.textContent = funnyPhrases[phraseIndex]!;
+        }, 2500);
+
         if (sonharBtn && cloudTransition) {
+            if ((window as any).__TAURI_INTERNALS__) {
+                listen<string>('loading-progress', (event) => {
+                    if (techLog) techLog.textContent = event.payload;
+                });
+
+                listen('ollama-ready', () => {
+                    logger.log('init', 'Sinal de IA Pronta recebido. Escondendo tela de loading.');
+                    clearInterval(phraseInterval);
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => loadingScreen.style.display = 'none', 800);
+                    }
+                });
+            } else {
+                // Fallback: se estiver rodando no navegador normal, tira o loading de cara
+                clearInterval(phraseInterval);
+                if (loadingScreen) loadingScreen.style.display = 'none';
+            }
+
             sonharBtn.addEventListener('click', () => {
                 cloudTransition.classList.add('active');
                 setTimeout(() => {

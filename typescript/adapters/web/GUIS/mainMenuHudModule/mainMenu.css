@@ -9,6 +9,42 @@
     flex-direction: column;
 }
 
+/* --- TELA DE LOADING --- */
+#loading-screen-container {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: #050403;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.loading-center {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+#loading-sprite {
+    width: 64px; height: 64px;
+    image-rendering: pixelated;
+    animation: bounceSprite 0.4s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
+}
+
+@keyframes bounceSprite {
+    from { transform: translateY(0); }
+    to { transform: translateY(-25px); }
+}
+
+#loading-funny-text { font-size: 36px; font-weight: bold; color: #FFD700; text-shadow: 3px 3px 0px #552200; margin: 0; }
+
+#loading-tech-log {
+    position: absolute; bottom: 20px; font-size: 14px; color: #888; opacity: 0.6; font-family: monospace;
+}
+
 .mm-tab-content {
     flex: 1;
     position: relative;
