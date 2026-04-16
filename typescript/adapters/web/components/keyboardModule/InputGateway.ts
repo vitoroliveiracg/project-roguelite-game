@@ -54,14 +54,20 @@ export default class InputGateway {
       actions.push('castSpell');
     }
 
+    const slotActions: GameAction[] = ['slot_1', 'slot_2', 'slot_3', 'slot_4'];
+    slotActions.forEach(slot => {
+      if (this.inputManager.consumeAction(slot)) {
+        logger.log("input", `(Input Gateway) handled ${slot} to player`);
+        actions.push(slot as action);
+      }
+    });
+
     if (actions.length <= 0) return;
 
-    let mouseWorldCoordinates: { x: number, y: number } = { x: 0, y: 0 };
-    if (actions.some(action => this.inputManager.clickActions.has(action))) {
-      const screenX = this.inputManager.mouseLastCoordinates.x;
-      const screenY = this.inputManager.mouseLastCoordinates.y;
-      mouseWorldCoordinates = screenToWorldFn(screenX, screenY);
-    }
+    // O cursor sempre deve ser convertido, pois atalhos de teclado (ex: slots) precisam saber para onde o mouse aponta!
+    const screenX = this.inputManager.mouseLastCoordinates.x;
+    const screenY = this.inputManager.mouseLastCoordinates.y;
+    const mouseWorldCoordinates = screenToWorldFn(screenX, screenY);
 
     logger.log('input', 'Input handling complete. Delegating to domain update...');
     this.domain.handlePlayerInteractions({ actions: actions }, mouseWorldCoordinates);

@@ -65,7 +65,7 @@ export default class ActionManager {
             handler(this.mouseLastCoordinates, action);
         } else {
             // Roteamento Dinâmico para o Loadout (Deck Building) - Teclas 1, 2, 3 e 4
-            const loadoutMatch = action.match(/^spell_([1-4])$/);
+            const loadoutMatch = action.match(/^slot_([1-4])$/);
             if (loadoutMatch) {
                 const slotIndex = parseInt(loadoutMatch[1] as string) - 1;
                 const skillId = this.player.activeLoadout[slotIndex];

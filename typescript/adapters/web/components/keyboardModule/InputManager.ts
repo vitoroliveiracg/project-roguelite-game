@@ -29,7 +29,11 @@ export type GameAction =
   | 'cast_spell'
   | 'toggle_attributes'
   | 'toggle_skill_tree'
-  | 'interact';
+  | 'interact'
+  | 'slot_1'
+  | 'slot_2'
+  | 'slot_3'
+  | 'slot_4';
 
 /**  @class InputManager Gerencia todos os inputs do usuário, mapeando eventos brutos de teclado para ações de jogo específicas. Esta classe centraliza a lógica de input, permitindo bindings complexos, combos e remapeamento de teclas. */
 export class InputManager {
@@ -101,6 +105,12 @@ export class InputManager {
     if (!this.actionMap.has('interact')) {
         this.setKeyForAction('interact', 'z');
     }
+    
+    // Fallback de Segurança: Atalhos padrão para os slots de habilidade (Loadout) independentes do Mago
+    if (!this.actionMap.has('slot_1')) this.setKeyForAction('slot_1', '1');
+    if (!this.actionMap.has('slot_2')) this.setKeyForAction('slot_2', '2');
+    if (!this.actionMap.has('slot_3')) this.setKeyForAction('slot_3', '3');
+    if (!this.actionMap.has('slot_4')) this.setKeyForAction('slot_4', '4');
   }
 
   /** Anexa os listeners de evento de teclado à janela do navegador. @private */

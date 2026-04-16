@@ -8,10 +8,24 @@ import type ObjectElement from "../../ObjectElement";
 import { RegisterSpawner, type SpawnPayload } from "../../SpawnRegistry";
 import FireEffect from "../../Items/Effects/ElementalEffects/FireEffect";
 import WaterEffect from "../../Items/Effects/ElementalEffects/WaterEffect";
-import PoisonEffect from "../../Items/Effects/ElementalEffects/PoisonEffect";
-import ThunderEffect from "../../Items/Effects/ElementalEffects/ThunderEffect";
+import GroundEffect from "../../Items/Effects/ElementalEffects/GroundEffect";
+import DarkEffect from "../../Items/Effects/ElementalEffects/DarkEffect";
 import LightEffect from "../../Items/Effects/ElementalEffects/LightEffect";
 import MagicEffect from "../../Items/Effects/ElementalEffects/MagicEffect";
+import PotenciaEffect from "../../Items/Effects/ElementalEffects/PotenciaEffect";
+import IceEffect from "../../Items/Effects/ElementalEffects/IceEffect";
+import LifeEffect from "../../Items/Effects/ElementalEffects/LifeEffect";
+import AreaDamageEffect from "../../Items/Effects/AreaDamageEffect";
+import OrdemEffect from "../../Items/Effects/ElementalEffects/OrdemEffect";
+import AirEffect from "../../Items/Effects/ElementalEffects/AirEffect";
+import MagmaEffect from "../../Items/Effects/ElementalEffects/MagmaEffect";
+import InfernousEffect from "../../Items/Effects/ElementalEffects/InfernousEffect";
+import ThunderEffect from "../../Items/Effects/ElementalEffects/ThunderEffect";
+import NatureEffect from "../../Items/Effects/ElementalEffects/NatureEffect";
+import AbysEffect from "../../Items/Effects/ElementalEffects/AbysEffect";
+import HolyEffect from "../../Items/Effects/ElementalEffects/HolyEffect";
+import DecayEffect from "../../Items/Effects/ElementalEffects/DecayEffect";
+import CrystalEffect from "../../Items/Effects/ElementalEffects/CrystalEffect";
 
 @RegisterSpawner('dynamicSpell')
 export class DynamicProjectile extends Bullet {
@@ -78,10 +92,26 @@ export class DynamicProjectile extends Bullet {
             for (const el of payload.spellElements) {
                 if (el === 'fire') elementalEffects.push(new FireEffect(source));
                 if (el === 'water') elementalEffects.push(new WaterEffect());
-                if (el === 'nature') elementalEffects.push(new PoisonEffect(source));
-                if (el === 'thunder') elementalEffects.push(new ThunderEffect());
+                if (el === 'ground') elementalEffects.push(new GroundEffect(source));
+                if (el === 'dark') elementalEffects.push(new DarkEffect(source));
                 if (el === 'light') elementalEffects.push(new LightEffect(source));
                 if (el === 'magic') elementalEffects.push(new MagicEffect());
+                
+                // --- DEEP 2 ---
+                if (el === 'potencia') elementalEffects.push(new PotenciaEffect(source));
+                if (el === 'ice') elementalEffects.push(new IceEffect());
+                if (el === 'life') elementalEffects.push(new LifeEffect(source));
+                if (el === 'caos') elementalEffects.push(new AreaDamageEffect(eventManager, 120, payload.attack!)); // Caos é Dano em Área!
+                if (el === 'ordem') elementalEffects.push(new OrdemEffect(source, payload.attack!, payload.spellElements!));
+                if (el === 'air') elementalEffects.push(new AirEffect());
+                if (el === 'magma') elementalEffects.push(new MagmaEffect(source));
+                if (el === 'infernous') elementalEffects.push(new InfernousEffect());
+                if (el === 'thunder') elementalEffects.push(new ThunderEffect());
+                if (el === 'nature') elementalEffects.push(new NatureEffect());
+                if (el === 'abys') elementalEffects.push(new AbysEffect());
+                if (el === 'holy') elementalEffects.push(new HolyEffect(source, payload.attack!));
+                if (el === 'decay') elementalEffects.push(new DecayEffect(source));
+                if (el === 'crystal') elementalEffects.push(new CrystalEffect(eventManager, source, payload.attack!, payload.spellElements!));
             }
         }
         

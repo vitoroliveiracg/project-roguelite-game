@@ -9,6 +9,7 @@ export default class SkillTreeGui {
     private container!: HTMLElement;
     private isVisible: boolean = false;
     private lastTreeHash: string = '';
+    private lastLoadoutHash: string = '';
     private togglePauseCallback: () => void;
     
     // Variáveis de estado do Pan & Zoom
@@ -35,6 +36,8 @@ export default class SkillTreeGui {
         const div = document.createElement('div'); 
         div.innerHTML = html;
         this.container = div.firstElementChild as HTMLElement;
+        // Garante que a árvore de skills fique por cima de outras UIs como o HUD da janela
+        this.container.style.zIndex = '1000';
         document.body.appendChild(this.container);
     }
     
@@ -97,15 +100,92 @@ export default class SkillTreeGui {
     public update(data: EntityRenderableState): void {
         if (!this.isVisible || !data.classes) return;
         
-        const hash = JSON.stringify(data.classes) + JSON.stringify(data.skillTree);
-        if (this.lastTreeHash === hash) return; // Evita recriar o DOM se não houve mudança real nos nós e classes
-        this.lastTreeHash = hash;
-        
-        // Atualiza os pontos disponíveis no losango místico
+        // 1. Atualiza os pontos disponíveis independentemente de Hash complexo
         const pointsEl = this.container.querySelector('#st-available-points');
         if (pointsEl && data.attributes) {
             pointsEl.textContent = data.attributes.availablePoints.toString();
         }
+
+        // 2. Renderização dos Painéis de Loadout e Eventos de Soltar (Drop)
+        // Usa um hash isolado para o Loadout para não engatilhar recriação pesada na árvore central
+        const level = data.level || 1;
+        const loadoutHash = JSON.stringify(data.activeLoadout) + level;
+        
+        if (this.lastLoadoutHash !== loadoutHash) {
+            this.lastLoadoutHash = loadoutHash;
+
+            const loadoutSlots = this.container.querySelectorAll('.loadout-slot');
+            const slotRequirements = [1, 10, 30, 50]; // Níveis estritos para liberar cada slot!
+
+            if (loadoutSlots.length > 0 && data.activeLoadout) {
+                loadoutSlots.forEach((slotEl, index) => {
+                    const el = slotEl as HTMLElement;
+                    const reqLevel = slotRequirements[index]!;
+                    const isUnlocked = level >= reqLevel;
+
+                    // Gerencia o visual de trancado/destrancado com base no Nível
+                    if (isUnlocked) {
+                        el.classList.remove('locked');
+                        const reqSpan = el.querySelector('.slot-req');
+                        if (reqSpan) reqSpan.remove();
+                        
+                        // Prepara o Drag & Drop no Slot com prevenção segura nativa
+                        el.ondragover = (e) => e.preventDefault(); 
+                        el.ondrop = (e) => {
+                            e.preventDefault();
+                            el.style.borderColor = ''; 
+                            const skillId = e.dataTransfer?.getData('text/plain');
+                            if (skillId) {
+                                this.skillActionCallback('equip', { skillId, slotIndex: index });
+                            }
+                        };
+                        el.ondragenter = () => { el.style.borderColor = '#00ffff'; };
+                        el.ondragleave = () => { el.style.borderColor = ''; };
+                    } else {
+                        el.classList.add('locked');
+                        let reqSpan = el.querySelector('.slot-req');
+                        if (!reqSpan) {
+                            reqSpan = document.createElement('span');
+                            reqSpan.className = 'slot-req';
+                            reqSpan.textContent = `L${reqLevel}`;
+                            el.appendChild(reqSpan);
+                        }
+                    }
+
+                    // Renderiza o visual do item atualmente equipado
+                    const equippedId = data.activeLoadout![index];
+                    const existingImg = el.querySelector('.equipped-skill-indicator');
+                    if (existingImg) existingImg.remove();
+                    el.removeAttribute('title');
+
+                    if (equippedId && isUnlocked) {
+                        const skillInfo = data.unlockedActiveSkills?.find(sk => sk.id === equippedId);
+                        if (skillInfo) {
+                            el.title = skillInfo.name;
+                            const img = document.createElement('div');
+                            img.className = 'equipped-skill-indicator';
+                            
+                            // Verifica se a skill pertence à classe atual (Árvore atual)
+                            const isFromActiveClass = data.skillTree?.some(s => s.id === equippedId);
+                            if (!isFromActiveClass) {
+                                img.style.filter = 'grayscale(100%) opacity(0.4)';
+                                img.style.borderColor = '#555';
+                                img.style.color = '#777';
+                                el.title = `${skillInfo.name}\n(Bloqueada: Requer arma apropriada)`;
+                            }
+                            
+                            img.textContent = skillInfo.name.charAt(0).toUpperCase();
+                            el.appendChild(img);
+                        }
+                    }
+                });
+            }
+        }
+
+        // 3. Atualiza a árvore visual (Pesada) - Uso estrito do Hash aqui!
+        const treeHash = JSON.stringify(data.classes) + JSON.stringify(data.skillTree);
+        if (this.lastTreeHash === treeHash) return; 
+        this.lastTreeHash = treeHash;
 
         const header = this.container.querySelector('.skill-header') as HTMLElement;
         const classes = data.classes;
@@ -121,23 +201,23 @@ export default class SkillTreeGui {
                 const classWeaponMap: Record<string, string> = { 'Mago': 'staff', 'Guerreiro': 'simple-sword', 'Necromante': 'scythe', 'Gunslinger': 'gun', 'Pescador': 'fishing-rod' };
 
                 const createIconBtn = (cls: any, role: 'prev' | 'active' | 'next') => {
-                const className = cls?.name || '';
-                const configKey = classWeaponMap[className];
-                const config = configKey ? VisualConfigMap[configKey] as ItemVisualConfig | undefined : undefined;
+                    const className = cls?.name || '';
+                    const configKey = classWeaponMap[className];
+                    const config = configKey ? VisualConfigMap[configKey] as ItemVisualConfig | undefined : undefined;
                     const imgUrl = config?.uiIconUrl || '';
 
-                const btn = document.createElement('button');
+                    const btn = document.createElement('button');
                     btn.className = `class-icon ${role === 'active' ? 'active' : 'secondary'} ${cls?.isUnlocked ? 'unlocked' : 'locked'}`;
-                btn.title = className;
+                    btn.title = className;
                     if (role !== 'active') btn.onclick = () => this.skillActionCallback('changeClass', { className: className });
-                
-                if (imgUrl) {
-                    const img = document.createElement('img');
-                    img.src = imgUrl;
-                    btn.appendChild(img);
-                } else {
-                    btn.textContent = '?';
-                }
+                    
+                    if (imgUrl) {
+                        const img = document.createElement('img');
+                        img.src = imgUrl;
+                        btn.appendChild(img);
+                    } else {
+                        btn.textContent = '?';
+                    }
                     return btn;
                 };
 
@@ -170,66 +250,6 @@ export default class SkillTreeGui {
                 if (len > 1) header.appendChild(createIconBtn(nextClass, 'next'));
             }
         }
-        
-        // Renderização dos Painéis de Loadout e Eventos de Soltar (Drop)
-        const loadoutSlots = this.container.querySelectorAll('.loadout-slot');
-        const level = data.level || 1;
-        const slotRequirements = [1, 10, 30, 50]; // Níveis estritos para liberar cada slot!
-
-        if (loadoutSlots.length > 0 && data.activeLoadout) {
-            loadoutSlots.forEach((slotEl, index) => {
-                const el = slotEl as HTMLElement;
-                const reqLevel = slotRequirements[index]!;
-                const isUnlocked = level >= reqLevel;
-
-                // Gerencia o visual de trancado/destrancado com base no Nível
-                if (isUnlocked) {
-                    el.classList.remove('locked');
-                    const reqSpan = el.querySelector('.slot-req');
-                    if (reqSpan) reqSpan.remove();
-                    
-                    // Prepara o Drag & Drop no Slot
-                    el.ondragover = (e) => e.preventDefault(); // Permite soltar
-                    el.ondrop = (e) => {
-                        e.preventDefault();
-                        el.style.borderColor = ''; // Reseta o visual brilhante
-                        const skillId = e.dataTransfer?.getData('text/plain');
-                        if (skillId) {
-                            this.skillActionCallback('equip', { skillId, slotIndex: index });
-                        }
-                    };
-                    el.ondragenter = () => { el.style.borderColor = '#00ffff'; };
-                    el.ondragleave = () => { el.style.borderColor = ''; };
-                } else {
-                    el.classList.add('locked');
-                    let reqSpan = el.querySelector('.slot-req');
-                    if (!reqSpan) {
-                        reqSpan = document.createElement('span');
-                        reqSpan.className = 'slot-req';
-                        reqSpan.textContent = `L${reqLevel}`;
-                        el.appendChild(reqSpan);
-                    }
-                }
-
-                // Renderiza o visual do item atualmente equipado
-                const equippedId = data.activeLoadout![index];
-                const existingImg = el.querySelector('.equipped-skill-indicator');
-                if (existingImg) existingImg.remove();
-                el.removeAttribute('title');
-
-                if (equippedId && isUnlocked) {
-                    const skillInfo = data.unlockedActiveSkills?.find(sk => sk.id === equippedId);
-                    if (skillInfo) {
-                        el.title = skillInfo.name;
-                        const img = document.createElement('div');
-                        img.className = 'equipped-skill-indicator';
-                        // Cria um ícone provisório super estiloso usando a primeira letra da Skill!
-                        img.textContent = skillInfo.name.charAt(0).toUpperCase();
-                        el.appendChild(img);
-                    }
-                }
-            });
-        }
 
         const treeArea = this.container.querySelector('.skill-tree-canvas') as HTMLElement;
         if (treeArea && data.skillTree && data.skillTree.length > 0) {
@@ -253,21 +273,42 @@ export default class SkillTreeGui {
 
                 skillsInTier.forEach(skill => {
                     const btn = document.createElement('button');
-                    
-                    // A Semântica Topológica!
+
+                    // Define a forma do nó com base no tipo de habilidade
                     let shapeClass = 'node-active'; // Padrão: Retângulo
                     if (skill.type === 'passive') shapeClass = 'node-passive'; // Triângulo
                     if (skill.type === 'rare') shapeClass = 'node-rare';       // Losango
                     if (skill.type === 'essential') shapeClass = 'node-essential'; // Estrela
                     if (skill.type === 'attribute') shapeClass = 'node-attribute'; // Círculo
                     
+                    // Define o estado visual (trancado, liberável, liberado)
                     let stateClass = 'locked';
-                    if (skill.unlocked) stateClass = 'unlocked';
-                    else if (skill.canUnlock && data.attributes && data.attributes.availablePoints > 0) stateClass = 'can-unlock';
+                    if (skill.unlocked) {
+                        stateClass = 'unlocked';
+                    } else if (skill.canUnlock && data.attributes && data.attributes.availablePoints > 0) {
+                        stateClass = 'can-unlock';
+                    }
 
                     btn.className = `skill-node ${shapeClass} ${stateClass}`;
                     btn.title = `${skill.name}\n\n${skill.description}`; // Tooltip com Descrição
-                    btn.onclick = () => this.skillActionCallback('unlock', { skillId: skill.id });
+
+                    // Apenas habilidades liberáveis podem ser clicadas para desbloquear
+                    if (stateClass === 'can-unlock') {
+                        btn.onclick = () => this.skillActionCallback('unlock', { skillId: skill.id });
+                    }
+
+                    // Apenas habilidades ativas/essenciais e já desbloqueadas podem ser arrastadas
+                    if (stateClass === 'unlocked' && (skill.type === 'active' || skill.type === 'essential')) {
+                        btn.draggable = true;
+                        btn.ondragstart = (e) => {
+                            if (e.dataTransfer) {
+                                e.dataTransfer.effectAllowed = 'copyMove';
+                                e.dataTransfer.setData('text/plain', skill.id);
+                            }
+                        };
+                        btn.style.cursor = 'grab';
+                    }
+
                     nodesDiv.appendChild(btn);
                 });
                 tierDiv.appendChild(nodesDiv);

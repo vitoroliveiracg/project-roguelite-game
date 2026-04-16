@@ -81,7 +81,6 @@ export default class GameAdapter {
     this.setupEventListeners();
     
     const canvas = new Canvas(document.body, 0, 0);
-    this.setupResponsiveCanvas(canvas.element);
     
     this.camera = new Camera(canvas, 3);
     
@@ -127,13 +126,7 @@ export default class GameAdapter {
   private update(deltaTime: number): void {
     
     if (this.inputGateway.inputManager.consumeAction('interact')) {
-      const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
-      if (playerState?.interactablePrompt) {
-        const prompt = playerState.interactablePrompt;
-        // Abre a interface visualmente como "Aguardando" e manda um "Oi" invisível para despertar a LLM do NPC
-        this.uiManager.dialogueGui.show(prompt.npcName, "...", prompt.npcId);
-        this.domain.sendDialogue("[Aproximou-se para conversar]", prompt.npcId);
-      }
+      this.uiManager.handleInteract();
     }
 
     if (this.inputGateway.inputManager.consumeAction('toggle_attributes')) {
@@ -224,14 +217,6 @@ export default class GameAdapter {
         this.isPaused = true; // Congela as entidades no fundo
         this.inputGateway.inputManager.setPreventUnload(false); // Desativa o aviso antes de recarregar
         this.uiManager.showGameOver();
-
-        // Fallback garantido: Pressione qualquer tecla ou clique para reiniciar
-        // Atraso de 1.5 segundos para o jogador não pular a tela sem querer se estiver atacando alucinadamente
-        setTimeout(() => {
-          const forceRestart = () => { window.location.href = window.location.pathname; };
-          window.addEventListener('keydown', forceRestart, { once: true });
-          window.addEventListener('mousedown', forceRestart, { once: true });
-        }, 1500);
       }
     });
 
@@ -247,30 +232,14 @@ export default class GameAdapter {
       this.sceneManager.addVisualEffect(payload);
     });
 
-    this.eventManager.on('levelUp', (_payload) => {
-      const playerState = this.domain.getRenderState().renderables.find(r => r.id === 1);
-      if (playerState) {
-        const centerX = playerState.coordinates.x + playerState.size.width / 2;
-        const centerY = playerState.coordinates.y + playerState.size.height / 2;
-        // Envia a cor Azul Mágico para o efeito de Level Up
-        this.eventManager.dispatch('particle', { effect: 'levelUp', x: centerX, y: centerY, color: '#00aaff' });
-      }
+    this.eventManager.on('levelUp', (payload) => {
+      // Envia a cor Azul Mágico para o efeito de Level Up
+      this.eventManager.dispatch('particle', { effect: 'levelUp', x: payload.coordinates.x, y: payload.coordinates.y, color: '#00aaff' });
     });
 
     // Ouvinte oficial do sistema de partículas semântico!
     this.eventManager.on('particle', (payload) => {
-      const orchestrator = this.sceneManager.particleOrchestrator as any;
-      if (orchestrator[payload.effect]) {
-          if (payload.effect === 'slashSparks') {
-              orchestrator.slashSparks(payload.x, payload.y, payload.angle || 0);
-          } else if (payload.effect === 'magicAura') {
-              orchestrator.magicAura(payload.x, payload.y, payload.color);
-          } else {
-              orchestrator[payload.effect](payload.x, payload.y, payload.color);
-          }
-      } else {
-          logger.log('error', `Efeito de partícula desconhecido requisitado: ${payload.effect}`);
-      }
+      this.sceneManager.particleOrchestrator.executeEffect(payload);
     });
   }
 
@@ -285,22 +254,6 @@ export default class GameAdapter {
     this.inputGateway.handleInteractions((screenX, screenY) => this.screenToWorld(screenX, screenY));
   }
 
-  /** Fase de Inicialização: Configura o elemento Canvas para ocupar toda a tela e ser responsivo a redimensionamentos da janela. @private @param canvasElement O elemento canvas a ser estilizado. */
-  private setupResponsiveCanvas(canvasElement: HTMLCanvasElement) {
-    canvasElement.style.position = 'absolute'; // Posiciona o canvas de forma absoluta.
-    canvasElement.style.top = '0';
-    canvasElement.style.left = '0';
-    canvasElement.style.width = '100vw';
-    canvasElement.style.height = '100vh';
-    canvasElement.style.display = 'block';
-    document.body.style.margin = '0';
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('resize', () => { 
-      if (window.innerWidth === 0 || window.innerHeight === 0) return;
-      canvasElement.width = window.innerWidth; 
-      canvasElement.height = window.innerHeight; 
-    }); 
-  }
   /** * Converte as coordenadas de clique da tela (pixels do canvas) para as coordenadas do mundo do jogo. * @param screenX Coordenada X do clique (e.g., event.clientX). * @param screenY Coordenada Y do clique (e.g., event.clientY). * @returns Um objeto com as coordenadas do mundo { worldX, worldY }. */
   private screenToWorld(screenX: number, screenY: number): { x: number, y: number } {
 

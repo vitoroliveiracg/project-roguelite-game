@@ -25,6 +25,8 @@ export default class WindowHudGui {
         const div = document.createElement('div');
         div.innerHTML = html;
         this.container = div.firstElementChild as HTMLElement;
+        // Garante que o HUD da janela tenha prioridade absoluta sobre todas as outras UIs (incluindo a SkillTree que está em 1000)
+        this.container.style.zIndex = '9999';
         document.body.appendChild(this.container);
 
         const appIcon = this.container.querySelector('#titlebar-app-icon') as HTMLImageElement;

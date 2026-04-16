@@ -6,6 +6,7 @@ import Bullet, { type bulletStates } from "./Bullet";
 import type { IEventManager } from "../../../eventDispacher/IGameEvents";
 import type { objectTypeId } from "../../objectType.type";
 import { RegisterSpawner, type SpawnPayload } from "../../SpawnRegistry";
+import type Entity from "../Entity";
 
 @RegisterSpawner('simpleBullet')
 @RegisterSpawner('magicMissile')
@@ -16,6 +17,7 @@ export class SimpleBullet extends Bullet {
     private distanceTraveled: number = 0
     private pierceCount: number = 0;
     private hitTargets: Set<number> = new Set();
+    private target: Entity | null = null;
 
     constructor (
         id: number,
@@ -25,7 +27,8 @@ export class SimpleBullet extends Bullet {
         eventManager: IEventManager,
         state :bulletStates = 'travelling',
         objectId: objectTypeId = 'simpleBullet',
-        size: { width: number, height: number } = { width: 8, height: 8 }
+        size: { width: number, height: number } = { width: 8, height: 8 },
+        target: Entity | null = null
     ){
     super(id, coordinates, size, objectId, eventManager, state);
 
@@ -34,6 +37,7 @@ export class SimpleBullet extends Bullet {
         this.rotation = this.direction.angle()
         this.generateRandomNoiseAccelerator()
         this.pierceCount = attack.attacker.attributes.piercing || 0;
+        this.target = target;
     }
 
     private setHitboxes(size :{ width :number, height :number }, attack :Attack ) :HitBoxCircle[]{
@@ -69,10 +73,28 @@ export class SimpleBullet extends Bullet {
     }
 
     public override move(deltaTime: number): void {
+        // Lógica de Perseguição (Homing) para o Magic Missile
+        if (this.objectId === 'magicMissile' && this.target && this.target.attributes.hp > 0) {
+            const targetCenter = {
+                x: this.target.coordinates.x + this.target.size.width / 2,
+                y: this.target.coordinates.y + this.target.size.height / 2
+            };
+            const selfCenter = {
+                x: this.coordinates.x + this.size.width / 2,
+                y: this.coordinates.y + this.size.height / 2
+            };
+            // Recalcula a direção a cada frame para seguir o alvo
+            this.direction = Vector2D.sub(targetCenter, selfCenter).normalizeMut();
+        } else {
+            // Se o alvo morrer ou não existir, o míssil se torna um projétil reto
+            this.target = null;
+        }
+
         const displacement = this.speed * deltaTime
         this.distanceTraveled += displacement
 
-        if (this.distanceTraveled >= 150) super.destroy()
+        const maxDistance = this.objectId === 'magicMissile' ? 400 : 150;
+        if (this.distanceTraveled >= maxDistance) super.destroy()
 
         // Define a direção e magnitude da velocidade, mas sem o deltaTime.
         this.velocity = this.direction.clone()
@@ -108,7 +130,7 @@ export class SimpleBullet extends Bullet {
         this.direction = normalizedDirection.clone().addMut(noiseOffset).normalizeMut(); 
     }
 
-    public static createSpawn(id: number, payload: SpawnPayload, eventManager: IEventManager): SimpleBullet {
+    public static createSpawn(id: number, payload: any, eventManager: IEventManager): SimpleBullet {
         let size = { width: 8, height: 8 };
         if (payload.type === 'scytheProjectile') size = { width: 24, height: 24 };
         if (payload.type === 'magicMissile') size = { width: 12, height: 12 };
@@ -120,6 +142,19 @@ export class SimpleBullet extends Bullet {
             x: payload.coordinates.x - size.width / 2,
             y: payload.coordinates.y - size.height / 2
         };
-        return new SimpleBullet(id, centeredCoordinates, payload.direction!, payload.attack!, eventManager, 'travelling', payload.type, size);
+
+        let initialDirection: Vector2D;
+        // Se a magia tem um alvo, calcula a direção inicial, senão, usa a direção do payload (tiro reto)
+        if (payload.target) {
+            const targetCenter = {
+                x: payload.target.coordinates.x + payload.target.size.width / 2,
+                y: payload.target.coordinates.y + payload.target.size.height / 2
+            };
+            initialDirection = Vector2D.sub(targetCenter, payload.coordinates).normalizeMut();
+        } else {
+            initialDirection = payload.direction!;
+        }
+
+        return new SimpleBullet(id, centeredCoordinates, initialDirection, payload.attack!, eventManager, 'travelling', payload.type, size, payload.target || null);
     }
 }

@@ -26,12 +26,15 @@ export default class Pescador extends Class {
     private readonly hookDurationSeconds: number = 0.7;
     private lastPetTime: number = 0;
     private readonly petCooldown: number = 10000; // 10s cooldown
+    private lastLeviataTime: number = 0;
+    private readonly leviataCooldown: number = 8000; // 8s de recarga
 
     constructor(xpTable: IXPTable, player: Player, eventManager: IEventManager) {
         super('Pescador', xpTable, player, eventManager);
         // Exemplo de uma passiva inicial temática
         this.skillsByLevel.set(2, new Skill('pesc_t1_fisgada', 'Fisgada Perfeita', 'O seu puxão se torna mais rápido e pesado.', 'passive', 1));
         this.skillsByLevel.set(4, new Skill('pesc_t2_net', 'Rede Pesada', 'Joga uma rede mágica que enraíza inimigos em área.', 'active', 2, 'pesc_t1_fisgada'));
+        this.skillsByLevel.set(8, new Skill('pesc_t3_leviata', 'Fúria do Leviatã', 'Invoca um Leviatã das profundezas para esmagar uma área.', 'active', 3, 'pesc_t2_net'));
         this.skillsByLevel.set(16, new Skill('pesc_t4_fishpet', 'Peixinho de Combate', 'Invoca um peixinho lutador imortal da dimensão aquática.', 'essential', 4));
 
         this.eventManager.on('hookDestroyed', (payload) => {
@@ -263,8 +266,27 @@ export default class Pescador extends Class {
         this.eventManager.dispatch('releaseFishingHook', { playerId: this.player.id });
     }
 
-    public executeSkill(skillId: string, _mouseCoordinates: {x: number, y: number}): void {
+    public executeSkill(skillId: string, mouseCoordinates: {x: number, y: number}): void {
         this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Skill ${skillId} executada no Loadout!`, params: [] });
+
+        if (skillId === 'pesc_t3_leviata') {
+            const now = Date.now();
+            if (now - this.lastLeviataTime < this.leviataCooldown) {
+                this.eventManager.dispatch('log', { channel: 'classes:pescador', message: `[Pescador] Leviatã em recarga!`, params: [] });
+                return;
+            }
+            this.lastLeviataTime = now;
+
+            // Leviatã dá dano mágico maciço em área (a hitbox já é 128x128 no Leviata.ts)
+            const damage = 150 + Math.floor(this.player.attributes.wisdom * 5);
+            const leviataAttack = new Attack(this.player, damage, 'magical', []);
+
+            this.eventManager.dispatch('spawn', {
+                type: 'spawn-leviatã' as any,
+                coordinates: mouseCoordinates,
+                attack: leviataAttack
+            });
+        }
     }
 
     //? ----------- Skills -----------

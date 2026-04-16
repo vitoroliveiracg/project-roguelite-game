@@ -44,6 +44,33 @@ export default class ParticleOrchestrator implements IRenderable {
     // BIBLIOTECA DE EFEITOS VISUAIS (VFX) SEMÂNTICOS
     // ============================================================================
 
+    /**
+     * Roteador central de efeitos de partículas. 
+     * Encapsula o conhecimento de quais efeitos requerem parâmetros específicos (como angle ou color),
+     * blindando o Adapter de saber detalhes de implementação.
+     */
+    public executeEffect(payload: { effect: string, x: number, y: number, color?: string, angle?: number }): void {
+        switch (payload.effect) {
+            case 'slashSparks':
+                this.slashSparks(payload.x, payload.y, payload.angle || 0);
+                break;
+            case 'magicAura':
+                this.magicAura(payload.x, payload.y, payload.color);
+                break;
+            case 'levelUp':
+                this.levelUp(payload.x, payload.y, payload.color);
+                break;
+            default:
+                const effectFn = (this as any)[payload.effect];
+                if (typeof effectFn === 'function') {
+                    effectFn.call(this, payload.x, payload.y, payload.color);
+                } else {
+                    console.warn(`[ParticleOrchestrator] Efeito de partícula desconhecido requisitado: ${payload.effect}`);
+                }
+                break;
+        }
+    }
+
     /** Sangue espirrando e caindo rapidamente com gravidade. Ideal para dano físico. */
     public bloodSplatter(x: number, y: number): void {
         this.particles.emit({
@@ -276,6 +303,108 @@ export default class ParticleOrchestrator implements IRenderable {
             friction: 0.92,
             fade: true,
             isCircle: false // Entidade despedaçada em cacos irregulares!
+        });
+    }
+
+    /** Explosão rápida, brilhante e caótica. Ideal para o elemento Thunder (Trovão). */
+    public thunderStrike(x: number, y: number): void {
+        this.particles.emit({
+            x, y,
+            count: 35,
+            colors: ['#FFFF00', '#FFFFFF', '#FFD700', '#E0FFFF'], // Elétrico, branco e dourado
+            speedMin: 200, speedMax: 800, // Altíssima velocidade inicial
+            sizeMin: 1, sizeMax: 4,
+            lifeMin: 0.1, lifeMax: 0.3, // Curta duração (pisca como um raio)
+            angle: 0, spread: Math.PI * 2,
+            gravity: 0,
+            friction: 0.75, // Frenagem brusca para imitar faíscas elétricas quebrando
+            fade: true,
+            isCircle: false // Formas pontiagudas e ásperas
+        });
+    }
+
+    /** Brilho sagrado que se expande. Ideal para o elemento Light (Luz). */
+    public lightFlash(x: number, y: number): void {
+        this.particles.emit({
+            x, y,
+            count: 45,
+            colors: ['#FFFFFF', '#FFFACD', '#FFFFE0', '#FAFAD2'], // Branco puro e amarelos bem pálidos
+            speedMin: 50, speedMax: 300,
+            sizeMin: 3, sizeMax: 8,
+            lifeMin: 0.3, lifeMax: 0.7,
+            angle: -Math.PI / 2, spread: Math.PI * 2,
+            gravity: -10, // Flutua levemente para cima
+            friction: 0.88,
+            fade: true,
+            isCircle: true // Esferas perfeitas de luz divinas
+        });
+    }
+
+    /** Pulso de energia mística. Ideal para o elemento Magic (Magia Arcana). */
+    public magicPulse(x: number, y: number): void {
+        this.particles.emit({
+            x, y,
+            count: 50,
+            colors: ['#8A2BE2', '#9400D3', '#DA70D6', '#4B0082'], // Tons roxos, violetas e arcanos
+            speedMin: 20, speedMax: 200,
+            sizeMin: 2, sizeMax: 7,
+            lifeMin: 0.5, lifeMax: 1.2, // Fica bastante tempo na tela pulsando
+            angle: 0, spread: Math.PI * 2,
+            gravity: 0, // Gravidade zero, energia pura
+            friction: 0.94, // Espalha e para devagar
+            fade: true,
+            isCircle: true
+        });
+    }
+
+    /** Explosão de folhas e terra. Ideal para o elemento Nature (Natureza). */
+    public natureBurst(x: number, y: number): void {
+        this.particles.emit({
+            x, y,
+            count: 40,
+            colors: ['#228B22', '#32CD32', '#00FF00', '#8B4513'], // Folhas verdes e pedaços de terra marrom
+            speedMin: 40, speedMax: 250,
+            sizeMin: 3, sizeMax: 7,
+            lifeMin: 0.5, lifeMax: 1.2,
+            angle: -Math.PI / 2, spread: Math.PI * 1.5, // Estoura pra cima igual terra/mato sendo chutado
+            gravity: 300, // Gravidade puxa de volta pra terra
+            friction: 0.95,
+            fade: true,
+            isCircle: false // Formas quadradas para simular folhas/terra picada
+        });
+    }
+
+    /** Explosão pesada de pedregulhos e terra. Ideal para o elemento Ground (Terra). */
+    public rockShatter(x: number, y: number): void {
+        this.particles.emit({
+            x, y,
+            count: 45,
+            colors: ['#4A4A4A', '#696969', '#8B4513', '#A0522D', '#2F4F4F'], // Cinzas de pedra e marrons de terra
+            speedMin: 100, speedMax: 400, // Estouro forte inicial
+            sizeMin: 4, sizeMax: 10, // Pedaços graúdos
+            lifeMin: 0.5, lifeMax: 1.2,
+            angle: -Math.PI / 2, spread: Math.PI * 1.5, // Maior parte dos detritos sobe antes de cair
+            gravity: 800, // Gravidade extrema, pedras são muito pesadas
+            friction: 0.95,
+            fade: true,
+            isCircle: false // Quadrados afiados para simular pedras irregulares
+        });
+    }
+
+    /** Pulso de energia sombria e corrompida que consome a luz. Ideal para o elemento Dark (Trevas). */
+    public darkPulse(x: number, y: number): void {
+        this.particles.emit({
+            x, y,
+            count: 60,
+            colors: ['#1A0033', '#2E0854', '#4B0082', '#000000', '#483D8B'], // Tons de roxo abissal e preto
+            speedMin: 10, speedMax: 150, // Expansão insidiosa
+            sizeMin: 3, sizeMax: 9,
+            lifeMin: 0.8, lifeMax: 1.8, // Permanece como uma névoa densa
+            angle: 0, spread: Math.PI * 2,
+            gravity: -15, // Flutua levemente como um miasma
+            friction: 0.88, // Freia rapidamente e fica pairando
+            fade: true,
+            isCircle: true // Bordas suaves para simular energia escura e vazios
         });
     }
 

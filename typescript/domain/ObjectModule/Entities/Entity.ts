@@ -31,6 +31,7 @@ export default abstract class Entity extends ObjectElement {
     public attributes :Attributes,
     eventManager: IEventManager,
     state :string = "",
+    public elementalType?: DamageType,
     protected accelerator:Vector2D = new Vector2D(0,0),
     protected hurtLaunchFactor:number = 10
   ){ 
@@ -77,7 +78,7 @@ export default abstract class Entity extends ObjectElement {
 
     // VULNERABILIDADES ELEMENTAIS (A Sinergia)
     if (this.activeStatuses.has('wet')) {
-        if (damageInfo.damageType === 'thunder') finalDamage *= 1.5; // Água conduz eletricidade
+        if (damageInfo.damageType === 'dark') finalDamage *= 1.5; // Água conduz eletricidade (Trovão virou Trevas)
         if (damageInfo.damageType === 'fire') finalDamage *= 0.5;    // Água apaga fogo
     }
     // DEBUFF DE VENENO
@@ -85,11 +86,33 @@ export default abstract class Entity extends ObjectElement {
         finalDamage *= 1.15; // 15% a mais de dano recebido de todas as fontes
     }
     // DANO SAGRADO VS MORTOS-VIVOS
-    if (damageInfo.damageType === 'light' && ['skeleton', 'zombie', 'vampire', 'lich', 'demon', 'bdiAgent'].includes(this.objectId)) {
+    if (damageInfo.damageType === 'light' && ['skeleton', 'zombie', 'vampire', 'lich', 'demon', 'bdiAgent', 'shadowmob'].includes(this.objectId)) {
         finalDamage *= 2.0;
     }
 
-    if (damageInfo.damageType !== 'true') {
+    // FRAQUEZAS E RESISTÊNCIAS INTRÍNSECAS DA ENTIDADE
+    if (this.elementalType) {
+        const weaknesses: { [key in DamageType]?: DamageType } = {
+            'ground': 'fire', // Fogo > Terra
+            'fire': 'water',  // Água > Fogo
+            'water': 'dark'   // Trevas > Água
+        };
+        const resistances: { [key in DamageType]?: DamageType } = {
+            'fire': 'ground', // Terra resiste a Fogo
+            'water': 'fire',  // Fogo resiste a Água
+            'dark': 'light'   // Luz resiste a Trevas
+        };
+
+        if (weaknesses[this.elementalType] === damageInfo.damageType) {
+            finalDamage *= 1.5; // 50% a mais de dano
+        } else if (resistances[this.elementalType] === damageInfo.damageType) {
+            finalDamage *= 0.5; // 50% de resistência
+        } else if (this.elementalType === damageInfo.damageType) {
+            finalDamage *= 0.5; // Dano do mesmo tipo também é resistido
+        }
+    }
+
+    if (damageInfo.damageType !== 'true' && damageInfo.damageType !== 'dark') {
       finalDamage = Math.max(1, damageInfo.totalDamage - this.attributes.defence);
     }
 
@@ -143,13 +166,24 @@ export default abstract class Entity extends ObjectElement {
     this.accelerator.resetMut();
   }
 
+  public applyForce(force: Vector2D): void {
+    this.accelerator.addMut(force);
+  }
+
 
   public move(deltaTime: number):void {
-    if (this.activeStatuses.has('stun') || this.activeStatuses.has('paralyze')) return; // Controle de Grupo! (Não sai do lugar)
-    //? Calcula o deslocamento para este frame (velocidade * tempo) e o aplica.
-    this.velocity.multiplyMut(deltaTime)
+    if (this.activeStatuses.has('stun') || this.activeStatuses.has('paralyze')) {
+        // Controle de Grupo! A entidade perde a vontade própria de se mover
+        this.velocity.resetMut();
+    }
+
+    //? Calcula o deslocamento base para este frame (velocidade * tempo)
+    this.velocity.multiplyMut(deltaTime);
     
-    this.updatePosition()
+    // A física reage: Adiciona Forças Externas (Knockback/Pull) como deslocamento absoluto
+    this.velocity.addMut(this.accelerator);
+    
+    this.updatePosition();
   }
 
   protected disperseFrom(otherElement: ObjectElement) {

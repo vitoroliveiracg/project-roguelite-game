@@ -12,11 +12,30 @@ export default class Canvas {
     this.element.width = width;
     this.element.height = height;
 
+    this.setupResponsiveStyles();
+
     const context = this.element.getContext('2d');
     if (!context) throw new Error('Não foi possível obter o contexto 2D do canvas.');
     this.ctx = context;
 
     container.appendChild(this.element);
+  }
+
+  /** Configura o elemento Canvas para ocupar toda a tela e ser responsivo a redimensionamentos da janela. */
+  private setupResponsiveStyles(): void {
+    this.element.style.position = 'absolute';
+    this.element.style.top = '0';
+    this.element.style.left = '0';
+    this.element.style.width = '100vw';
+    this.element.style.height = '100vh';
+    this.element.style.display = 'block';
+    document.body.style.margin = '0';
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('resize', () => { 
+      if (window.innerWidth === 0 || window.innerHeight === 0) return;
+      this.element.width = window.innerWidth; 
+      this.element.height = window.innerHeight; 
+    }); 
   }
 
   /** Fase de Desenho: Limpa toda a área do canvas, preparando-o para o desenho do próximo frame. É tipicamente a primeira operação em um ciclo de desenho. */

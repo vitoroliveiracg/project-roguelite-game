@@ -1,16 +1,15 @@
 #skill-tree-container {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 46px; /* Desce exatamente o tamanho do WindowHud do Tauri */
+    left: 0;
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 46px); /* Subtrai os 46px para não causar scroll vertical */
     background-color: rgba(15, 12, 10, 0.98);
     border: none;
     border-radius: 0;
     color: white;
     font-family: 'Minecraft', 'Courier New', Courier, monospace;
-    z-index: 250;
+    z-index: 300; /* Elevado para garantir que fique sobre o menu de personagem */
     display: none;
     flex-direction: column;
     box-shadow: inset 0 0 100px rgba(0,0,0,1);

@@ -38,7 +38,7 @@ export class RenderableFactory {
         const config = this.spriteConfigs.get(configKey);
         const image = this.imageCache.get(config?.imageSrc || '');
         
-        return new GameObjectElement(params.initialState, config, image as HTMLImageElement);
+        return new GameObjectElement(params.initialState, config, image);
       };
       this.creationStrategies.set(state.entityTypeId, creationStrategy); // Salva na memória para não recriar a função todo frame
     }

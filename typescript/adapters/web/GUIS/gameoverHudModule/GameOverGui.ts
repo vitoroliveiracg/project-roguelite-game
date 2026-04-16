@@ -29,6 +29,14 @@ export default class GameOverGui {
 
     public show(): void {
         this.container.style.display = 'flex';
+
+        // Fallback garantido: Pressione qualquer tecla ou clique para reiniciar
+        // Atraso de 1.5 segundos para o jogador não pular a tela sem querer se estiver atacando alucinadamente
+        setTimeout(() => {
+            const forceRestart = () => { this.restartCallback(); };
+            window.addEventListener('keydown', forceRestart, { once: true });
+            window.addEventListener('mousedown', forceRestart, { once: true });
+        }, 1500);
     }
 
     public hide(): void {

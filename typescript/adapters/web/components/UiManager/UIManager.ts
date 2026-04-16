@@ -19,6 +19,7 @@ export default class UIManager {
   public dialogueGui: DialogueGui;
   private windowHudGui = new WindowHudGui();
   private promptEl: HTMLElement;
+  private currentPrompt: { npcId: number; text: string; npcName: string } | null = null;
 
   constructor(
     togglePauseCallback: () => void, 
@@ -28,7 +29,7 @@ export default class UIManager {
     allocateAttributeCallback: (attribute: string) => void,
     restartCallback: () => void,
     deleteItemCallback: (index: number) => void = () => {},
-    playerReplyCallback: (message: string, npcId?: number) => void = () => {}
+    private playerReplyCallback: (message: string, npcId?: number) => void = () => {}
   ) {
     this.characterMenuGui = new CharacterMenuGui(togglePauseCallback, equipItemCallback, unequipItemCallback, allocateAttributeCallback, deleteItemCallback);
     this.skillTreeGui = new SkillTreeGui(togglePauseCallback, skillActionCallback);
@@ -75,6 +76,14 @@ export default class UIManager {
     this.skillTreeGui.toggle();
   }
 
+  public handleInteract(): void {
+    if (this.currentPrompt && !this.dialogueGui.isOpen) {
+      // Abre a interface visualmente como "Aguardando" e manda um "Oi" invisível para despertar a LLM do NPC
+      this.dialogueGui.show(this.currentPrompt.npcName, "...", this.currentPrompt.npcId);
+      this.playerReplyCallback("[Aproximou-se para conversar]", this.currentPrompt.npcId);
+    }
+  }
+
   /** Atualiza as GUIs com os dados mais recentes. */
   public update(playerState: EntityRenderableState | undefined, playerScreenPos?: {x: number, y: number}, mousePos?: {x: number, y: number}): void {
     if (playerState) {
@@ -86,11 +95,13 @@ export default class UIManager {
 
       // UI de prompt se o Domínio acusar proximidade com um NPC
       if (playerState.interactablePrompt && playerScreenPos && !this.dialogueGui.isOpen) {
+        this.currentPrompt = playerState.interactablePrompt;
         this.promptEl.style.display = 'block';
         this.promptEl.innerText = playerState.interactablePrompt.text;
         this.promptEl.style.left = `${playerScreenPos.x}px`;
         this.promptEl.style.top = `${playerScreenPos.y - 40}px`; // Exibe exatamente acima da cabeça do personagem
       } else {
+        this.currentPrompt = null;
         this.promptEl.style.display = 'none';
       }
     }

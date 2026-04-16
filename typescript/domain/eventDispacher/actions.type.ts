@@ -20,4 +20,7 @@ export type action =
   | 'spell_f'
   | 'castSpell'
   | 'interact'
-;
+  | 'slot_1'
+  | 'slot_2'
+  | 'slot_3'
+  | 'slot_4';

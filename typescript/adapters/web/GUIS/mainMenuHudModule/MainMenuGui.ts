@@ -264,18 +264,29 @@ export default class MainMenuGui {
         }, 2500);
 
         if (sonharBtn && cloudTransition) {
+
+            const hideLoadingScreen = () => {
+                logger.log('init', 'Sinal de IA Pronta recebido ou já estava pronta. Escondendo tela de loading.');
+                clearInterval(phraseInterval);
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => loadingScreen.style.display = 'none', 800);
+                }
+            };
+
+
             if ((window as any).__TAURI_INTERNALS__) {
+                if (sessionStorage.getItem('ollama_ready') === 'true') {
+                    hideLoadingScreen();
+                }
+                
                 listen<string>('loading-progress', (event) => {
                     if (techLog) techLog.textContent = event.payload;
                 });
 
                 listen('ollama-ready', () => {
-                    logger.log('init', 'Sinal de IA Pronta recebido. Escondendo tela de loading.');
-                    clearInterval(phraseInterval);
-                    if (loadingScreen) {
-                        loadingScreen.style.opacity = '0';
-                        setTimeout(() => loadingScreen.style.display = 'none', 800);
-                    }
+                    sessionStorage.setItem('ollama_ready', 'true');
+                    hideLoadingScreen();
                 });
             } else {
                 // Fallback: se estiver rodando no navegador normal, tira o loading de cara
@@ -284,6 +295,8 @@ export default class MainMenuGui {
             }
 
             sonharBtn.addEventListener('click', () => {
+                sonharBtn.disabled = true; // Previne o duplo clique que forçava a geração dupla de itens do mundo!
+                sonharBtn.style.pointerEvents = 'none';
                 cloudTransition.classList.add('active');
                 setTimeout(() => {
                     this.container.style.display = 'none';

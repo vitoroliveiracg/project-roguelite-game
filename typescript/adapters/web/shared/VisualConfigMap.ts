@@ -61,8 +61,8 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
     'slime': {
         category: 'entity',
         animations: {
-            'waiting': { imageSrc: new URL('../assets/entities/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } },
-            'walking': { imageSrc: new URL('../assets/entities/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }
+            'waiting': { imageSrc: new URL('../assets/entities/enemies/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } },
+            'walking': { imageSrc: new URL('../assets/entities/enemies/slime-green-walk.png', import.meta.url).href, frameCount: 8, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }
         }
     },
     'circle': {
@@ -72,9 +72,29 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
     'shadowMob': {
         category: 'entity',
         animations: {
-            'idle': { imageSrc: new URL('../assets/entities/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }, // Reciclando o slime temporariamente
-            'walking': { imageSrc: new URL('../assets/entities/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } },
-            'dead': { imageSrc: new URL('../assets/entities/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }
+            'idle': { imageSrc: new URL('../assets/entities/enemies/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }, // Reciclando o slime temporariamente
+            'walking': { imageSrc: new URL('../assets/entities/enemies/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } },
+            'dead': { imageSrc: new URL('../assets/entities/enemies/shadowMob-waiting.png', import.meta.url).href, frameCount: 9, animationSpeed: 4, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }
+        }
+    },
+    'fishPet': {
+        category: 'entity',
+        animations: {
+            // Usando o slime como placeholder enquanto você não desenha o peixinho!
+            'idle': { imageSrc: new URL('../assets/entities/pet-fish.png', import.meta.url).href, frameCount: 3, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } },
+            'walking': { imageSrc: new URL('../assets/entities/pet-fish.png', import.meta.url).href, frameCount: 3, animationSpeed: 1, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }
+        }
+    },
+    'spawn-leviatã' :{
+        category: 'entity',
+        animations: {
+            'spawn': { 
+                imageSrc: new URL('../assets/entities/spawn-leviata.png', import.meta.url).href, 
+                frameCount: 19, animationSpeed: 3,
+                frameWidth: 128, frameHeight: 128,
+                atlasOffset: { x: 0, y: 0 },
+                spriteSize: { width: 128, height: 128 }
+            }
         }
     },
 
@@ -163,10 +183,10 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
     'simple-ring': {
         category: 'equipment', iconId: 16,
         uiIconUrl: new URL('../assets/itens/simple-ring.png', import.meta.url).href,
-        droppedConfig: { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 } },
+        droppedConfig: { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } },
         animations: {
-            'idle': { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 16, height: 16 }, renderOffset: [{ x: 0, y: 0 }, { x: 0, y: 0 }] },
-            'walking': { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 16, height: 16 }, renderOffset: [{ x: 0, y: 0 }, { x: 0, y: 0 }] },
+            'idle': { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 20, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 }, renderOffset: [{ x: 0, y: 0 }, { x: 0, y: 0 }] },
+            'walking': { imageSrc: new URL('../assets/itens/simple-ring.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 0 }, spriteSize: { width: 32, height: 32 }, renderOffset: [{ x: 0, y: 0 }, { x: 0, y: 0 }] },
         }
     },
     'staff': {
@@ -263,13 +283,13 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
     // ================== PROJÉTEIS & VFX ==================
     'simpleBullet': {
         category: 'projectile',
-        animations: { 'travelling': { imageSrc: new URL('../assets/entities/simple-bullet.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 } } }
+        animations: { 'travelling': { imageSrc: new URL('../assets/entities/vfx/simple-bullet.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 } } }
     },
     'fishingHook': {
         category: 'projectile',
         animations: { 
             'travelling': { 
-                imageSrc: new URL('../assets/entities/fishing-hook.png', import.meta.url).href, 
+                imageSrc: new URL('../assets/entities/vfx/fishing-hook.png', import.meta.url).href, 
                 frameCount: 1, animationSpeed: 10, 
                 frameWidth: 16, frameHeight: 16, 
                 atlasOffset: { x: 0, y: 32 }, 
@@ -279,17 +299,13 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
     },
     'magicMissile': {
         category: 'projectile',
-        animations: { 'travelling': { imageSrc: new URL('../assets/entities/simple-bullet.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 16, frameHeight: 16, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 16, height: 16 } } }
-    },
-    'scytheProjectile': {
-        category: 'projectile',
-        animations: { 'travelling': { imageSrc: new URL('../assets/itens/scythe-design-1.png', import.meta.url).href, frameCount: 1, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } } }
+        animations: { 'travelling': { imageSrc: new URL('../assets/entities/vfx/magic-missil.png', import.meta.url).href, frameCount: 3, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 32, height: 32 } } }
     },
     'fireball': {
         category: 'projectile',
         animations: { 
             'travelling': { 
-                imageSrc: new URL('../assets/entities/firebola.png', import.meta.url).href, 
+                imageSrc: new URL('../assets/entities/vfx/firebola.png', import.meta.url).href, 
                 frameCount: 1, animationSpeed: 10, 
                 frameWidth: 16, frameHeight: 16, 
                 atlasOffset: { x: 0, y: 32 }, 
@@ -301,7 +317,7 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
         category: 'projectile',
         animations: { 
             'travelling': { 
-                imageSrc: new URL('../assets/entities/projectile.png', import.meta.url).href, 
+                imageSrc: new URL('../assets/entities/vfx/projectile.png', import.meta.url).href, 
                 frameCount: 1, animationSpeed: 1, 
                 frameWidth: 16, frameHeight: 16, 
                 spriteSize: { width: 10, height: 10 }
@@ -310,13 +326,13 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
     },
     'explosion': {
         category: 'vfx',
-        animations: { 'active': { imageSrc: new URL('../assets/entities/explosion.png', import.meta.url).href, frameCount: 16, animationSpeed: 1, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 128, height: 128 } } }
+        animations: { 'active': { imageSrc: new URL('../assets/entities/vfx/explosion.png', import.meta.url).href, frameCount: 16, animationSpeed: 1, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 0, y: 32 }, spriteSize: { width: 128, height: 128 } } }
     },
     'slash' :{
         category: 'vfx',
         animations: {
             'active': { 
-                imageSrc: new URL('../assets/entities/sword-atack-spritesheet.png', import.meta.url).href, 
+                imageSrc: new URL('../assets/entities/vfx/sword-atack-spritesheet.png', import.meta.url).href, 
                 frameCount: 6, animationSpeed: 3,
                 frameWidth: 64, frameHeight: 64,
                 atlasOffset: { x: 0, y: 0 },
@@ -324,19 +340,11 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
             }
         }
     },
-    'fishPet': {
-        category: 'entity',
-        animations: {
-            // Usando o slime como placeholder enquanto você não desenha o peixinho!
-            'idle': { imageSrc: new URL('../assets/entities/pet-fish.png', import.meta.url).href, frameCount: 3, animationSpeed: 10, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } },
-            'walking': { imageSrc: new URL('../assets/entities/pet-fish.png', import.meta.url).href, frameCount: 3, animationSpeed: 1, frameWidth: 32, frameHeight: 32, atlasOffset: { x: 64, y: 0 }, spriteSize: { width: 32, height: 32 } }
-        }
-    },
     'scythe-slash' :{
         category: 'vfx',
         animations: {
             'active': { 
-                imageSrc: new URL('../assets/entities/sword-atack-spritesheet.png', import.meta.url).href, 
+                imageSrc: new URL('../assets/entities/vfx/sword-atack-spritesheet.png', import.meta.url).href, 
                 frameCount: 6, animationSpeed: 3,
                 frameWidth: 64, frameHeight: 64,
                 atlasOffset: { x: 0, y: 0 },
@@ -344,5 +352,30 @@ export const VisualConfigMap: Record<string, AnyVisualConfig> = {
                 anchor: 'bottom-left'
             }
         }
-    }
+    },
+        'knockback-vfx': {
+        category: 'vfx',
+        animations: {
+            'active': { 
+                imageSrc: new URL('../assets/entities/vfx/knockback-vfx.png', import.meta.url).href, 
+                frameCount: 15, animationSpeed: 3,
+                frameWidth: 32, frameHeight: 32,
+                atlasOffset: { x: 0, y: 0 },
+                spriteSize: { width: 32, height: 32 }
+            }
+        }
+    },
+    'pull-force': {
+        category: 'vfx',
+        animations: {
+            'active': { 
+                imageSrc: new URL('../assets/entities/vfx/pull-force.png', import.meta.url).href, 
+                frameCount: 5, animationSpeed: 3,
+                frameWidth: 64, frameHeight: 128,
+                atlasOffset: { x: 0, y: 0 },
+                spriteSize: { width: 64, height: 128 }
+            }
+        }
+    },
+
 };

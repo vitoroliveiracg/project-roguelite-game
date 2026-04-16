@@ -52,13 +52,13 @@ export default class GameObjectElement implements IRenderable {
   public size: { width: number; height: number };
   public rotation:number
 
-  protected image: HTMLImageElement;
+  protected image: HTMLImageElement | undefined;
   protected config: SpriteConfig | undefined; // Explicitamente SpriteConfig | undefined
 
   protected currentFrame: number = 0;
   protected frameCounter: number = 0;
 
-  constructor(initialState: EntityRenderableState, initialConfig: SpriteConfig | undefined, initialImage: HTMLImageElement) {
+  constructor(initialState: EntityRenderableState, initialConfig: SpriteConfig | undefined, initialImage: HTMLImageElement | undefined) {
     this.id = initialState.id;
     this.coordinates = { ...initialState.coordinates }; // Clonar para evitar mutação externa
     this.size = initialState.size;
@@ -109,7 +109,7 @@ export default class GameObjectElement implements IRenderable {
 
   public draw(ctx: CanvasRenderingContext2D): void {
     // Se não for um sprite configurado, desenha um quadrado preto como fallback.
-    if (!this.config) {
+    if (!this.config || !this.image) {
       logger.log('render', `Rendering fallback black box for ID: ${this.id}`);
       ctx.fillStyle = "black";
       ctx.fillRect(this.coordinates.x, this.coordinates.y, this.size.width, this.size.height);

@@ -31,6 +31,7 @@ export default class Attributes {
   private _bonusTenacity: number = 0;
   private _bonusVigor: number = 0;
   private _bonusDodge: number = 0;
+  private _bonusDefence: number = 0;
   private _bonusInsight: number = 0;
   private _bonusLifesteal: number = 0;
   private _bonusArea: number = 0;
@@ -141,8 +142,8 @@ export default class Attributes {
   /** Maximum Mana Points. Based on the best between Inteligence, Wisdom, and Charisma. */
   public get maxMana() :number {  return this.getBestAttribute(this.intelligence, this.wisdom, this.charisma) * 10 }
   
-  /** |  (this.constitution / 10 ) + (this.dexterity / 10)  | @returns returns damage cap*/
-  public get defence(){ return (this.constitution / 10 ) + (this.dexterity / 10) }
+  /** |  (this.constitution / 10 ) + (this.dexterity / 10) + bônus  | @returns returns damage cap*/
+  public get defence(){ return (this.constitution / 10 ) + (this.dexterity / 10) + this._bonusDefence; }
 
   /** The current level of the entity. */
   public get level(): number { return this._level; }
@@ -224,6 +225,7 @@ export default class Attributes {
   public set tenacity(value: number) { this._bonusTenacity += value; }
   public set vigor(value: number) { this._bonusVigor += value; }
   public set dodge(value: number) { this._bonusDodge += value; }
+  public set defence(value: number) { this._bonusDefence += value; }
   public set insight(value: number) { this._bonusInsight += value; }
   public set lifesteal(value: number) { this._bonusLifesteal += value; }
   public set bonusArea(value: number) { this._bonusArea += value; }

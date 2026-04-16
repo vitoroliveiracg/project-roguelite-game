@@ -316,7 +316,9 @@ export default class Player extends Entity {
   }
 
   private processLevelUp(level: number): void {
-      this.eventManager.dispatch('levelUp', { newLevel: level });
+      const cx = this.coordinates.x + this.size.width / 2;
+      const cy = this.coordinates.y + this.size.height / 2;
+      this.eventManager.dispatch('levelUp', { newLevel: level, coordinates: { x: cx, y: cy } });
       this.eventManager.dispatch('log', { channel: 'domain', message: `Player leveled up to ${level}!`, params: [] });
 
       const activeClass = this._classes.find(c => c.name === this._activeClass);
@@ -537,7 +539,18 @@ export default class Player extends Entity {
 
   public executeActiveSkill(skillId: string, mouseCoordinates: {x: number, y: number}): void {
       const activeClassInstance = this._classes.find(c => c.name === this._activeClass);
-      if (activeClassInstance && typeof (activeClassInstance as any).executeSkill === 'function') {
+      
+      if (!activeClassInstance) return;
+
+      // Restrição de Multiclasse: Só executa a skill se ela pertencer à classe do item da mão!
+      const isFromActiveClass = activeClassInstance.allSkills.some(s => s.id === skillId);
+
+      if (!isFromActiveClass) {
+          this.eventManager.dispatch('log', { channel: 'error', message: `Multiclasse: A habilidade '${skillId}' não pertence à classe ativa (${this._activeClass}). Troque de arma para usá-la!`, params: [] });
+          return;
+      }
+
+      if (typeof (activeClassInstance as any).executeSkill === 'function') {
           (activeClassInstance as any).executeSkill(skillId, mouseCoordinates);
       } else {
           this.eventManager.dispatch('log', { channel: 'error', message: `Skill ${skillId} falhou: A classe ${this._activeClass} não implementa executeSkill.`, params: [] });

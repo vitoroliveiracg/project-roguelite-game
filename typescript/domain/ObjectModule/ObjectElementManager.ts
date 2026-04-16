@@ -109,7 +109,6 @@ export default class ObjectElementManager {
 
   /** * Executa o método `update` de todas as entidades gerenciadas. * @param deltaTime O tempo decorrido desde o último frame. */
   public updateAll(deltaTime: number, player: Player): void {
-    const allElements = [player, ...this.elements.values()];
 
     // Resolução Atrasada: Aplica as colisões do último frame processado, sem travar esse!
     for (let i = 0; i < this.pendingCollisions.length; i += 2) {
@@ -168,7 +167,8 @@ export default class ObjectElementManager {
     // O jogador também precisa ser verificado.
     this.clampToWorldBounds(player);
 
-    this.checkCollisions(allElements);
+    // Monta o array limpo, excluindo entidades que foram destruídas (ex: DroppedItems coletados) na resolução de colisão acima
+    this.checkCollisions([player, ...this.elements.values()]);
   }
   /** * Cria e adiciona uma nova entidade ao gerenciador usando uma função de fábrica. * Este método abstrai a criação de qualquer tipo de `ObjectElement`. * @param factoryFn Uma função que recebe um ID e retorna uma nova instância de `ObjectElement` (ou uma subclasse como `Enemy`, `Projectile`, etc.). * @returns A instância da entidade criada. * @template T O tipo específico da entidade a ser criada, que deve estender `ObjectElement`. */
   public spawn<T extends ObjectElement>(factoryFn: (id: number) => T): T {
