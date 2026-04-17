@@ -7,7 +7,9 @@
     "dev": "vite",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +18,9 @@
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/cli": "^2.0.0",
     "@webgpu/types": "^0.1.66",
+    "jsdom": "^29.0.2",
     "typescript": "^5.9.3",
-    "vite": "^7.1.12"
+    "vite": "^7.1.12",
+    "vitest": "^4.1.4"
   }
 }

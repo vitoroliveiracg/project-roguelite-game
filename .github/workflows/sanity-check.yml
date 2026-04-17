@@ -1,0 +1,50 @@
+name: Sanity Check (Fail-Fast CI)
+
+on:
+  push:
+    branches: [ "dev", "feature/*" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  validation:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install JS Dependencies
+      run: npm ci
+
+    - name: Executar Bateria de Testes (Zero-GC, Fuzzing, Determinismo)
+      run: npm run test
+
+    - name: Validar Fronteiras Arquiteturais (Fitness Functions)
+      run: npx depcruise typescript/domain --config .dependency-cruiser.js
+
+    - name: Install Rust Toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+        cache-target: release
+
+    - name: Setup Rust Cache (Tauri)
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: 'src-tauri -> target'
+
+    - name: Install Linux Dependencies (Webkit/Tauri)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+    - name: Cargo Check (Borrow Checker & AST Validation)
+      # Processa a AST do backend e resolve alocação de memória sem gerar o binário final LLVM, reduzindo o tempo de CI para < 3 minutos.
+      run: cargo check --manifest-path src-tauri/Cargo.toml

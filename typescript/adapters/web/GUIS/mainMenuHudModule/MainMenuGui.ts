@@ -1,7 +1,7 @@
 import { logger } from "../../shared/Logger";
 import html from './mainMenu.html?raw';
 import css from './mainMenu.css?raw';
-import { LocalStorageAdapter } from "../../../../domain/ports/LocalStorageAdapter";
+import { safeInvoke } from '../../shared/TauriIPC';
 import { listen } from '@tauri-apps/api/event';
 
 export default class MainMenuGui {
@@ -288,6 +288,15 @@ export default class MainMenuGui {
                     sessionStorage.setItem('ollama_ready', 'true');
                     hideLoadingScreen();
                 });
+
+                // Fallback timeout para caso o backend falhe em enviar o evento ou demore muito
+                setTimeout(() => {
+                    if (sessionStorage.getItem('ollama_ready') !== 'true') {
+                        logger.log('init', 'Timeout esperando Ollama, forçando inicialização do jogo.');
+                        sessionStorage.setItem('ollama_ready', 'true');
+                        hideLoadingScreen();
+                    }
+                }, 5000);
             } else {
                 // Fallback: se estiver rodando no navegador normal, tira o loading de cara
                 clearInterval(phraseInterval);
@@ -314,18 +323,18 @@ export default class MainMenuGui {
         
         if (!btnExport || !btnImport || !ioArea || !btnConfirm) return;
 
-        const repo = new LocalStorageAdapter();
-
         btnExport.addEventListener('click', async () => {
-            const data = await repo.loadProgress();
-            if (data) {
-                const saveStr = btoa(JSON.stringify(data));
+            try {
+                // Requisita o Save criptografado diretamente do Disco Nativo via Rust IPC
+                const jsonString = await safeInvoke<string>('load_game_state');
+                const data = JSON.parse(jsonString); // Valida integridade do JSON lido
+                const saveStr = btoa(JSON.stringify(data)); // Gera Base64 puro para exportação (código de transferência)
                 ioArea.value = saveStr;
                 ioArea.style.display = 'block';
                 btnConfirm.style.display = 'none';
                 ioArea.select();
-            } else {
-                alert("Nenhum save encontrado para exportar.");
+            } catch (e) {
+                alert("Nenhum save encontrado no disco ou falha de IPC: " + e);
             }
         });
 
@@ -341,12 +350,13 @@ export default class MainMenuGui {
             if (!data) return;
             
             try {
-                const decoded = JSON.parse(atob(data));
-                await repo.saveProgress(decoded);
-                alert("Save importado com sucesso! Recarregando os sonhos...");
+                const decodedJson = atob(data);
+                JSON.parse(decodedJson); // Valida se o conteúdo descriptografado é um DTO saudável
+                await safeInvoke<string>('save_game_state', { payload: decodedJson });
+                alert("Save importado com sucesso no disco nativo! Recarregando os sonhos...");
                 window.location.reload();
             } catch (e) {
-                alert("Código de save inválido ou corrompido!");
+                alert("Código de save inválido, corrompido ou falha de gravação (IPC)!");
             }
         });
     }

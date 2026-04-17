@@ -41,5 +41,12 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "noEmitOnError": false
-  }
+  },
+  "include": [
+    "typescript/**/*"
+  ],
+  "exclude": [
+    "vitest.config.ts",
+    "node_modules"
+  ]
 }

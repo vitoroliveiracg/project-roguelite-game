@@ -112,8 +112,11 @@ export default abstract class Entity extends ObjectElement {
         }
     }
 
+    let currentDefence = this.attributes.defence;
+    if (this.activeStatuses.has('vulnerable')) currentDefence -= 8;
+
     if (damageInfo.damageType !== 'true' && damageInfo.damageType !== 'dark') {
-      finalDamage = Math.max(1, damageInfo.totalDamage - this.attributes.defence);
+      finalDamage = Math.max(1, finalDamage - currentDefence);
     }
 
     // Aplica o dano ao HP

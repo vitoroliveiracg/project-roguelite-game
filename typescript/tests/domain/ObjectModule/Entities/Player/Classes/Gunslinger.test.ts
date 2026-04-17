@@ -1,0 +1,26 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import Gunslinger from '../../../../../../domain/ObjectModule/Entities/Player/Classes/Gunslinger';
+import DefaultXPTable from '../../../../../../domain/ObjectModule/Entities/DefaultXPTable';
+import type Player from '../../../../../../domain/ObjectModule/Entities/Player/Player';
+import type { IEventManager } from '../../../../../../domain/eventDispacher/IGameEvents';
+
+const mockEventManager: IEventManager = { on: vi.fn(), dispatch: vi.fn() };
+const mockPlayer = {} as Player;
+const xpTable = new DefaultXPTable();
+
+describe('Gunslinger Class', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('deve inicializar skills corretamente e interceptar Fan the Hammer', () => {
+    const gunslinger = new Gunslinger(xpTable, mockPlayer, mockEventManager);
+    expect(gunslinger.allSkills.length).toBe(3);
+    expect(gunslinger.getSkillForLevel(4)?.id).toBe('gs_t2_fanhammer');
+    
+    gunslinger.executeSkill('gs_t2_fanhammer', { x: 10, y: 10 });
+    expect(mockEventManager.dispatch).toHaveBeenCalledWith('log', expect.objectContaining({
+      message: expect.stringContaining('Fan the Hammer ativado no alvo')
+    }));
+  });
+});

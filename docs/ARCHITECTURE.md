@@ -532,3 +532,19 @@ Este documento descreve a arquitetura do projeto, seus princípios, os papéis d
   2. **Adicione Permissões:** Se quiser que a IA consiga criar chamas no chão, você precisa passar uma referência de fábrica (Ex: `spawnFactory`).
   3. **Validação do Praxis (Segurança):** Abra o `PraxisValidator.ts`. Se a IA for usar algum recurso global novo (como `Date.now()`), certifique-se de que a palavra não esteja na lista de bloqueios de segurança (`forbiddenTokens`), caso contrário, o "mini-antivírus" bloqueará o plano do NPC no frame seguinte e ele "esquecerá" a magia!
   4. **Prompt Tuning:** Na string estática `systemPrompt` (em `askOllamaToCode`), escreva explicitamente o contrato que a IA tem nas mãos. Exemplo: *"Você tem acesso a 'npc.castFire(x, y)'. Use com sabedoria!"*.
+
+### 4.12. Como Criar uma Nova Combinação de Magia (Deep 2 no Mago)
+
+  O Mago funde elementos adjacentes digitados no buffer. Para criar uma nova fusão (Alquimia):
+
+  1. **Crie o Efeito Elemental:** Em `domain/ObjectModule/Items/Effects/ElementalEffects/`, crie a classe do seu novo elemento (ex: `SteamEffect.ts` para Vapor), implementando o método `apply(target: Entity)` para causar dano, status ou repulsão.
+  2. **Adicione ao Motor Dinâmico:** No arquivo `DynamicProjectile.ts` (e no método `solveSelf` do `Mage.ts`), instancie seu Efeito caso o array de `spellElements` contenha a chave do seu novo elemento.
+  3. **Atualize o Parser do Mago:** Em `Mage.ts`, localize o `comboMap` dentro de `parseDynamicSpell`. Adicione a nova receita: `'fire,water': 'steam'`.
+  4. **Partículas (Visual):** Mapeie a chave `'steam'` no `effectMap` (dentro de `Mage.ts`) para uma partícula existente (ex: `'magicAura'`) ou crie um método novo no `ParticleOrchestrator.ts`.
+
+### 4.13. Como Aplicar Forças Físicas (Knockback/Pull) em Entidades
+
+  A Engine de física separa a Vontade da Inteligência Artificial (IA) da Física Bruta de empurrões.
+
+  1. **Aplique a Força:** Nunca altere a propriedade `velocity` diretamente para empurrar um inimigo. Em vez disso, calcule o vetor de direção, normalize-o, multiplique pela magnitude da força (ex: 25) e chame `target.applyForce(vetor)`. Isso soma a força no `accelerator` da Entidade.
+  2. **Anule a Resistência (Dica de Ouro):** Se o inimigo for rápido, ele pode "lutar" contra o empurrão no mesmo frame. Para um arrasto perfeito (como um puxão ou arremesso), zere a inércia temporariamente (`target.velocity.resetMut()`) antes de aplicar a força, ou aplique um micro-stun (`target.applyStatus(new StunStatus(0.2))`). O Stun paralisa a IA, mas a física nativa continuará lendo o `accelerator` e arremessará o corpo pela tela!

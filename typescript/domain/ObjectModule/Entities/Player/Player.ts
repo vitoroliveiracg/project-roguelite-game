@@ -150,6 +150,7 @@ export default class Player extends Entity {
    */
   public override takeDamage(damageInfo: DamageInfo): number {
     let totalDodge = this.attributes.dodge;
+    if (this.activeStatuses.has('poison')) totalDodge -= 10;
     let totalDamageReduction = 0;
 
     // Soma os bônus defensivos de todas as armaduras equipadas
@@ -221,8 +222,11 @@ export default class Player extends Entity {
   public override move( deltaTime: number): void {
     if (this.state === 'dead' || this.attributes.hp <= 0) return;
 
-    this.state = 'walking';
-    this.movementSinceLastUpdate = true;
+    if (this.direction.x !== 0 || this.direction.y !== 0 || this.accelerator.x !== 0 || this.accelerator.y !== 0) {
+      this.state = 'walking';
+      this.movementSinceLastUpdate = true;
+    }
+
     const displacement = this.attributes.speed * deltaTime
     
     // Guarda a última direção virada para usar na magia

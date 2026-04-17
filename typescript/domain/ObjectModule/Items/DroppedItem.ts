@@ -9,6 +9,7 @@ import { RegisterSpawner, type SpawnPayload } from "../SpawnRegistry";
 @RegisterSpawner('droppedItem')
 export default class DroppedItem extends ObjectElement {
     public item: Item;
+    private isCollected: boolean = false;
 
     constructor(
         id: number,
@@ -38,6 +39,8 @@ export default class DroppedItem extends ObjectElement {
                 0,
                 12, // Radius um pouco maior (12px) para facilitar a coleta ao passar perto
                 (otherElement: ObjectElement) => {
+                    if (this.isCollected) return; // Trava de Idempotência
+
                     if (otherElement instanceof Player) {
                         if (this.item.category === 'currency' && 'use' in this.item) {
                             // Ouro auto-coletado! Não ocupa espaço na mochila.
@@ -45,10 +48,12 @@ export default class DroppedItem extends ObjectElement {
                             // Um estalo visual dopaminérgico amarelo
                             this.eventManager.dispatch('particle', { effect: 'magicAura', x: this.coordinates.x, y: this.coordinates.y, color: '#FFD700' });
                             this.eventManager.dispatch('log', { channel: 'domain', message: `Collected item: ${this.item.name}`, params: [] });
+                            this.isCollected = true;
                             super.destroy(); // Despawna a cápsula do mapa
                         } else {
                             if (otherElement.backpack.length < otherElement.maxBackpackSize) {
                                 otherElement.backpack.push(this.item);
+                                this.isCollected = true;
                                 this.eventManager.dispatch('log', { channel: 'domain', message: `Collected item: ${this.item.name}`, params: [] });
                                 super.destroy(); // Despawna a cápsula do mapa
                             } else {

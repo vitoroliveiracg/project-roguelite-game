@@ -13,6 +13,17 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-set-fullscreen",
     "core:window:allow-is-fullscreen",
-    "core:window:allow-start-dragging"
+    "core:window:allow-start-dragging",
+    "shell:default",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "ollama",
+          "sidecar": true,
+          "args": ["serve"]
+        }
+      ]
+    }
   ]
 }

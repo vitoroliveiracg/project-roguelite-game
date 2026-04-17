@@ -86,92 +86,86 @@ export default class Quadtree<T> {
     if (this.nodes[0]) {
       const index = this.getIndex(element);
 
-      // Se o elemento cabe em um quadrante filho, insira-o lá.
       if (index !== -1) {
         const node = this.nodes[index];
-        if (node) { // Garante que o nó existe antes de usá-lo
+        if (node) {
           node.insert(element);
         }
         return;
       }
     }
 
-    // Se não couber em nenhum filho (ou se o nó não foi subdividido),
-    // adicione o elemento à lista deste nó.
     this.elements.push(element);
 
     if (this.elements.length > this.max_objects && this.level < this.max_levels) {
-      // Se o nó estiver cheio e não tiver filhos, subdivida.
       if (!this.nodes[0]) {
         this.subdivide();
       }
 
-      let i = 0;
-      while (i < this.elements.length) {
-        const element = this.elements[i];
-        // Adiciona uma verificação de segurança para garantir que o elemento existe.
-        if (!element) {
-          i++;
-          continue;
-        }
-        const index = this.getIndex(element);
-        // Tente mover o elemento para um quadrante filho.
-        if (index !== -1) {
-          const node = this.nodes[index];
-          if (node) { // Garante que o nó existe antes de usá-lo
-            // Remove o elemento da lista atual e o insere no nó filho.
-            // Usamos a variável 'element' que já sabemos que não é indefinida.
-            node.insert(element);
-            this.elements.splice(i, 1);
-          } else { i++; } // Se o nó não existir, avança para evitar loop infinito.
-        } else { 
-          // Se não couber, deixe-o neste nó e vá para o próximo.
-          i++;
-        }
-      }
-    }
-  }
-
-  /**
-   * Retorna uma lista de todos os objetos que podem colidir com o objeto fornecido.
-   * @param object O objeto (ou área) para o qual se deseja encontrar colisões potenciais.
-   * @returns Um array de `ObjectElement`s.
-   */
-  public retrieve(area: IRectangle): (T & IRectangle)[] {
-    let returnElements = [...this.elements]; // Começa com os elementos deste nó
-
-    // Se houver nós filhos, verifica em quais deles a área se sobrepõe
-    if (this.nodes[0]) {
-      const index = this.getIndex(area);
-
-      // Se a área cabe inteiramente em um quadrante filho, busca apenas nele
-      if (index !== -1) {
-        const node = this.nodes[index];
-        if (node) { // Garante que o nó existe antes de usá-lo
-          returnElements = returnElements.concat(node.retrieve(area));
-        }
-      } else {
-        // Se a área se sobrepõe a múltiplos filhos, busca em cada um deles
-        for (let i = 0; i < this.nodes.length; i++) {
-          const node = this.nodes[i];
-          // A verificação 'intersects' evita buscar em quadrantes que não se tocam
-          if (node && node.intersects(area)) {
-            returnElements = returnElements.concat(node.retrieve(area));
+      // Iteração reversa para garantir Swap and Pop O(1) sem pular índices
+      let i = this.elements.length;
+      while (i--) {
+        const el = this.elements[i];
+        if (!el) continue;
+        const index = this.getIndex(el);
+        
+        if (index !== -1 && this.nodes[index]) {
+          this.nodes[index].insert(el);
+          
+          // Remoção O(1) (Swap and Pop)
+          const last = this.elements.pop();
+          if (i < this.elements.length && last !== undefined) {
+            this.elements[i] = last;
           }
         }
       }
     }
-    return returnElements;
   }
 
   /**
-   * Verifica se a caixa delimitadora de um objeto se sobrepõe aos limites deste nó.
-   * @param object O objeto a ser verificado.
+   * Retorna uma lista de todos os objetos que podem colidir com a área fornecida.
+   * @param area A área para a qual se deseja encontrar colisões potenciais.
+   * @param found Buffer mutável para evitar alocação de memória (Zero-GC).
+   * @returns O array mutado `found`.
+   */
+  public retrieve(area: IRectangle, found: (T & IRectangle)[] = []): (T & IRectangle)[] {
+    for (let i = 0; i < this.elements.length; i++) {
+      const el = this.elements[i];
+      if (el && !(
+        area.x > el.x + el.width ||
+        area.x + area.width < el.x ||
+        area.y > el.y + el.height ||
+        area.y + area.height < el.y
+      )) {
+        found.push(el);
+      }
+    }
+
+    if (this.nodes.length > 0) {
+      const index = this.getIndex(area);
+
+      if (index !== -1) {
+        const node = this.nodes[index];
+        if (node) {
+          node.retrieve(area, found);
+        }
+      } else {
+        for (let i = 0; i < this.nodes.length; i++) {
+          const node = this.nodes[i];
+          if (node && node.intersects(area)) {
+            node.retrieve(area, found);
+          }
+        }
+      }
+    }
+    return found;
+  }
+
+  /**
+   * Verifica se a caixa delimitadora se sobrepõe aos limites deste nó.
    */
   private intersects(area: IRectangle): boolean {
     const boundary = this.bounds;
-
-    // Verifica se não há sobreposição. Retorna a negação.
     return !(
       area.x > boundary.x + boundary.width ||
       area.x + area.width < boundary.x ||
@@ -180,9 +174,17 @@ export default class Quadtree<T> {
     );
   }
 
-  /** Limpa a Quadtree, removendo todos os elementos e nós filhos. */
+  /** Limpa a Quadtree, mantendo as referências de memória dos nós filhos (Zero-GC). */
   public clear(): void {
-    this.elements = [];
-    this.nodes = [];
+    this.elements.length = 0;
+
+    if (this.nodes.length) {
+      for (let i = 0; i < this.nodes.length; i++) {
+        const node = this.nodes[i];
+        if (node) {
+          node.clear();
+        }
+      }
+    }
   }
 }
