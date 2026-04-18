@@ -11,7 +11,8 @@
     "target": "esnext",
     "lib": ["esnext", "dom", "dom.iterable"],
     "types": [
-      "@webgpu/types"
+      "@webgpu/types",
+      "@types/node"
     ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
