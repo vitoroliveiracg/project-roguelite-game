@@ -2,10 +2,10 @@ name: "Sanity Check (Fail-Fast CI)"
 
 on:
   push:
-    branches: [ "**" ] # Roda em qualquer branch que você fizer push
+    branches: [ "**" ]
   pull_request:
     branches: [ "main", "dev" ]
-  workflow_dispatch: # <-- É ESSA LINHA QUE HABILITA O BOTÃO MANUAL NO GITHUB!
+  workflow_dispatch:
 
 jobs:
   test-and-check:
