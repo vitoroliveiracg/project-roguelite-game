@@ -36,8 +36,8 @@ function apiRequest(path, method = 'GET', data = null) {
 async function updateIssuesFromTodo() {
   const existingContent = fs.existsSync('docs/todo.md') ? fs.readFileSync('docs/todo.md', 'utf8') : '';
   const lines = existingContent.split('\n');
-  const issueRegex = /- \[([xX~])\] .+ \(#(\d+)\)/;
-  const subtaskRegex = /^\s{4,}- \[([xX~])\] (.+)$/;
+  const issueRegex = /- \[([ xX~]?)\] .+ \(#(\d+)\)/;
+  const subtaskRegex = /^\s{4,}- \[([ xX~]?)\] (.+)$/;
   
   let currentIssueNumber = null;
 
@@ -110,7 +110,7 @@ async function main() {
       const lines = currentIssueSection.split('\n');
       let currentIssueNumber = null;
       let currentBlock = [];
-      const issueHeaderRegex = /^- \[([ xX~])\] .+ \(#(\d+)\)$/;
+      const issueHeaderRegex = /^- \[([ xX~]?)\] .+ \(#(\d+)\)$/;
 
       for (const line of lines) {
         const match = line.match(issueHeaderRegex);
