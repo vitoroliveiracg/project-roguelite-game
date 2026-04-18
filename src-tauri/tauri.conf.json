@@ -32,9 +32,9 @@
     "targets": "all",
     "externalBin": ["bin/ollama"],
     "icon": [
-      "icons/game-icon.ico",
-      "icons/game-icon.png",
-      "icons/game-icon-128.png"
+      "icons/icon.ico",
+      "icons/icon.png",
+      "icons/icon.icns"
     ]
   }
 }
