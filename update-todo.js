@@ -36,25 +36,42 @@ function apiRequest(path, method = 'GET', data = null) {
 async function updateIssuesFromTodo() {
   const existingContent = fs.existsSync('docs/todo.md') ? fs.readFileSync('docs/todo.md', 'utf8') : '';
   const lines = existingContent.split('\n');
-  const issueRegex = /- \[(x|~)\] .+ \(#(\d+)\)/;
+  const issueRegex = /- \[([xX~])\] .+ \(#(\d+)\)/;
+  const subtaskRegex = /^\s{4,}- \[([xX~])\] (.+)$/;
+  
+  let currentIssueNumber = null;
 
   for (const line of lines) {
-    const match = line.match(issueRegex);
-    if (match) {
-      const status = match[1];
-      const issueNumber = match[2];
+    // Check for main issue
+    const issueMatch = line.match(issueRegex);
+    if (issueMatch) {
+      const status = issueMatch[1].toLowerCase();
+      currentIssueNumber = issueMatch[2];
       try {
         if (status === 'x') {
-          // Close the issue
-          await apiRequest(`/repos/${repo}/issues/${issueNumber}`, 'PATCH', { state: 'closed' });
-          console.log(`Closed issue #${issueNumber}`);
+          await apiRequest(`/repos/${repo}/issues/${currentIssueNumber}`, 'PATCH', { state: 'closed' });
+          console.log(`Closed issue #${currentIssueNumber}`);
         } else if (status === '~') {
-          // Add comment
-          await apiRequest(`/repos/${repo}/issues/${issueNumber}/comments`, 'POST', { body: 'parcialmente integrada' });
-          console.log(`Added comment to issue #${issueNumber}`);
+          await apiRequest(`/repos/${repo}/issues/${currentIssueNumber}/comments`, 'POST', { body: 'parcialmente integrada' });
+          console.log(`Added comment to issue #${currentIssueNumber}`);
         }
       } catch (err) {
-        console.warn(`Warning: Could not update issue #${issueNumber}: ${err.message}`);
+        console.warn(`Warning: Could not update issue #${currentIssueNumber}: ${err.message}`);
+      }
+    }
+    
+    // Check for subtasks
+    const subtaskMatch = line.match(subtaskRegex);
+    if (subtaskMatch && currentIssueNumber) {
+      const status = subtaskMatch[1].toLowerCase();
+      const subtaskText = subtaskMatch[2];
+      try {
+        if (status === '~') {
+          await apiRequest(`/repos/${repo}/issues/${currentIssueNumber}/comments`, 'POST', { body: `[${subtaskText}] parcialmente concluida` });
+          console.log(`Added subtask comment to issue #${currentIssueNumber}`);
+        }
+      } catch (err) {
+        console.warn(`Warning: Could not add subtask comment to issue #${currentIssueNumber}: ${err.message}`);
       }
     }
   }

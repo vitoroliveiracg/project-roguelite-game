@@ -47,4 +47,8 @@ describe('CI Workflow Validation', () => {
     expect(targets).not.toContain('msi');
     expect(targets).toContain('nsis'); // Ensure NSIS is used for Windows instead
   });
+
+  it('should have .dockerignore to exclude large build artifacts', () => {
+    expect(existsSync('.dockerignore')).toBe(true);
+  });
 });

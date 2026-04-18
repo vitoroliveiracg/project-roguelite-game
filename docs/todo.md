@@ -19,17 +19,17 @@
 
 - [ ] NPCS (#11)
     descrição: - [ ] Entidade npc no jogo
-    - [ ] Entidade npc no jogo
-    - [ ] Diálogo com npcs
-    - [ ] tecla de interação e tooltip para interação
-    - [ ] Hud de conversa
-    - [ ] Dialog Handler do hud de conversa pelo canvas
+    - [X] Entidade npc no jogo
+    - [X] Diálogo com npcs
+    - [X] tecla de interação e tooltip para interação
+    - [~] Hud de conversa
+    - [X] Dialog Handler do hud de conversa pelo canvas
     - [ ] Opções para diálogo
 
 - [ ] Interface personagem (#10)
     descrição: 
     - [ ] - Bag
-    - [ ]  - Itens equipados (Habilitar as classes e manter as classes atuais no personagem)
+    - [~]  - Itens equipados (Habilitar as classes e manter as classes atuais no personagem)
     - [ ] - Status
 
 - [ ] Tela seleção de mapas (#9)
@@ -65,20 +65,20 @@
     - [ ] Implementar apenas a UI de "Itens Equipados" (o "Paper")
 
 - [ ] Drop de Item Básico (#4)
-    descrição: - [ ] Inimigos têm X% de chance (ex: 3%) de "dropar" um item ao morrer.
-    - [ ] Inimigos têm X% de chance (ex: 3%) de "dropar" um item ao morrer.
-    - [ ] Item fica no chão se inventário cheio.
-    - [ ] O item é coletado ao passar por cima.
+    descrição: - [X] Inimigos têm X% de chance (ex: 3%) de "dropar" um item ao morrer.
+    - [X] Inimigos têm X% de chance (ex: 3%) de "dropar" um item ao morrer.
+    - [X] Item fica no chão se inventário cheio.
+    - [X] O item é coletado ao passar por cima.
     - [ ] Item tem range de atributos (e muito menor de ter efeito)
 
 - [ ] Paredes e colisões (#3)
-    descrição: - [x] Colisão de entidades
+    descrição: - [X] Colisão de entidades
     - [ ] Colisão em objetos do mundo
     - [ ] Mapa de lugares que não pode andar
     - [ ] Lógica de "spawn" de inimigos em áreas.
 
 - [ ] Player Básico (#1)
-    descrição: - [x] Design inicial do personagem
+    descrição: - [X] Design inicial do personagem
     - [ ] Animação para cada uma das direções (8 direções) andando
     - [ ] Animação para cada uma das direções (8 direções) idle
 
