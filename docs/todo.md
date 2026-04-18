@@ -49,6 +49,88 @@
     - [ ] Adição de **armaduras**
     - [ ] Composição dos sprites de **skills**
 
+- [ ] Progressão de Habilidade Mínima (de dentro do mundo): (#6)
+    descrição: - [ ] Tela da árvore podendo adicionar habilidades na árvore
+    - [ ] Tela da árvore podendo adicionar habilidades na árvore
+    - [ ] Nível de xp para upar habilidade
+    - [ ] Abrir uma UI temporária (e simples) que oferece a escolha de 1 de 3 upgrades passivos (ex: "+5% Dano", "+10% Velocidade de Ataque", "+1 HP").
+
+- [ ] Inventário Mínimo (#5)
+    descrição: - [ ] Implementar apenas a UI de "Itens Equipados" (o "Paper")
+    - [ ] Implementar apenas a UI de "Itens Equipados" (o "Paper")
+
+- [ ] Drop de Item Básico (#4)
+    descrição: - [ ] Inimigos têm X% de chance (ex: 3%) de "dropar" um item ao morrer.
+    - [ ] Inimigos têm X% de chance (ex: 3%) de "dropar" um item ao morrer.
+    - [ ] Item fica no chão se inventário cheio.
+    - [ ] O item é coletado ao passar por cima.
+    - [ ] Item tem range de atributos (e muito menor de ter efeito)
+
+- [ ] Paredes e colisões (#3)
+    descrição: - [x] Colisão de entidades
+    - [ ] Colisão em objetos do mundo
+    - [ ] Mapa de lugares que não pode andar
+    - [ ] Lógica de "spawn" de inimigos em áreas.
+
+- [ ] Player Básico (#1)
+    descrição: - [x] Design inicial do personagem
+    - [ ] Animação para cada uma das direções (8 direções) andando
+    - [ ] Animação para cada uma das direções (8 direções) idle
+
+
+---
+
+# TODO - Synced from GitHub Issues
+
+## Issues
+
+- [ ] Interface geral (#13)
+    descrição: - [ ] Seleção de broches
+    - [ ] Seleção de broches
+    - [ ] Geração dos broches
+    - [ ] Seleção dos broches
+    - [ ] Salvamento dos broches
+    - [ ] Telas de status gerais
+
+- [ ] Árvore de habilidades de cada classe (#12)
+    descrição: - [ ] Árvores de habilidade das 5 classes-base (guerreiro, gunslighter, arqueiro, mago e feiticeiro)
+    - [ ] Árvores de habilidade das 5 classes-base (guerreiro, gunslighter, arqueiro, mago e feiticeiro)
+    - [ ] Seleção de classes ao iniciar a run
+    - [ ] Listagem e controle das classes desbloqueadas no player
+    - [ ] Ganho de itens através de um npc
+
+- [ ] NPCS (#11)
+    descrição: - [ ] Entidade npc no jogo
+    - [ ] Entidade npc no jogo
+    - [ ] Diálogo com npcs
+    - [ ] tecla de interação e tooltip para interação
+    - [ ] Hud de conversa
+    - [ ] Dialog Handler do hud de conversa pelo canvas
+    - [ ] Opções para diálogo
+
+- [ ] Interface personagem (#10)
+    descrição: 
+    - [ ] - Bag
+    - [ ]  - Itens equipados (Habilitar as classes e manter as classes atuais no personagem)
+    - [ ] - Status
+
+- [ ] Tela seleção de mapas (#9)
+    descrição: - [ ] HUD
+    - [ ] HUD
+    - [ ] Composição dos mapas na tela
+    - [ ] Colocar um mapa (tile)
+    - [ ] Junção dos mapas (tiles)
+    - [ ] Isso deve ser expansível facilmente
+    - [ ] Fog
+    - [ ] Seleção de mapas para jogar
+
+- [ ] Compositor de personagem (#8)
+    descrição: - [ ] Melhorar o `renderModule/Sprite` para poder juntar os sprites de partes do **personagem** 
+    - [ ] Melhorar o `renderModule/Sprite` para poder juntar os sprites de partes do **personagem**
+    - [ ] Permitir adição de **armas**
+    - [ ] Adição de **armaduras**
+    - [ ] Composição dos sprites de **skills**
+
 - [ ] Gerenciamento básico (#7)
     descrição: - [ ] Tela preta com um botão "Iniciar Run".
     - [ ] Tela preta com um botão "Iniciar Run".
