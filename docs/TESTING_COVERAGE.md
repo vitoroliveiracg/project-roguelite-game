@@ -156,3 +156,13 @@ Este documento detalha as **regras de negócio testadas**, como elas **simulam o
     *   **Regra Testada:** Refatorações de atributos, status e itens não podem inadvertidamente quebrar a viabilidade das classes. O DPS deve ser matematicamente suficiente para romper hordas e evoluir o Nível do Avatar.
     - **Como é Simulado:** Um "Robô de Controle" injeta inputs rotacionais super-humanos ($10$ disparos/s fundindo magias complexas) contra *Spawns* iterativos de Slimes em um ambiente estritamente Headless e em fast-forward. O teste usa interceptores diretos (`Spies`) no método `takeDamage` das entidades para aferição pura.
     - **Garantia Técnica:** Prova-se que a conversão de *Stats* (Força, Inteligência, Dano Base) atinge um Patamar de Dano Por Segundo ($DPS > 4.0$) e curva de ganho de Experiência escalável (O jogador cruza o Nível 5 com folga em janela curta de combate), barrando modificações que quebrem a matemática econômica do Bullet Hell.
+
+---
+
+## 13. Validação de CI e Arquitetura
+*A blindagem contra falhas de build e violações arquiteturais.*
+
+*   **Validação de Workflows e Configs (`ci-validation`)**
+    *   **Regra Testada:** O repositório deve conter todos os arquivos obrigatórios para os workflows do CI funcionarem, e as configurações devem evitar problemas conhecidos (ex.: MSI no Windows).
+    - **Como é Simulado:** Parsing de arquivos YAML dos workflows, verificação de presença de `package.json`, `Cargo.toml`, `tauri.conf.json`, ícones, e validação de targets seguros (ex.: rejeição de MSI para evitar downloads falhos).
+    - **Garantia Técnica:** Fail-Fast na CI local. O teste impede pushes com setups incompletos ou configs arriscadas, garantindo que builds não falhem por falta de arquivos ou targets problemáticos (ex.: WiX timeout).
