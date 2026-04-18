@@ -74,12 +74,14 @@ jobs:
             COMMITS=$(git log --oneline $LATEST_RELEASE..HEAD)
           fi
           
-          CHANGELOG="Nova versão do jogo gerada automaticamente para Windows, Mac e Linux!
-
-## Commits nesta versão:
-$(echo "$COMMITS" | head -20)"
-          
-          echo "body=$CHANGELOG" >> $GITHUB_OUTPUT
+          {
+            echo "body<<EOF"
+            echo "Nova versão do jogo gerada automaticamente para Windows, Mac e Linux!"
+            echo ""
+            echo "## Commits nesta versão:"
+            echo "$COMMITS" | head -20
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
