@@ -33,10 +33,10 @@ jobs:
 
           const options = {
             hostname: 'api.github.com',
-            path: \`/repos/\${repo}/issues\`,
+            path: '/repos/' + repo + '/issues',
             headers: {
               'User-Agent': 'GitHub-Actions',
-              'Authorization': \`token \${token}\`
+              'Authorization': 'token ' + token
             }
           };
 
@@ -57,7 +57,7 @@ jobs:
                       issueTodos += '    ' + line.trim() + '\\n';
                     }
                   });
-                  issuesContent += \`- [ ] \${issue.title} (#\${issue.number})\\n    descrição: \${issue.body ? issue.body.split('\\n')[0] : 'No description.'}\\n\${issueTodos}\\n\`;
+                  issuesContent += '- [ ] ' + issue.title + ' (#' + issue.number + ')\\n    descrição: ' + (issue.body ? issue.body.split('\\n')[0] : 'No description.') + '\\n' + issueTodos + '\\n';
                 }
               });
               
