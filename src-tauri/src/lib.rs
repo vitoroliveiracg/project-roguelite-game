@@ -103,7 +103,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![save_game_state])
+        .invoke_handler(tauri::generate_handler![save_game_state, load_game_state])
         .run(tauri::generate_context!())
-        .expect("Erro de alocação durante a execução da engine Tauri");
+        .expect("error while running tauri application");
 }
