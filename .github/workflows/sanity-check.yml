@@ -29,5 +29,10 @@ jobs:
       - name: Executar Sanity Check (TypeScript Domain)
         run: npm run test
 
+      - name: Mock Sidecar Binaries (Para bypass rápido do Tauri Build Script)
+        run: |
+          mkdir -p src-tauri/bin
+          touch src-tauri/bin/ollama-x86_64-unknown-linux-gnu
+
       - name: Executar Sanity Check Nativo (Rust AST)
         run: cargo check --manifest-path src-tauri/Cargo.toml
