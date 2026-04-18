@@ -99,29 +99,70 @@ async function main() {
       const existingContent = fs.existsSync('docs/todo.md') ? fs.readFileSync('docs/todo.md', 'utf8') : '';
 
       const separator = '\n---\n';
-      let suffix = '';
       const separatorIndex = existingContent.indexOf(separator);
-      if (separatorIndex !== -1) {
-        suffix = existingContent.slice(separatorIndex + separator.length);
-        suffix = suffix.replace(/# TODO - Synced from GitHub Issues[\s\S]*/g, '').trim();
+      const startHeader = existingContent.indexOf('# TODO - Synced from GitHub Issues');
+      const currentIssueSection = startHeader !== -1
+        ? existingContent.slice(startHeader, separatorIndex !== -1 ? separatorIndex : undefined)
+        : (separatorIndex !== -1 ? existingContent.slice(0, separatorIndex) : existingContent);
+      const suffix = separatorIndex !== -1 ? existingContent.slice(separatorIndex + separator.length) : '';
+
+      const issueBlocks = new Map();
+      const lines = currentIssueSection.split('\n');
+      let currentIssueNumber = null;
+      let currentBlock = [];
+      const issueHeaderRegex = /^- \[([ xX~])\] .+ \(#(\d+)\)$/;
+
+      for (const line of lines) {
+        const match = line.match(issueHeaderRegex);
+        if (match) {
+          if (currentIssueNumber !== null) {
+            issueBlocks.set(currentIssueNumber, currentBlock.join('\n'));
+          }
+          currentIssueNumber = match[2];
+          currentBlock = [line];
+        } else if (currentIssueNumber !== null) {
+          currentBlock.push(line);
+        }
+      }
+      if (currentIssueNumber !== null) {
+        issueBlocks.set(currentIssueNumber, currentBlock.join('\n'));
       }
 
-      let issuesContent = '## Issues\n\n';
+      const openIssueNumbers = new Set();
+      const newIssueBlocks = [];
+
       issues.forEach(issue => {
-        if (!issue.pull_request) {
+        if (issue.pull_request) return;
+        openIssueNumbers.add(String(issue.number));
+        const existingBlock = issueBlocks.get(String(issue.number));
+        if (existingBlock) {
+          const lines = existingBlock.split('\n');
+          const headerMatch = lines[0].match(/^- \[([ xX~])\] .+ \(#\d+\)$/);
+          const status = headerMatch ? headerMatch[1].trim() : ' ';
+          const header = `- [${status}] ${issue.title} (#${issue.number})`;
+          newIssueBlocks.push([header, ...lines.slice(1)].join('\n'));
+        } else {
           let issueTodos = '';
-          const lines = (issue.body || '').split('\n');
-          lines.forEach(line => {
+          const bodyLines = (issue.body || '').split('\n');
+          bodyLines.forEach(line => {
             if (line.trim().startsWith('- [ ]')) {
               issueTodos += '    ' + line.trim() + '\n';
             }
           });
-          issuesContent += '- [ ] ' + issue.title + ' (#' + issue.number + ')\n    descrição: ' + (issue.body ? issue.body.split('\n')[0] : 'No description.') + '\n' + issueTodos + '\n';
+          newIssueBlocks.push(`- [ ] ${issue.title} (#${issue.number})\n    descrição: ${issue.body ? issue.body.split('\n')[0] : 'No description.'}\n${issueTodos}`);
         }
       });
 
+      // Preserve closed/completed issues that were marked X in local file
+      issueBlocks.forEach((block, issueNumber) => {
+        if (!openIssueNumbers.has(issueNumber) && /- \[[xX]\] /.test(block)) {
+          newIssueBlocks.push(block);
+        }
+      });
+
+      const issuesContent = '## Issues\n\n' + newIssueBlocks.join('\n\n') + '\n';
       const todoContent = '# TODO - Synced from GitHub Issues\n\n' + issuesContent + separator;
-      const finalContent = suffix ? todoContent + '\n' + suffix + '\n' : todoContent;
+      const finalContent = suffix.trim() ? todoContent + '\n' + suffix.trim() + '\n' : todoContent;
       fs.writeFileSync('docs/todo.md', finalContent);
       console.log('TODO updated');
     });
