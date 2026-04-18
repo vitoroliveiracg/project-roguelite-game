@@ -33,46 +33,144 @@ function apiRequest(path, method = 'GET', data = null) {
   });
 }
 
-async function updateIssuesFromTodo() {
-  const existingContent = fs.existsSync('docs/todo.md') ? fs.readFileSync('docs/todo.md', 'utf8') : '';
-  const lines = existingContent.split('\n');
-  const issueRegex = /- \[([ xX~]?)\] .+ \(#(\d+)\)/;
-  const subtaskRegex = /^\s{4,}- \[([ xX~]?)\] (.+)$/;
-  
-  let currentIssueNumber = null;
+function normalizeStatus(character) {
+  if (!character) return ' ';
+  const status = character.trim().toLowerCase();
+  if (status === 'x') return 'x';
+  if (status === '~') return '~';
+  return ' ';
+}
+
+function normalizeText(text) {
+  return text.trim().replace(/\s+/g, ' ');
+}
+
+function parseTodoIssues(content) {
+  const lines = content.split('\n');
+  const issueHeaderRegex = /^\s*-\s*\[([ xX~]?)\]\s*(.+?)\s*\(#(\d+)\)\s*$/;
+  const subtaskRegex = /^\s*-\s*\[([ xX~]?)\]\s*(.+)$/;
+
+  const issues = [];
+  let currentIssue = null;
 
   for (const line of lines) {
-    // Check for main issue
-    const issueMatch = line.match(issueRegex);
+    const issueMatch = line.match(issueHeaderRegex);
     if (issueMatch) {
-      const status = issueMatch[1].toLowerCase();
-      currentIssueNumber = issueMatch[2];
-      try {
-        if (status === 'x') {
-          await apiRequest(`/repos/${repo}/issues/${currentIssueNumber}`, 'PATCH', { state: 'closed' });
-          console.log(`Closed issue #${currentIssueNumber}`);
-        } else if (status === '~') {
-          await apiRequest(`/repos/${repo}/issues/${currentIssueNumber}/comments`, 'POST', { body: 'parcialmente integrada' });
-          console.log(`Added comment to issue #${currentIssueNumber}`);
-        }
-      } catch (err) {
-        console.warn(`Warning: Could not update issue #${currentIssueNumber}: ${err.message}`);
+      if (currentIssue) {
+        issues.push(currentIssue);
+      }
+      currentIssue = {
+        number: issueMatch[3],
+        status: normalizeStatus(issueMatch[1]),
+        title: issueMatch[2].trim(),
+        subtasks: []
+      };
+      continue;
+    }
+
+    if (currentIssue) {
+      const subtaskMatch = line.match(subtaskRegex);
+      if (subtaskMatch) {
+        currentIssue.subtasks.push({
+          status: normalizeStatus(subtaskMatch[1]),
+          text: subtaskMatch[2].trim()
+        });
       }
     }
-    
-    // Check for subtasks
-    const subtaskMatch = line.match(subtaskRegex);
-    if (subtaskMatch && currentIssueNumber) {
-      const status = subtaskMatch[1].toLowerCase();
-      const subtaskText = subtaskMatch[2];
-      try {
-        if (status === '~') {
-          await apiRequest(`/repos/${repo}/issues/${currentIssueNumber}/comments`, 'POST', { body: `[${subtaskText}] parcialmente concluida` });
-          console.log(`Added subtask comment to issue #${currentIssueNumber}`);
+  }
+
+  if (currentIssue) {
+    issues.push(currentIssue);
+  }
+
+  return issues;
+}
+
+function updateIssueBodyCheckboxes(body, subtasks) {
+  const originalLines = body.split('\n');
+  const lines = [...originalLines];
+  const missing = [];
+
+  for (const subtask of subtasks) {
+    const normalizedTodo = normalizeText(subtask.text);
+    let matched = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(/^\s*([-*]\s*)\[[ xX~]?\]\s*(.+)$/);
+      if (!match) continue;
+
+      const existingText = normalizeText(match[2]);
+      if (existingText === normalizedTodo) {
+        const newLine = `${match[1]}[${subtask.status}] ${match[2].trim()}`;
+        if (newLine !== lines[i]) {
+          lines[i] = newLine;
         }
-      } catch (err) {
-        console.warn(`Warning: Could not add subtask comment to issue #${currentIssueNumber}: ${err.message}`);
+        matched = true;
+        break;
       }
+    }
+
+    if (!matched) {
+      missing.push(subtask);
+    }
+  }
+
+  if (missing.length) {
+    let insertIndex = lines.findIndex((line) => line.trim().toLowerCase().startsWith('descrição:'));
+    if (insertIndex === -1) {
+      insertIndex = lines.length;
+    } else {
+      insertIndex += 1;
+    }
+
+    for (const subtask of missing) {
+      lines.splice(insertIndex, 0, `- [${subtask.status}] ${subtask.text}`);
+      insertIndex++;
+    }
+  }
+
+  return lines.join('\n');
+}
+
+async function updateIssuesFromTodo() {
+  const existingContent = fs.existsSync('docs/todo.md') ? fs.readFileSync('docs/todo.md', 'utf8') : '';
+  const todoIssues = parseTodoIssues(existingContent);
+
+  for (const todoIssue of todoIssues) {
+    const issueNumber = todoIssue.number;
+    const patchData = {};
+
+    try {
+      const issue = await apiRequest(`/repos/${repo}/issues/${issueNumber}`);
+
+      if (todoIssue.status === 'x' && issue.state !== 'closed') {
+        patchData.state = 'closed';
+      }
+
+      if (todoIssue.status === ' ' && issue.state === 'closed') {
+        patchData.state = 'open';
+      }
+
+      if (todoIssue.subtasks.length > 0) {
+        const updatedBody = updateIssueBodyCheckboxes(issue.body || '', todoIssue.subtasks);
+        if (updatedBody !== (issue.body || '')) {
+          patchData.body = updatedBody;
+        }
+      }
+
+      if (Object.keys(patchData).length > 0) {
+        await apiRequest(`/repos/${repo}/issues/${issueNumber}`, 'PATCH', patchData);
+        console.log(`Patched issue #${issueNumber}:`, patchData);
+      }
+
+      for (const subtask of todoIssue.subtasks) {
+        if (subtask.status === '~') {
+          await apiRequest(`/repos/${repo}/issues/${issueNumber}/comments`, 'POST', { body: `[${subtask.text}] parcialmente concluida` });
+          console.log(`Added subtask comment to issue #${issueNumber}`);
+        }
+      }
+    } catch (err) {
+      console.warn(`Warning: Could not update issue #${issueNumber}: ${err.message}`);
     }
   }
 }
