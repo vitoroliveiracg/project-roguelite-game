@@ -19,10 +19,10 @@
 
 - [ ] NPCS (#11)
     descrição: - [ ] Entidade npc no jogo
-    - [ ] Entidade npc no jogo
-    - [ ] Diálogo com npcs
-    - [ ] tecla de interação e tooltip para interação
-    - [ ] Hud de conversa
+    - [X] Entidade npc no jogo
+    - [~] Diálogo com npcs
+    - [X] tecla de interação e tooltip para interação
+    - [~] Hud de conversa
     - [ ] Dialog Handler do hud de conversa pelo canvas
     - [ ] Opções para diálogo
 
@@ -32,7 +32,7 @@
     - [ ]  - Itens equipados (Habilitar as classes e manter as classes atuais no personagem)
     - [ ] - Status
 
-- [ ] Tela seleção de mapas (#9)
+- [~] Tela seleção de mapas (#9)
     descrição: - [ ] HUD
     - [ ] HUD
     - [ ] Composição dos mapas na tela
@@ -45,14 +45,14 @@
 - [ ] Compositor de personagem (#8)
     descrição: - [ ] Melhorar o `renderModule/Sprite` para poder juntar os sprites de partes do **personagem** 
     - [ ] Melhorar o `renderModule/Sprite` para poder juntar os sprites de partes do **personagem**
-    - [ ] Permitir adição de **armas**
-    - [ ] Adição de **armaduras**
+    - [X] Permitir adição de **armas**
+    - [X] Adição de **armaduras**
     - [ ] Composição dos sprites de **skills**
 
-- [ ] Gerenciamento básico (#7)
+- [X] Gerenciamento básico (#7)
     descrição: - [ ] Tela preta com um botão "Iniciar Run".
-    - [ ] Tela preta com um botão "Iniciar Run".
-    - [ ] Tela de "Game Over" quando o HP do jogador chegar a 0, com um botão "Tentar Novamente".
+    - [X] Tela preta com um botão "Iniciar Run".
+    - [X] Tela de "Game Over" quando o HP do jogador chegar a 0, com um botão "Tentar Novamente".
 
 - [ ] Progressão de Habilidade Mínima (de dentro do mundo): (#6)
     descrição: - [ ] Tela da árvore podendo adicionar habilidades na árvore
@@ -107,7 +107,7 @@
 * [X] IA simples (ex: mover*se em direção ao jogador e bater).
 * [X] Sistema de Vida (HP) e "Hitbox" (ser atingido) e xp dropado.
 
-## REQUISITOS
+## REQUISITOS - Organização
 
 ### Mapa
 
@@ -122,7 +122,8 @@
     * GUI de HP e Mana na tela, lendo diretamente do estado do jogador no domínio.
     * UI modular para mostrar demais atributos de sistema em janelas sobrepostas.
 
-### Armas e Classes
+### Armas e Cla    - [ ] Listagem e controle das classes desbloqueadas no player
+sses
 
     * Habilidades passivas das classes funcionam somente com as classes ativas
 
