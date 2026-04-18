@@ -63,6 +63,24 @@ jobs:
             mv src-tauri/bin/ollama.exe src-tauri/bin/ollama-x86_64-pc-windows-msvc.exe
           fi
 
+      - name: Generate Changelog from Commits
+        id: changelog
+        shell: bash
+        run: |
+          LATEST_RELEASE=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_RELEASE" ]; then
+            COMMITS=$(git log --oneline --all)
+          else
+            COMMITS=$(git log --oneline $LATEST_RELEASE..HEAD)
+          fi
+          
+          CHANGELOG="Nova versão do jogo gerada automaticamente para Windows, Mac e Linux!
+
+## Commits nesta versão:
+$(echo "$COMMITS" | head -20)"
+          
+          echo "body=$CHANGELOG" >> $GITHUB_OUTPUT
+
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
@@ -70,6 +88,6 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: 'RPG Roguelite v__VERSION__'
-          releaseBody: 'Nova versão do jogo gerada automaticamente para Windows, Mac e Linux!'
+          releaseBody: ${{ steps.changelog.outputs.body }}
           releaseDraft: false
           prerelease: false

@@ -43,14 +43,18 @@ async function updateIssuesFromTodo() {
     if (match) {
       const status = match[1];
       const issueNumber = match[2];
-      if (status === 'x') {
-        // Close the issue
-        await apiRequest(`/repos/${repo}/issues/${issueNumber}`, 'PATCH', { state: 'closed' });
-        console.log(`Closed issue #${issueNumber}`);
-      } else if (status === '~') {
-        // Add comment
-        await apiRequest(`/repos/${repo}/issues/${issueNumber}/comments`, 'POST', { body: 'parcialmente integrada' });
-        console.log(`Added comment to issue #${issueNumber}`);
+      try {
+        if (status === 'x') {
+          // Close the issue
+          await apiRequest(`/repos/${repo}/issues/${issueNumber}`, 'PATCH', { state: 'closed' });
+          console.log(`Closed issue #${issueNumber}`);
+        } else if (status === '~') {
+          // Add comment
+          await apiRequest(`/repos/${repo}/issues/${issueNumber}/comments`, 'POST', { body: 'parcialmente integrada' });
+          console.log(`Added comment to issue #${issueNumber}`);
+        }
+      } catch (err) {
+        console.warn(`Warning: Could not update issue #${issueNumber}: ${err.message}`);
       }
     }
   }

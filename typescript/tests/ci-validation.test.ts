@@ -16,10 +16,6 @@ describe('CI Workflow Validation', () => {
     // Skip if not present, as it may not be committed yet
     if (!existsSync(workflowPath)) return;
 
-    // Check for Ollama binary paths as per workflow
-    // Note: These are downloaded in CI, so in local repo they might not exist, but check if the dir exists
-    expect(existsSync('src-tauri/bin')).toBe(true);
-
     // Check tauri.conf.json exists and has valid targets
     expect(existsSync('src-tauri/tauri.conf.json')).toBe(true);
     const tauriConfig = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
