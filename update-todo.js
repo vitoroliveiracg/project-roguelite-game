@@ -98,6 +98,14 @@ async function main() {
       const issues = JSON.parse(data);
       const existingContent = fs.existsSync('docs/todo.md') ? fs.readFileSync('docs/todo.md', 'utf8') : '';
 
+      const separator = '\n---\n';
+      let suffix = '';
+      const separatorIndex = existingContent.indexOf(separator);
+      if (separatorIndex !== -1) {
+        suffix = existingContent.slice(separatorIndex + separator.length);
+        suffix = suffix.replace(/# TODO - Synced from GitHub Issues[\s\S]*/g, '').trim();
+      }
+
       let issuesContent = '## Issues\n\n';
       issues.forEach(issue => {
         if (!issue.pull_request) {
@@ -112,8 +120,9 @@ async function main() {
         }
       });
 
-      const todoContent = '# TODO - Synced from GitHub Issues\n\n' + issuesContent + '\n---\n\n' + existingContent;
-      fs.writeFileSync('docs/todo.md', todoContent);
+      const todoContent = '# TODO - Synced from GitHub Issues\n\n' + issuesContent + separator;
+      const finalContent = suffix ? todoContent + '\n' + suffix + '\n' : todoContent;
+      fs.writeFileSync('docs/todo.md', finalContent);
       console.log('TODO updated');
     });
   }).on('error', (err) => {
